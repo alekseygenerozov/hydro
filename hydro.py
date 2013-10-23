@@ -64,15 +64,17 @@ class Zone:
 class Grid:
 	"""Class stores (static) grid for solving Euler equations numerically"""
 
-	def __init__(self, r1, r2, f_initial, n=100, M=1.E6*M_sun, num_ghosts=3, periodic=False):
+	def __init__(self, r1, r2, f_initial, n=100, M=1.E6*M_sun, num_ghosts=3, periodic=False, safety=0.6):
 		assert r2>r1
 		assert n>1
 
 		self.M=M
 		#Grid will be stored as list of zones
 		self.grid=[]
+		delta=float(r2-r1)/n
+		self.safety=safety
 		#Getting list of radii
-		radii=np.linspace(r1, r2, n)
+		radii=np.linspace(r1+(delta/2.), r2-(delta/2.), n)
 		#Spacing of grid, which we for now assume to be uniform
 		self.delta=radii[1]-radii[0]
 		#Attributes to store length of the list as well as start and end indices (useful for ghost zones)
@@ -176,7 +178,7 @@ class Grid:
 
 
 	#Evaluate Courant condition for the entire grid. This gives us an upper bound on the time step we may take 
-	def _cfl(self, safety=0.6):
+	def _cfl(self):
 		alpha_max=0.
 		#Finding the maximum transport speed across the grid
 		for zone in self.grid:
@@ -184,7 +186,7 @@ class Grid:
 			if zone_alpha_max>alpha_max:
 				alpha_max=zone_alpha_max
 		#Setting the time step
-		cfl_delta_t=safety*(self.delta/alpha_max)
+		cfl_delta_t=self.safety*(self.delta/alpha_max)
 		target_delta_t=self.time_target-self.time_cur
 		self.delta_t=min([target_delta_t, cfl_delta_t])
 
@@ -204,11 +206,11 @@ class Grid:
 		#rad=self.grid[i].rad
 		# assert rad>0
 		cs=self.grid[i].cs
-		#art_visc=0.01*self.delta*cs
+		art_visc=0.2*self.delta*cs
 		drho_dr=self.get_spatial_deriv(i, 'rho')
-		#drho_dr_second=self.get_spatial_deriv(i, 'rho',second=True)
+		drho_dr_second=self.get_spatial_deriv(i, 'rho',second=True)
 
-		return -cs*drho_dr#+art_visc*drho_dr_second
+		return -cs*drho_dr+art_visc*drho_dr_second
 		#return -(1./rad)**2*self.get_spatial_deriv(i, 'frho')
 
 	#Evaluating the partial derivative of velocity with respect to time
@@ -242,7 +244,7 @@ class Grid:
 		self.time_cur=0
 		self.time_target=time
 		ims=[]
-		fig=plt.figure()
+		fig,ax=plt.subplots()
 		#While we have not yet reached the target time
 		while self.time_cur<time:
 			if field_animate:
@@ -252,7 +254,9 @@ class Grid:
 				if analytic_func:
 					vec_analytic_func=np.vectorize(analytic_func)
 					field_analytic=vec_analytic_func(radii, self.time_cur)
-					ims.append(plt.plot( radii, field_analytic, 'b', radii, field_sol[1], 'r'))
+					plt.ylim([ 1.5*np.min(field_analytic), 1.5*np.max(field_analytic)])
+					ax.set_title(str(self.time_cur))
+					ims.append(ax.plot( radii, field_analytic, 'b', radii, field_sol[1], 'rs'))
 			#Updating each of the primitive variable fields.	
 			for field in ['rho', 'vel', 'temp']:
 				self._step(field)
@@ -261,6 +265,7 @@ class Grid:
 		if field_animate:
 			field_ani=animation.ArtistAnimation(fig, ims, interval=50, repeat_delay=3000,blit=True)
 			field_ani.save('sol_'+field_animate+'.mp4', dpi=200)
+		plt.clf()
 
 			
 
@@ -306,9 +311,9 @@ class Grid:
 			for i in range(self.start, self.end+1):
 				setattr(self.grid[i], field, f[i])
 
-		if self.periodic:
-			end=getattr(self.grid[-1], field)
-			setattr(self.grid[0], field, end)
+		# if self.periodic:
+		# 	end=getattr(self.grid[-1], field)
+		# 	setattr(self.grid[0], field, end)
 		# else:
 		#  	self._update_ghosts()
 
