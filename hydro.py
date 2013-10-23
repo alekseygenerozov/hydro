@@ -38,7 +38,7 @@ class Zone:
 	def eos(self):
 		gamma=5./3.
 		mu=0.615
-		self.pres=self.rho*kb*self.temp/(mp)
+		self.pres=self.rho*kb*self.temp/(mu*mp)
 		self.cs=np.sqrt(gamma*kb*self.temp/(mu*mp))
 
 	#Method which will be used to update non-primitive vars. 
@@ -72,7 +72,7 @@ class Grid:
 		#Grid will be stored as list of zones
 		self.grid=[]
 		#Getting list of radii
-		radii=np.linspace(r1, r2, n+2)[1:-1]
+		radii=np.linspace(r1, r2, n)
 		#Spacing of grid, which we for now assume to be uniform
 		self.delta=radii[1]-radii[0]
 		#Attributes to store length of the list as well as start and end indices (useful for ghost zones)
@@ -252,7 +252,7 @@ class Grid:
 				if analytic_func:
 					vec_analytic_func=np.vectorize(analytic_func)
 					field_analytic=vec_analytic_func(radii, self.time_cur)
-					ims.append(plt.plot(radii, field_sol[1], 'r', radii, field_analytic, 'b'))
+					ims.append(plt.plot( radii, field_analytic, 'b', radii, field_sol[1], 'r'))
 			#Updating each of the primitive variable fields.	
 			for field in ['rho', 'vel', 'temp']:
 				self._step(field)
@@ -294,7 +294,7 @@ class Grid:
 		#Getting array of all the densities
 		f=self.get_field(field)[1]
 		g=f[:]
-		fprime=np.zeros_like(f)
+
 		#Updating all of the grid zones using predictor corrector scheme as discussd in...
 		for j in range(3):
 			for i in range(self.start, self.end+1):
@@ -302,10 +302,15 @@ class Grid:
 				f[i]=g[i]+gamma[j]*self.delta_t*fprime
 				if j!=2:
 					g[i]=f[i]+zeta[j]*self.delta_t*fprime
+			#Updating the the grid with the results of a single time step
+			for i in range(self.start, self.end+1):
 				setattr(self.grid[i], field, f[i])
 
-		if not self.periodic:
-		 	self._update_ghosts()
+		if self.periodic:
+			end=getattr(self.grid[-1], field)
+			setattr(self.grid[0], field, end)
+		# else:
+		#  	self._update_ghosts()
 
 	#Extracting the array corresponding to a particular field from the grid as well as an array of radii
 	def get_field(self, field):
