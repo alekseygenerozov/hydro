@@ -107,23 +107,24 @@ class Grid:
 
 
 
-			
-	#Adding ghost zones onto the edges of the grid
+	#Adding ghost zones onto the edges of the grid (moving the start of the grid)
 	def _add_ghosts(self, num_ghosts=3):
-		#Append and prepend ghost1 and ghost2 n times
-		print num_ghosts
-		for i in range(num_ghosts):
-			print self.grid[0]
-			ghost1=copy.deepcopy(self.grid[0])
-			ghost2=copy.deepcopy(self.grid[-1])
-			ghost1.rad=self.grid[0].rad-self.delta
-			ghost2.rad=self.grid[-1].rad+self.delta
-
-			self.grid.insert(0,ghost1)
-			self.grid.append(ghost2)
-		#Start keeps track of where the actual grid starts	
 		self.start=num_ghosts
-		self.length=self.length+2*num_ghosts	
+		self.end=self.end-num_ghosts
+		#self.length=self.length+2*num_ghosts
+		#Append and prepend ghost1 and ghost2 n times
+		#print num_ghosts
+		# for i in range(num_ghosts):
+		# 	print self.grid[0]
+		# 	ghost1=copy.deepcopy(self.grid[0])
+		# 	ghost2=copy.deepcopy(self.grid[-1])
+		# 	ghost1.rad=self.grid[0].rad-self.delta
+		# 	ghost2.rad=self.grid[-1].rad+self.delta
+
+		# 	self.grid.insert(0,ghost1)
+		# 	self.grid.append(ghost2)
+		#Start keeps track of where the actual grid starts	
+	
 
 	#Interpolating field (using zones wiht indices i1 and i2) to radius rad 
 	def _interp_zones(self, rad, i1, i2, field):
@@ -137,19 +138,18 @@ class Grid:
 
 	#Method to update the ghost cells
 	def _update_ghosts(self):
-		fields=['rho', 'vel', 'temp']
-		for field in fields:
-				#Updating the starting ghosts
-				for i in range(1, self.start):
-					rad=self.grid[i].rad
-					val=self._interp_zones(rad, 0, self.start, field)
-					setattr(self.grid[i], field, val)
-				#Updating the end ghosts
-				for i in range(self.end+1, self.length-1):
-					rad=self.grid[i].rad
-					val=self._interp_zones(rad, self.end, self.length-1, field)
-					setattr(self.grid[i], field ,val)
-
+		fields=['log_rho', 'vel', 'temp']
+		for i in range(1, self.start):
+			for field in fields:
+				rad=self.grid[i].rad
+				val=self._interp_zones(rad, 0, self.start, field)
+				setattr(self.grid[i], field, val)
+			self.grid[i].update()
+		#For end zones just do a constant extrapolation.
+		for i in range(self.end+1, self.length):
+			tmp=copy.deepcopy(self.grid[self.end])
+			self.grid[i]=tmp		
+	
 
 	#Get stencil for a particular zone
 	def _get_stencil(self, i, left=3, right=3):
@@ -272,6 +272,8 @@ class Grid:
 			#Updating each of the primitive variable fields.	
 			for field in ['rho', 'vel', 'temp']:
 				self._step(field)
+			for i in range(0, self.length):
+				self.grid[i].update()
 			#Updating the time
 			self.time_cur+=self.delta_t
 			self.total_time+=self.delta_t
@@ -365,7 +367,7 @@ class Grid:
 		# 	end=getattr(self.grid[-1], field)
 		# 	setattr(self.grid[0], field, end)
 		# else:
-		#  	self._update_ghosts()
+		self._update_ghosts()
 
 	#Extracting the array corresponding to a particular field from the grid as well as an array of radii
 	def get_field(self, field):
