@@ -64,25 +64,30 @@ class Zone:
 class Grid:
 	"""Class stores (static) grid for solving Euler equations numerically"""
 
-	def __init__(self, r1, r2, f_initial, n=100, M=1.E6*M_sun, num_ghosts=3, periodic=False, safety=0.6):
+	def __init__(self, r1, r2, f_initial, n=100, M=1.E6*M_sun, num_ghosts=3, periodic=False, safety=0.6, visc_mag=0.01):
 		assert r2>r1
 		assert n>1
+
+
 
 		self.M=M
 		#Grid will be stored as list of zones
 		self.grid=[]
 		delta=float(r2-r1)/n
 		self.safety=safety
+
+		self.visc_mag=visc_mag
 		#Getting list of radii
-		radii=np.linspace(r1+(delta/2.), r2-(delta/2.), n)
+
+		self.radii=np.linspace(r1+(delta/2.), r2-(delta/2.), n)
 		#Spacing of grid, which we for now assume to be uniform
-		self.delta=radii[1]-radii[0]
+		self.delta=self.radii[1]-self.radii[0]
 		#Attributes to store length of the list as well as start and end indices (useful for ghost zones)
 		self.length=n
 		self.start=0
 		self.end=n-1
 		#Initializing the grid using the initial value function f_initial
-		for rad in radii:
+		for rad in self.radii:
 			prims=f_initial(rad)
 			self.grid.append(Zone(rad=rad, prims=prims, M=M))
 		if periodic:
@@ -92,7 +97,10 @@ class Grid:
 			self._add_ghosts(num_ghosts=num_ghosts)
 		self.delta_t=0
 		self.time_cur=0
+		self.total_time=0
 		self.time_target=0
+
+		self.saved=[]
 
 
 
@@ -206,7 +214,7 @@ class Grid:
 		#rad=self.grid[i].rad
 		# assert rad>0
 		cs=self.grid[i].cs
-		art_visc=0.2*self.delta*cs
+		art_visc=self.visc_mag*self.delta*cs
 		drho_dr=self.get_spatial_deriv(i, 'rho')
 		drho_dr_second=self.get_spatial_deriv(i, 'rho',second=True)
 
@@ -243,30 +251,72 @@ class Grid:
 		#Initialize the current and target times
 		self.time_cur=0
 		self.time_target=time
-		ims=[]
-		fig,ax=plt.subplots()
+		num_steps=0
+		#ims=[]
+		#fig,ax=plt.subplots()
 		#While we have not yet reached the target time
 		while self.time_cur<time:
-			if field_animate:
-				field_sol=self.get_field(field_animate)
-				radii=field_sol[0]
-				#If analytic solution has been passed to the method
-				if analytic_func:
-					vec_analytic_func=np.vectorize(analytic_func)
-					field_analytic=vec_analytic_func(radii, self.time_cur)
-					plt.ylim([ 1.5*np.min(field_analytic), 1.5*np.max(field_analytic)])
-					ax.set_title(str(self.time_cur))
-					ims.append(ax.plot( radii, field_analytic, 'b', radii, field_sol[1], 'rs'))
+			if num_steps%5==0:
+				self.save()
+				# field_sol=self.get_field(field_animate)
+				# radii=field_sol[0]
+				# #If analytic solution has been passed to the method
+				# if analytic_func:
+				# 	vec_analytic_func=np.vectorize(analytic_func)
+				# 	field_analytic=vec_analytic_func(radii, self.time_cur)
+				# 	plt.ylim([ 1.5*np.min(field_analytic), 1.5*np.max(field_analytic)])
+				# 	ax.text(0.1, 1, str(self.time_cur))
+				# 	ims.append(ax.plot( radii, field_analytic, 'b', radii, field_sol[1], 'rs'))
+
+
 			#Updating each of the primitive variable fields.	
 			for field in ['rho', 'vel', 'temp']:
 				self._step(field)
 			#Updating the time
 			self.time_cur+=self.delta_t
+			self.total_time+=self.delta_t
+			num_steps+=1
+
 		if field_animate:
-			field_ani=animation.ArtistAnimation(fig, ims, interval=50, repeat_delay=3000,blit=True)
-			field_ani.save('sol_'+field_animate+'.mp4', dpi=200)
+			self.animate(analytic_func=analytic_func)
+			# field_ani=animation.ArtistAnimation(fig, ims, interval=50, repeat_delay=3000,blit=True)
+			# field_ani.save('sol_'+field_animate+'.mp4', dpi=200)
 		plt.clf()
 
+
+	#Create movie of solution for now hard-coded to the density
+	def animate(self,  analytic_func=None):
+		if analytic_func:
+			vec_analytic_func=np.vectorize(analytic_func)
+		def update_img(n):
+			time=self.saved[n][0]
+			rho_sol.set_ydata(self.saved[n][1][:,0])
+			if analytic_func:
+				analytic_sol.set_ydata(vec_analytic_func(self.radii, time))
+			label.set_text(str(time))
+
+		fig,ax=plt.subplots()
+		rho_sol,=ax.plot(self.radii, self.saved[0][1][:,0], 'rs')
+		if analytic_func:
+			analytic_sol,=ax.plot(self.radii, vec_analytic_func(self.radii, 0.))
+
+		label=ax.text(0.02, 0.95, '', transform=ax.transAxes)	
+
+		sol_ani=animation.FuncAnimation(fig,update_img,len(self.saved),interval=50)
+		sol_ani.save('sol.mp4', dpi=200)
+
+	#Save the state of the grid
+	def save(self):
+		fields=['rho', 'vel', 'temp']
+		grid_prims=np.zeros((3, self.length))
+		for i in range(len(fields)):
+			grid_prims[i]=self.get_field(fields[i])[1]
+		#Saving the state of the grid within list
+		self.saved.append((self.total_time, np.transpose(grid_prims)))
+
+	#Clear all of the info in the saved list
+	def clear_saved(self):
+		self.saved=[]
 			
 
 	# # #Take a single step in time
