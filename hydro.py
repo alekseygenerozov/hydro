@@ -31,21 +31,32 @@ class Zone:
 		self.rho=prims[0]
 		self.vel=prims[1]
 		self.temp=prims[2]
+		#Temporary storage for all of the primitive variables
+		self.rho_tmp=self.rho
+		self.vel_tmp=self.vel
+		self.temp_tmp=self.temp
+
 		#Updating non-primitive variables within zone
-		self.update()
+		self.update_aux()
 
 	#Equation of state. Note this could be default in the future there could be functionality to override this.
 	def eos(self):
 		gamma=5./3.
-		mu=0.615
+		mu=1.
 		self.pres=self.rho*kb*self.temp/(mu*mp)
 		self.cs=np.sqrt(gamma*kb*self.temp/(mu*mp))
 
-	#Method which will be used to update non-primitive vars. 
+	#Method which updates all of the primitive variables in the grid after each time step
 	def update(self):
+		for field in ['rho', 'vel', 'temp']:
+			val=getattr(self, field+'_tmp')
+			setattr(self, field, val)
+
+	#Method which will be used to update non-primitive vars. 
+	def update_aux(self):
 		self.eos()
 		self.frho=self.rad**2*self.vel*self.rho
-		self.visc=self.cs*self.vel
+		# self.visc=self.cs*self.vel
 
 
 	#Finding the maximum transport speed across the zone
@@ -138,17 +149,34 @@ class Grid:
 
 	#Method to update the ghost cells
 	def _update_ghosts(self):
-		fields=['log_rho', 'vel', 'temp']
+		#Interpolating the density for all of the ghost zones
 		for i in range(1, self.start):
-			for field in fields:
-				rad=self.grid[i].rad
-				val=self._interp_zones(rad, 0, self.start, field)
-				setattr(self.grid[i], field, val)
-			self.grid[i].update()
-		#For end zones just do a constant extrapolation.
+			rho=self._interp_zones(self.grid[i].rad, 0, self.start, 'rho')
+			setattr(self.grid[i], 'rho', rho)
+		#Calculating the mdot in the first real zone
+		first_cell=copy.deepcopy(self.grid[self.start])
+		mdot=first_cell.rho*first_cell.vel*first_cell.rad**2
+
+		#Updating velocities in the ghost cells
+		for i in range(0, self.start):
+			vel=mdot/self.grid[i].rho/self.grid[i].rad**2
+			setattr(self.grid[i], 'vel', vel)
+
+		#Updating the end ghost zones, copy everything except for the radius
 		for i in range(self.end+1, self.length):
 			tmp=copy.deepcopy(self.grid[self.end])
-			self.grid[i]=tmp		
+			rad=self.grid[i].rad
+			self.grid[i]=tmp	
+			self.grid[i].rad=rad
+		# 	for field in fields:
+		# 		rad=self.grid[i].rad
+		# 		val=self._interp_zones(rad, 0, self.start, field)
+		# 		setattr(self.grid[i], field, val)
+		# 	self.grid[i].update()
+		# #For end zones just do a constant extrapolation.
+		# for i in range(self.end+1, self.length):
+		# 	tmp=copy.deepcopy(self.grid[self.end])
+		# 	self.grid[i]=tmp		
 	
 
 	#Get stencil for a particular zone
@@ -211,35 +239,34 @@ class Grid:
 
 	#Partial derivative of density with respect to time
 	def drho_dt(self, i):
-		#rad=self.grid[i].rad
+		rad=self.grid[i].rad
 		# assert rad>0
 		cs=self.grid[i].cs
 		art_visc=self.visc_mag*self.delta*cs
 		drho_dr=self.get_spatial_deriv(i, 'rho')
 		drho_dr_second=self.get_spatial_deriv(i, 'rho',second=True)
 
-		return -cs*drho_dr+art_visc*drho_dr_second
-		#return -(1./rad)**2*self.get_spatial_deriv(i, 'frho')
+		#return -cs*drho_dr+art_visc*drho_dr_second
+		return -(1./rad)**2*self.get_spatial_deriv(i, 'frho')
 
 	#Evaluating the partial derivative of velocity with respect to time
 	def dvel_dt(self, i):
-		return 0.
-		# rad=self.grid[i].rad
-		# vel=self.grid[i].vel
-		# rho=self.grid[i].rho
+		#return 0.
+		rad=self.grid[i].rad
+		vel=self.grid[i].vel
+		rho=self.grid[i].rho
 		# assert rad>0
 		# #If the density zero of goes negative return zero to avoid numerical issues
 		# if rho<=0:
 		# 	return 0
 
 
+		dpres_dr=self.get_spatial_deriv(i, 'pres')
+		dv_dr=self.get_spatial_deriv(i, 'vel')
+		dv_dr_second=self.get_spatial_deriv(i, 'vel', second=True)
+		art_visc=self.grid[i].cs*self.delta
 
-		# dpres_dr=self.get_spatial_deriv(i, 'pres')
-		# dv_dr=self.get_spatial_deriv(i, 'vel')
-		# dv_dr_second=self.get_spatial_deriv(i, 'vel', second=True)
-		# art_visc=self.grid[i].cs*self.delta
-
-		# return -vel*dv_dr-(1./rho)*dpres_dr-(G*self.M)/rad**2+art_visc*dv_dr_second
+		return -vel*dv_dr-(1./rho)*dpres_dr-(G*self.M)/rad**2+art_visc*dv_dr_second
 
 	#Evaluating the partial derivative of temperature with respect to time.
 	def dtemp_dt(self, i):
@@ -247,7 +274,7 @@ class Grid:
 
 	#Evolve the system forward for time, time. If field is specified then we create a movie showing the solution for 
 	#the field as a function of time
-	def evolve(self, time, field_animate=None, analytic_func=None):
+	def evolve(self, time, max_steps=None, field_animate=None, analytic_func=None):
 		#Initialize the current and target times
 		self.time_cur=0
 		self.time_target=time
@@ -256,6 +283,7 @@ class Grid:
 		#fig,ax=plt.subplots()
 		#While we have not yet reached the target time
 		while self.time_cur<time:
+			# print self.time_cur
 			if num_steps%5==0:
 				self.save()
 				# field_sol=self.get_field(field_animate)
@@ -274,10 +302,16 @@ class Grid:
 				self._step(field)
 			for i in range(0, self.length):
 				self.grid[i].update()
+				self.grid[i].update_aux()
+			self._update_ghosts()
 			#Updating the time
 			self.time_cur+=self.delta_t
 			self.total_time+=self.delta_t
 			num_steps+=1
+
+			if max_steps:
+				if num_steps>max_steps:
+					break
 
 		if field_animate:
 			self.animate(analytic_func=analytic_func)
@@ -348,7 +382,7 @@ class Grid:
 
 		#Evaluating the Courant condition
 		self._cfl()
-		#Getting array of all the densities
+		#Getting array of all values of the field in grid.
 		f=self.get_field(field)[1]
 		g=f[:]
 
@@ -361,13 +395,13 @@ class Grid:
 					g[i]=f[i]+zeta[j]*self.delta_t*fprime
 			#Updating the the grid with the results of a single time step
 			for i in range(self.start, self.end+1):
-				setattr(self.grid[i], field, f[i])
+				setattr(self.grid[i], field+'_tmp', f[i])
 
 		# if self.periodic:
 		# 	end=getattr(self.grid[-1], field)
 		# 	setattr(self.grid[0], field, end)
 		# else:
-		self._update_ghosts()
+
 
 	#Extracting the array corresponding to a particular field from the grid as well as an array of radii
 	def get_field(self, field):
