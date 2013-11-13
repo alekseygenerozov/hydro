@@ -1,6 +1,7 @@
 import numpy as np
 import copy
 
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 
@@ -75,7 +76,7 @@ class Zone:
 class Grid:
 	"""Class stores (static) grid for solving Euler equations numerically"""
 
-	def __init__(self, r1, r2, f_initial, n=100, M=1.E6*M_sun, num_ghosts=3, periodic=False, safety=0.6, visc_mag=0.01):
+	def __init__(self, r1, r2, f_initial, n=100, M=1.E6*M_sun, num_ghosts=3, periodic=False, safety=0.6, Re=100., params=dict()):
 		assert r2>r1
 		assert n>1
 
@@ -87,7 +88,7 @@ class Grid:
 		delta=float(r2-r1)/n
 		self.safety=safety
 
-		self.visc_mag=visc_mag
+		self.Re=Re
 		#Getting list of radii
 
 		self.radii=np.linspace(r1+(delta/2.), r2-(delta/2.), n)
@@ -99,7 +100,7 @@ class Grid:
 		self.end=n-1
 		#Initializing the grid using the initial value function f_initial
 		for rad in self.radii:
-			prims=f_initial(rad)
+			prims=f_initial(rad, **params)
 			self.grid.append(Zone(rad=rad, prims=prims, M=M))
 		if periodic:
 			self.periodic=True
@@ -240,11 +241,6 @@ class Grid:
 	#Partial derivative of density with respect to time
 	def drho_dt(self, i):
 		rad=self.grid[i].rad
-		# assert rad>0
-		cs=self.grid[i].cs
-		art_visc=self.visc_mag*self.delta*cs
-		drho_dr=self.get_spatial_deriv(i, 'rho')
-		drho_dr_second=self.get_spatial_deriv(i, 'rho',second=True)
 
 		#return -cs*drho_dr+art_visc*drho_dr_second
 		return -(1./rad)**2*self.get_spatial_deriv(i, 'frho')
@@ -264,7 +260,7 @@ class Grid:
 		dpres_dr=self.get_spatial_deriv(i, 'pres')
 		dv_dr=self.get_spatial_deriv(i, 'vel')
 		dv_dr_second=self.get_spatial_deriv(i, 'vel', second=True)
-		art_visc=self.grid[i].cs*self.delta
+		art_visc=min(self.grid[i].cs, self.grid[i].vel)*(self.radii[self.end]-self.radii[0])/self.Re
 
 		return -vel*dv_dr-(1./rho)*dpres_dr-(G*self.M)/rad**2+art_visc*dv_dr_second
 
@@ -320,23 +316,30 @@ class Grid:
 		plt.clf()
 
 
-	#Create movie of solution for now hard-coded to the density
+	#Create movie of solution
 	def animate(self,  analytic_func=None):
+		fields=('rho', 'vel', 'temp')
 		if analytic_func:
 			vec_analytic_func=np.vectorize(analytic_func)
 		def update_img(n):
 			time=self.saved[n][0]
-			rho_sol.set_ydata(self.saved[n][1][:,0])
+			sol.set_ydata(self.saved[n][1][:,0])
+			# for i in range(len(fields)):
+			# 	sol[i].set_ydata(self.saved[n][1][:,1])
 			if analytic_func:
-				analytic_sol.set_ydata(vec_analytic_func(self.radii, time))
-			label.set_text(str(time))
+				analytic_sol.set_ydata(vec_analytic_func(self.radii))
+			#label.set_text(str(time))
 
 		fig,ax=plt.subplots()
-		rho_sol,=ax.plot(self.radii, self.saved[0][1][:,0], 'rs')
+		sol,=ax.plot(self.radii, self.saved[0][1][:,0], 'rs')
+		# sol=[]
+		# fig,ax=plt.subplots(3, figsize=(8, 24))
+		# for i in range(len(fields)):
+		# 	tmp,=ax[i].plot(self.radii, self.saved[0][1][:,1], 'rs')
+		# 	sol.append(tmp)
 		if analytic_func:
-			analytic_sol,=ax.plot(self.radii, vec_analytic_func(self.radii, 0.))
-
-		label=ax.text(0.02, 0.95, '', transform=ax.transAxes)	
+			analytic_sol,=ax.plot(self.radii, vec_analytic_func(self.radii))
+		#label=ax[0].text(0.02, 0.95, '', transform=ax.transAxes)	
 
 		sol_ani=animation.FuncAnimation(fig,update_img,len(self.saved),interval=50)
 		sol_ani.save('sol.mp4', dpi=200)
