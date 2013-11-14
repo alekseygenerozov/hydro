@@ -76,13 +76,14 @@ class Zone:
 class Grid:
 	"""Class stores (static) grid for solving Euler equations numerically"""
 
-	def __init__(self, r1, r2, f_initial, n=100, M=1.E6*M_sun, num_ghosts=3, periodic=False, safety=0.6, Re=100., params=dict()):
+	def __init__(self, r1, r2, f_initial, n=100, M=1.E6*M_sun, Mdot=1., num_ghosts=3, periodic=False, safety=0.6, Re=100., params=dict()):
 		assert r2>r1
 		assert n>1
 
 
 
 		self.M=M
+		self.Mdot=Mdot
 		#Grid will be stored as list of zones
 		self.grid=[]
 		delta=float(r2-r1)/n
@@ -113,6 +114,7 @@ class Grid:
 		self.time_target=0
 
 		self.saved=[]
+		self.bdry_rho=True
 
 
 
@@ -162,6 +164,7 @@ class Grid:
 		for i in range(0, self.start):
 			vel=mdot/self.grid[i].rho/self.grid[i].rad**2
 			setattr(self.grid[i], 'vel', vel)
+			self.grid[i].update_aux()
 
 		#Updating the end ghost zones, copy everything except for the radius
 		for i in range(self.end+1, self.length):
@@ -169,16 +172,8 @@ class Grid:
 			rad=self.grid[i].rad
 			self.grid[i]=tmp	
 			self.grid[i].rad=rad
-		# 	for field in fields:
-		# 		rad=self.grid[i].rad
-		# 		val=self._interp_zones(rad, 0, self.start, field)
-		# 		setattr(self.grid[i], field, val)
-		# 	self.grid[i].update()
-		# #For end zones just do a constant extrapolation.
-		# for i in range(self.end+1, self.length):
-		# 	tmp=copy.deepcopy(self.grid[self.end])
-		# 	self.grid[i]=tmp		
-	
+
+
 
 	#Get stencil for a particular zone
 	def _get_stencil(self, i, left=3, right=3):
@@ -323,7 +318,7 @@ class Grid:
 			vec_analytic_func=np.vectorize(analytic_func)
 		def update_img(n):
 			time=self.saved[n][0]
-			sol.set_ydata(self.saved[n][1][:,0])
+			sol.set_ydata(self.saved[n][1][:,1])
 			# for i in range(len(fields)):
 			# 	sol[i].set_ydata(self.saved[n][1][:,1])
 			if analytic_func:
@@ -331,7 +326,7 @@ class Grid:
 			#label.set_text(str(time))
 
 		fig,ax=plt.subplots()
-		sol,=ax.plot(self.radii, self.saved[0][1][:,0], 'rs')
+		sol,=ax.plot(self.radii, self.saved[0][1][:,1], 'rs')
 		# sol=[]
 		# fig,ax=plt.subplots(3, figsize=(8, 24))
 		# for i in range(len(fields)):
