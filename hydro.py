@@ -152,7 +152,21 @@ class Grid:
 
 	#Method to update the ghost cells
 	def _update_ghosts(self):
-		#Interpolating the density for all of the ghost zones
+		# first_cell=copy.deepcopy(self.grid[self.start])
+		# mdot=first_cell.rho*first_cell.vel*first_cell.rad**2
+		
+		# for i in range (0, self.start):
+		# 	if self.bdry_rho:
+		# 		vel=mdot/self.grid[i].rho/self.grid[i].rad**2
+		# 		setattr(self.grid[i], 'vel', vel)
+		# 		self.grid[i].update_aux()
+		# 		self.bdry_rho=False
+		# 	else:
+		# 		rho=mdot/self.grid[i].vel/self.grid[i].rad**2
+		# 		setattr(self.grid[i], 'rho', rho)
+		# 		self.grid[i].update_aux()
+		# 		self.bdry_rho=True
+		# #Interpolating the density for all of the ghost zones
 		for i in range(1, self.start):
 			rho=self._interp_zones(self.grid[i].rad, 0, self.start, 'rho')
 			setattr(self.grid[i], 'rho', rho)
@@ -265,7 +279,7 @@ class Grid:
 
 	#Evolve the system forward for time, time. If field is specified then we create a movie showing the solution for 
 	#the field as a function of time
-	def evolve(self, time, max_steps=None, field_animate=None, analytic_func=None):
+	def evolve(self, time, max_steps=None,  analytic_func=[None, None, None, None]):
 		#Initialize the current and target times
 		self.time_cur=0
 		self.time_target=time
@@ -304,21 +318,24 @@ class Grid:
 				if num_steps>max_steps:
 					break
 
-		if field_animate:
-			self.animate(analytic_func=analytic_func)
+		for i in range(4):
+			self.animate(index=i, analytic_func=analytic_func[i])
+		# if field_animate:
+		# 	self.animate(analytic_func=analytic_func)
 			# field_ani=animation.ArtistAnimation(fig, ims, interval=50, repeat_delay=3000,blit=True)
 			# field_ani.save('sol_'+field_animate+'.mp4', dpi=200)
 		plt.clf()
 
 
 	#Create movie of solution
-	def animate(self,  analytic_func=None):
-		fields=('rho', 'vel', 'temp')
+	def animate(self,  analytic_func=None, index=1):
 		if analytic_func:
 			vec_analytic_func=np.vectorize(analytic_func)
 		def update_img(n):
 			time=self.saved[n][0]
-			sol.set_ydata(self.saved[n][1][:,1])
+			# ymin=0.9*min(self.saved[n][1][:,index])
+			sol.set_ydata(self.saved[n][1][:,index])
+			#ax.set_ylim(ymin, ymin+yrange)
 			# for i in range(len(fields)):
 			# 	sol[i].set_ydata(self.saved[n][1][:,1])
 			if analytic_func:
@@ -326,7 +343,9 @@ class Grid:
 			#label.set_text(str(time))
 
 		fig,ax=plt.subplots()
-		sol,=ax.plot(self.radii, self.saved[0][1][:,1], 'rs')
+		sol,=ax.plot(self.radii, self.saved[0][1][:,index], 'rs')
+		ax.set_ylim(0.9*ax.get_ylim()[0])
+
 		# sol=[]
 		# fig,ax=plt.subplots(3, figsize=(8, 24))
 		# for i in range(len(fields)):
@@ -337,12 +356,12 @@ class Grid:
 		#label=ax[0].text(0.02, 0.95, '', transform=ax.transAxes)	
 
 		sol_ani=animation.FuncAnimation(fig,update_img,len(self.saved),interval=50)
-		sol_ani.save('sol.mp4', dpi=200)
+		sol_ani.save('sol'+str(index)+'.mp4', dpi=200)
 
 	#Save the state of the grid
 	def save(self):
-		fields=['rho', 'vel', 'temp']
-		grid_prims=np.zeros((3, self.length))
+		fields=['rho', 'vel', 'temp', 'frho']
+		grid_prims=np.zeros((len(fields), self.length))
 		for i in range(len(fields)):
 			grid_prims[i]=self.get_field(fields[i])[1]
 		#Saving the state of the grid within list
