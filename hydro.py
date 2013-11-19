@@ -80,7 +80,7 @@ class Grid:
 		assert r2>r1
 		assert n>1
 
-
+		self.fields=['rho', 'vel', 'temp']
 
 		self.M=M
 		self.Mdot=Mdot
@@ -302,13 +302,14 @@ class Grid:
 				# 	ims.append(ax.plot( radii, field_analytic, 'b', radii, field_sol[1], 'rs'))
 
 
-			#Updating each of the primitive variable fields.	
-			for field in ['rho', 'vel', 'temp']:
-				self._step(field)
-			for i in range(0, self.length):
-				self.grid[i].update()
-				self.grid[i].update_aux()
-			self._update_ghosts()
+			#Taking a single time-step
+			self._step()	
+			# for field in ['rho', 'vel', 'temp']:
+			# 	self._step(field)
+			# for i in range(0, self.length):
+			# 	self.grid[i].update()
+			# 	self.grid[i].update_aux()
+			# self._update_ghosts()
 			#Updating the time
 			self.time_cur+=self.delta_t
 			self.total_time+=self.delta_t
@@ -393,31 +394,35 @@ class Grid:
 	# 	#self._update_ghosts()
 
 	#Take a single step in time
-	def _step(self, field):
+	def _step(self):
 		gamma=[8./15., 5./12., 3./4.]
 		zeta=[-17./60.,-5./12.,0.]
 
-		#Evaluating the Courant condition
+		substep=0
 		self._cfl()
-		#Getting array of all values of the field in grid.
+
+		for j in range(3):
+			for field in self.fields:
+				self._sub_step(field, gamma[substep], zeta[substep])
+			for i in range(0, self.length):
+				self.grid[i].update()
+				self.grid[i].update_aux()
+			self._update_ghosts()
+			substep+=1
+
+	#Substeps
+	def _sub_step(self, field, gamma, zeta):
 		f=self.get_field(field)[1]
 		g=f[:]
 
-		#Updating all of the grid zones using predictor corrector scheme as discussd in...
-		for j in range(3):
-			for i in range(self.start, self.end+1):
-				fprime=self.dfield_dt(i, field)
-				f[i]=g[i]+gamma[j]*self.delta_t*fprime
-				if j!=2:
-					g[i]=f[i]+zeta[j]*self.delta_t*fprime
-			#Updating the the grid with the results of a single time step
-			for i in range(self.start, self.end+1):
-				setattr(self.grid[i], field+'_tmp', f[i])
+		for i in range(self.start, self.end+1):
+			fprime=self.dfield_dt(i, field)
+			f[i]=g[i]+gamma*self.delta_t*fprime
+			g[i]=f[i]+zeta*self.delta_t*fprime
 
-		# if self.periodic:
-		# 	end=getattr(self.grid[-1], field)
-		# 	setattr(self.grid[0], field, end)
-		# else:
+		#Updating the the grid with the results of a single time step
+		for i in range(self.start, self.end+1):
+			setattr(self.grid[i], field+'_tmp', f[i])
 
 
 	#Extracting the array corresponding to a particular field from the grid as well as an array of radii
