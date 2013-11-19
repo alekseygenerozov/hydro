@@ -47,11 +47,11 @@ class Zone:
 		self.pres=self.rho*kb*self.temp/(mu*mp)
 		self.cs=np.sqrt(gamma*kb*self.temp/(mu*mp))
 
-	#Method which updates all of the primitive variables in the grid after each time step
-	def update(self):
-		for field in ['rho', 'vel', 'temp']:
-			val=getattr(self, field+'_tmp')
-			setattr(self, field, val)
+	# #Method which updates all of the primitive variables in the grid after each time step
+	# def update(self):
+	# 	for field in ['rho', 'vel', 'temp']:
+	# 		val=getattr(self, field+'_tmp')
+	# 		setattr(self, field, val)
 
 	#Method which will be used to update non-primitive vars. 
 	def update_aux(self):
@@ -103,7 +103,10 @@ class Grid:
 		self.start=0
 		self.end=n-1
 
-		
+		self.time_derivs=np.zeros(n, dtype={'names':[self.fields[0], self.fields[1], self.fields[2]], 'formats':['float64',
+			'float64', 'float64']})
+
+
 		#Initializing the grid using the initial value function f_initial
 		for rad in self.radii:
 			prims=f_initial(rad, **params)
@@ -275,7 +278,7 @@ class Grid:
 		dv_dr_second=self.get_spatial_deriv(i, 'vel', second=True)
 		art_visc=min(self.grid[i].cs, self.grid[i].vel)*(self.radii[self.end]-self.radii[0])/self.Re
 
-		return -vel*dv_dr-(1./rho)*dpres_dr-(G*self.M)/rad**2+art_visc*dv_dr_second-self.q(rad)*vel
+		return -vel*dv_dr-(1./rho)*dpres_dr-(G*self.M)/rad**2+art_visc*dv_dr_second-(self.q(rad)*vel/rho)
 
 	#Evaluating the partial derivative of temperature with respect to time.
 	def dtemp_dt(self, i):
@@ -384,31 +387,40 @@ class Grid:
 		gamma=[8./15., 5./12., 3./4.]
 		zeta=[-17./60.,-5./12.,0.]
 
-		substep=0
 		self._cfl()
 
-		for j in range(3):
-			for field in self.fields:
-				self._sub_step(field, gamma[substep], zeta[substep])
+		for substep in range(3):
+			self._sub_step(gamma[substep], zeta[substep])
 			for i in range(0, self.length):
-				self.grid[i].update()
+				#self.grid[i].update()
 				self.grid[i].update_aux()
 			self._update_ghosts()
-			substep+=1
 
 	#Substeps
-	def _sub_step(self, field, gamma, zeta):
-		f=self.get_field(field)[1]
-		g=f[:]
+	def _sub_step(self, gamma, zeta):
+		# f=self.get_field(field)[1]
+		# g=f[:]
 
-		for i in range(self.start, self.end+1):
-			fprime=self.dfield_dt(i, field)
-			f[i]=g[i]+gamma*self.delta_t*fprime
-			g[i]=f[i]+zeta*self.delta_t*fprime
+		#Calculating the derivatives of the field
+		for field in self.fields:
+			for i in range(self.start,self.end+1):
+				self.time_derivs[i][field]=self.dfield_dt(i, field)
+
+		#Updating the values in the grid: have to calculate the time derivatives for all relevant fields before this step
+		for field in self.fields:
+			for i in range(self.start, self.end+1):
+				f=getattr(self.grid[i],field)+gamma*self.time_derivs[i][field]*self.delta_t
+				g=f+zeta*self.time_derivs[i][field]*self.delta_t
+				setattr(self.grid[i], field, g)
+
+		# for i in range(self.start, self.end+1):
+		# 	fprime=self.dfield_dt(i, field)
+		# 	f[i]=g[i]+gamma*self.delta_t*fprime
+		# 	g[i]=f[i]+zeta*self.delta_t*fprime
 
 		#Updating the the grid with the results of a single time step
-		for i in range(self.start, self.end+1):
-			setattr(self.grid[i], field+'_tmp', f[i])
+		# for i in range(self.start, self.end+1):
+		# 	setattr(self.grid[i], field+'_tmp', f[i])
 
 
 	#Extracting the array corresponding to a particular field from the grid as well as an array of radii
