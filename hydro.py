@@ -76,13 +76,16 @@ class Zone:
 class Grid:
 	"""Class stores (static) grid for solving Euler equations numerically"""
 
-	def __init__(self, r1, r2, f_initial, n=100, M=1.E6*M_sun, Mdot=1., num_ghosts=3, periodic=False, safety=0.6, Re=100., params=dict()):
+	def __init__(self, r1, r2, f_initial, n=100, M=1.E6*M_sun, Mdot=1., num_ghosts=3, periodic=False, safety=0.6, Re=100., q=None, params=dict()):
 		assert r2>r1
 		assert n>1
 
 		self.fields=['rho', 'vel', 'temp']
 
 		self.M=M
+		if q:
+			self.q=q
+
 		self.Mdot=Mdot
 		#Grid will be stored as list of zones
 		self.grid=[]
@@ -99,6 +102,8 @@ class Grid:
 		self.length=n
 		self.start=0
 		self.end=n-1
+
+		
 		#Initializing the grid using the initial value function f_initial
 		for rad in self.radii:
 			prims=f_initial(rad, **params)
@@ -117,9 +122,8 @@ class Grid:
 		self.bdry_rho=True
 
 
-
-
-
+	def q(self, rad):
+		return 0.
 
 	#Adding ghost zones onto the edges of the grid (moving the start of the grid)
 	def _add_ghosts(self, num_ghosts=3):
@@ -252,7 +256,7 @@ class Grid:
 		rad=self.grid[i].rad
 
 		#return -cs*drho_dr+art_visc*drho_dr_second
-		return -(1./rad)**2*self.get_spatial_deriv(i, 'frho')
+		return -(1./rad)**2*self.get_spatial_deriv(i, 'frho')+self.q(rad)
 
 	#Evaluating the partial derivative of velocity with respect to time
 	def dvel_dt(self, i):
@@ -262,8 +266,8 @@ class Grid:
 		rho=self.grid[i].rho
 		# assert rad>0
 		# #If the density zero of goes negative return zero to avoid numerical issues
-		# if rho<=0:
-		# 	return 0
+		if rho<=0:
+			return 0
 
 
 		dpres_dr=self.get_spatial_deriv(i, 'pres')
@@ -271,7 +275,7 @@ class Grid:
 		dv_dr_second=self.get_spatial_deriv(i, 'vel', second=True)
 		art_visc=min(self.grid[i].cs, self.grid[i].vel)*(self.radii[self.end]-self.radii[0])/self.Re
 
-		return -vel*dv_dr-(1./rho)*dpres_dr-(G*self.M)/rad**2+art_visc*dv_dr_second
+		return -vel*dv_dr-(1./rho)*dpres_dr-(G*self.M)/rad**2+art_visc*dv_dr_second-self.q(rad)*vel
 
 	#Evaluating the partial derivative of temperature with respect to time.
 	def dtemp_dt(self, i):
@@ -331,7 +335,7 @@ class Grid:
 	#Create movie of solution
 	def animate(self,  analytic_func=None, index=1):
 		if analytic_func:
-			vec_analytic_func=np.vectorize(analytic_func)
+			vec_analytic_func=np.vectorize(analytic_funcs)
 		def update_img(n):
 			time=self.saved[n][0]
 			# ymin=0.9*min(self.saved[n][1][:,index])
@@ -345,7 +349,9 @@ class Grid:
 
 		fig,ax=plt.subplots()
 		sol,=ax.plot(self.radii, self.saved[0][1][:,index], 'rs')
-		ax.set_ylim(0.9*ax.get_ylim()[0])
+		if index==0:
+			ax.set_yscale('log')
+		#ax.set_ylim(0.9*ax.get_ylim()[0])
 
 		# sol=[]
 		# fig,ax=plt.subplots(3, figsize=(8, 24))
@@ -372,26 +378,6 @@ class Grid:
 	def clear_saved(self):
 		self.saved=[]
 			
-
-	# # #Take a single step in time
-	# def _step(self):
-	# 	#Evaluating the Courant condition
-	# 	self._cfl()
-	# 	#Getting array of all the densities
-	# 	rho0=self.get_field('rho')[1]
-	# 	rho1=np.zeros_like(rho0)
-	# 	#Updating all of the grid zones
-	# 	for i in range(self.start, self.end+1):
-	# 		rho1[i]=rho0[i]+self.delta_t*self.drho_dt(i)
-	# 		self.grid[i].rho=rho1[i]
-	# 	rho2=np.zeros_like(rho1)
-	# 	for i in range(self.start, self.end+1):
-	# 		rho2[i]=(3./4.)*rho0[i]+(1./4.)*rho1[i]+(1./4.)*self.drho_dt(i)*self.delta_t
-	# 		self.grid[i].rho=rho2[i]
-	# 	for i in range(self.start, self.end+1):
-	# 		self.grid[i].rho=(1./3.)*rho0[i]+(2./3.)*rho2[i]+(2./3.)*self.drho_dt(i)*self.delta_t
-	# 		self.grid[i].update()
-	# 	#self._update_ghosts()
 
 	#Take a single step in time
 	def _step(self):
