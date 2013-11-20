@@ -29,13 +29,13 @@ class Zone:
 		self.M=M
 
 		#Primitive variables
-		self.rho=prims[0]
+		self.log_rho=prims[0]
 		self.vel=prims[1]
 		self.temp=prims[2]
 		#Temporary storage for all of the primitive variables
-		self.rho_tmp=self.rho
-		self.vel_tmp=self.vel
-		self.temp_tmp=self.temp
+		# self.rho_tmp=self.rho
+		# self.vel_tmp=self.vel
+		# self.temp_tmp=self.temp
 
 		#Updating non-primitive variables within zone
 		self.update_aux()
@@ -55,7 +55,9 @@ class Zone:
 
 	#Method which will be used to update non-primitive vars. 
 	def update_aux(self):
+		self.rho=np.exp(self.log_rho)
 		self.eos()
+		self.r2vel=self.rad**2*self.vel
 		self.frho=self.rad**2*self.vel*self.rho
 		# self.visc=self.cs*self.vel
 
@@ -80,7 +82,7 @@ class Grid:
 		assert r2>r1
 		assert n>1
 
-		self.fields=['rho', 'vel', 'temp']
+		self.fields=['log_rho', 'vel', 'temp']
 
 		self.M=M
 		if q:
@@ -251,8 +253,19 @@ class Grid:
 			return self.dvel_dt(i)
 		elif field=='temp':
 			return self.dtemp_dt(i)
+		elif field=='log_rho':
+			return self.dlog_rho_dt(i)
 		else:
 			return 0.
+
+	#Partial derivative of density with respect to time
+	def dlog_rho_dt(self, i):
+		rad=self.grid[i].rad
+		rho=self.grid[i].rho
+		vel=self.grid[i].vel
+
+		#return -cs*drho_dr+art_visc*drho_dr_second
+		return -vel*self.get_spatial_deriv(i, 'log_rho')-(1/rad**2)*self.get_spatial_deriv(i, 'r2vel')+self.q(rad)/rho
 
 	#Partial derivative of density with respect to time
 	def drho_dt(self, i):
@@ -267,18 +280,20 @@ class Grid:
 		rad=self.grid[i].rad
 		vel=self.grid[i].vel
 		rho=self.grid[i].rho
+		temp=self.grid[i].temp
 		# assert rad>0
 		# #If the density zero of goes negative return zero to avoid numerical issues
-		if rho<=0:
-			return 0
+		# if rho<=0:
+		# 	return 0
 
-
-		dpres_dr=self.get_spatial_deriv(i, 'pres')
+		# dpres_dr=self.get_spatial_deriv(i, 'pres')
+		dlog_rho_dr=self.get_spatial_deriv(i, 'log_rho')
+		dtemp_dr=self.get_spatial_deriv(i, 'temp')
 		dv_dr=self.get_spatial_deriv(i, 'vel')
 		dv_dr_second=self.get_spatial_deriv(i, 'vel', second=True)
 		art_visc=min(self.grid[i].cs, self.grid[i].vel)*(self.radii[self.end]-self.radii[0])/self.Re
 
-		return -vel*dv_dr-(1./rho)*dpres_dr-(G*self.M)/rad**2+art_visc*dv_dr_second-(self.q(rad)*vel/rho)
+		return -vel*dv_dr-dlog_rho_dr*(kb*temp/mp)+(kb/mp)*dtemp_dr-(G*self.M)/rad**2+art_visc*dv_dr_second-(self.q(rad)*vel/rho)
 
 	#Evaluating the partial derivative of temperature with respect to time.
 	def dtemp_dt(self, i):
