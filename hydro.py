@@ -78,7 +78,8 @@ class Zone:
 class Grid:
 	"""Class stores (static) grid for solving Euler equations numerically"""
 
-	def __init__(self, r1, r2, f_initial, n=100, M=1.E6*M_sun, Mdot=1., num_ghosts=3, periodic=False, safety=0.6, Re=100., q=None, params=dict()):
+	def __init__(self, r1, r2, f_initial, n=100, M=1.E6*M_sun, Mdot=1., num_ghosts=3, periodic=False, safety=0.6, Re=100., q=None, params=dict(),
+		floor=1.e-30):
 		assert r2>r1
 		assert n>1
 
@@ -93,10 +94,11 @@ class Grid:
 		self.grid=[]
 		delta=float(r2-r1)/n
 		self.safety=safety
-
 		self.Re=Re
-		#Getting list of radii
 
+		self.floor=floor
+
+		#Getting list of radii
 		self.radii=np.linspace(r1+(delta/2.), r2-(delta/2.), n)
 		#Spacing of grid, which we for now assume to be uniform
 		self.delta=self.radii[1]-self.radii[0]
@@ -156,32 +158,32 @@ class Grid:
 
 		val1=getattr(self.grid[i1],field)
 		val2=getattr(self.grid[i2],field)
-		return np.interp(rad, [rad1, rad2], [val1, val2])
+		return np.interp(np.log(rad), [np.log(rad1), np.log(rad2)], [val1, val2])
 
 
 	#Method to update the ghost cells
 	def _update_ghosts(self):
-		# first_cell=copy.deepcopy(self.grid[self.start])
-		# mdot=first_cell.rho*first_cell.vel*first_cell.rad**2
-		
-		# for i in range (0, self.start):
-		# 	if self.bdry_rho:
-		# 		vel=mdot/self.grid[i].rho/self.grid[i].rad**2
-		# 		setattr(self.grid[i], 'vel', vel)
-		# 		self.grid[i].update_aux()
-		# 		self.bdry_rho=False
-		# 	else:
-		# 		rho=mdot/self.grid[i].vel/self.grid[i].rad**2
-		# 		setattr(self.grid[i], 'rho', rho)
-		# 		self.grid[i].update_aux()
-		# 		self.bdry_rho=True
 		# #Interpolating the density for all of the ghost zones
-		for i in range(1, self.start):
-			rho=self._interp_zones(self.grid[i].rad, 0, self.start, 'rho')
-			setattr(self.grid[i], 'rho', rho)
-		#Calculating the mdot in the first real zone
-		first_cell=copy.deepcopy(self.grid[self.start])
-		mdot=first_cell.rho*first_cell.vel*first_cell.rad**2
+		# for i in range(1, self.start):
+		# 	log_rho=self._interp_zones(self.grid[i].rad, 0, self.start, 'log_rho')
+		# 	setattr(self.grid[i], 'log_rho', log_rho)
+		# 	self.grid[i].rho=np.exp(log_rho)
+
+		start_cell=copy.deepcopy(self.grid[self.start])
+		r_start=start_cell.rad
+		log_rho_start=start_cell.log_rho
+		#Updating the end ghost zones, extrapolating using a power law density
+		for i in range(0, self.start):
+			log_rho=-1.5*np.log(self.grid[i].rad/r_start)+log_rho_start
+			self.grid[i].log_rho=log_rho
+			self.grid[i].rho=np.exp(log_rho)
+
+		# for i in range(1, self.start):
+		# 	log_rho=self._interp_zones(self.grid[i].rad, 0, self.start, 'log_rho')
+		# 	setattr(self.grid[i], 'log_rho', log_rho)
+		# #Calculating the mdot in the first real zone
+		# first_cell=copy.deepcopy(self.grid[self.start])
+		mdot=start_cell.rho*start_cell.vel*start_cell.rad**2
 
 		#Updating velocities in the ghost cells
 		for i in range(0, self.start):
@@ -189,12 +191,24 @@ class Grid:
 			setattr(self.grid[i], 'vel', vel)
 			self.grid[i].update_aux()
 
-		#Updating the end ghost zones, copy everything except for the radius
-		for i in range(self.end+1, self.length):
-			tmp=copy.deepcopy(self.grid[self.end])
-			rad=self.grid[i].rad
-			self.grid[i]=tmp	
-			self.grid[i].rad=rad
+		end_cell=copy.deepcopy(self.grid[self.end])
+		r_end=end_cell.rad
+		log_rho_end=end_cell.log_rho
+
+		# #Updating the end ghost zones, extrapolating using a power law density
+		# for i in range(self.end+1, self.length):
+		# 	log_rho=-2.*np.log(self.grid[i].rad/r_end)+log_rho_end
+		# 	self.grid[i].log_rho=log_rho
+		# 	self.grid[i].rho=np.exp(log_rho)
+
+		# #Updating the velocities at the end of the grid assuming a constant mdot.
+		# mdot=end_cell.rho*end_cell.vel*end_cell.rad**2
+		# for i in range(self.end+1, self.length):
+		# 	vel=mdot/self.grid[i].rho/self.grid[i].rad**2
+		# 	self.grid[i].vel=vel
+		# 	self.grid[i].update_aux()
+
+
 
 
 
@@ -283,15 +297,15 @@ class Grid:
 		temp=self.grid[i].temp
 		# assert rad>0
 		# #If the density zero of goes negative return zero to avoid numerical issues
-		# if rho<=0:
-		# 	return 0
+		if rho<=self.floor:
+		 	return 0
 
 		# dpres_dr=self.get_spatial_deriv(i, 'pres')
 		dlog_rho_dr=self.get_spatial_deriv(i, 'log_rho')
 		dtemp_dr=self.get_spatial_deriv(i, 'temp')
 		dv_dr=self.get_spatial_deriv(i, 'vel')
 		dv_dr_second=self.get_spatial_deriv(i, 'vel', second=True)
-		art_visc=min(self.grid[i].cs, self.grid[i].vel)*(self.radii[self.end]-self.radii[0])/self.Re
+		art_visc=min(self.grid[i].cs,  np.abs(self.grid[i].vel))*(self.radii[self.end]-self.radii[0])/self.Re
 
 		return -vel*dv_dr-dlog_rho_dr*(kb*temp/mp)+(kb/mp)*dtemp_dr-(G*self.M)/rad**2+art_visc*dv_dr_second-(self.q(rad)*vel/rho)
 
@@ -313,26 +327,11 @@ class Grid:
 			# print self.time_cur
 			if num_steps%5==0:
 				self.save()
-				# field_sol=self.get_field(field_animate)
-				# radii=field_sol[0]
-				# #If analytic solution has been passed to the method
-				# if analytic_func:
-				# 	vec_analytic_func=np.vectorize(analytic_func)
-				# 	field_analytic=vec_analytic_func(radii, self.time_cur)
-				# 	plt.ylim([ 1.5*np.min(field_analytic), 1.5*np.max(field_analytic)])
-				# 	ax.text(0.1, 1, str(self.time_cur))
-				# 	ims.append(ax.plot( radii, field_analytic, 'b', radii, field_sol[1], 'rs'))
-
+			#self.save()
 
 			#Taking a single time-step
 			self._step()	
-			# for field in ['rho', 'vel', 'temp']:
-			# 	self._step(field)
-			# for i in range(0, self.length):
-			# 	self.grid[i].update()
-			# 	self.grid[i].update_aux()
-			# self._update_ghosts()
-			#Updating the time
+			
 			self.time_cur+=self.delta_t
 			self.total_time+=self.delta_t
 			num_steps+=1
@@ -364,18 +363,15 @@ class Grid:
 			if analytic_func:
 				analytic_sol.set_ydata(vec_analytic_func(self.radii))
 			#label.set_text(str(time))
+		# ymin=np.min(self.saved[:][1][:,index])
+		# ymax=np.max(self.saved[:][1][:,index])
 
 		fig,ax=plt.subplots()
 		sol,=ax.plot(self.radii, self.saved[0][1][:,index], 'rs')
 		if index==0:
 			ax.set_yscale('log')
-		#ax.set_ylim(0.9*ax.get_ylim()[0])
+		#ax.set_ylim(ymin, ymax)
 
-		# sol=[]
-		# fig,ax=plt.subplots(3, figsize=(8, 24))
-		# for i in range(len(fields)):
-		# 	tmp,=ax[i].plot(self.radii, self.saved[0][1][:,1], 'rs')
-		# 	sol.append(tmp)
 		if analytic_func:
 			analytic_sol,=ax.plot(self.radii, vec_analytic_func(self.radii))
 		#label=ax[0].text(0.02, 0.95, '', transform=ax.transAxes)	
@@ -391,6 +387,7 @@ class Grid:
 			grid_prims[i]=self.get_field(fields[i])[1]
 		#Saving the state of the grid within list
 		self.saved.append((self.total_time, np.transpose(grid_prims)))
+		#self.saved.append(np.transpose(grid_prims))
 
 	#Clear all of the info in the saved list
 	def clear_saved(self):
@@ -407,7 +404,7 @@ class Grid:
 		for substep in range(3):
 			self._sub_step(gamma[substep], zeta[substep])
 			for i in range(0, self.length):
-				#self.grid[i].update()
+				#self.grid[i].u()
 				self.grid[i].update_aux()
 			self._update_ghosts()
 
