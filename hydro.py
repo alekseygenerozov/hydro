@@ -79,7 +79,7 @@ class Grid:
 	"""Class stores (static) grid for solving Euler equations numerically"""
 
 	def __init__(self, r1, r2, f_initial, n=100, M=1.E6*M_sun, Mdot=1., num_ghosts=3, periodic=False, safety=0.6, Re=100., q=None, params=dict(),
-		floor=1.e-30):
+		floor=1.e-30, symbol='rs'):
 		assert r2>r1
 		assert n>1
 
@@ -125,8 +125,11 @@ class Grid:
 		self.total_time=0
 		self.time_target=0
 
-		self.saved=[]
-		self.bdry_rho=True
+		self.saved=np.empty([0, self.length, 4])
+		self.time_stamps=[]
+
+		self.symbol=symbol
+		# self.bdry_rho=True
 
 
 	def q(self, rad):
@@ -195,18 +198,18 @@ class Grid:
 		r_end=end_cell.rad
 		log_rho_end=end_cell.log_rho
 
-		# #Updating the end ghost zones, extrapolating using a power law density
-		# for i in range(self.end+1, self.length):
-		# 	log_rho=-2.*np.log(self.grid[i].rad/r_end)+log_rho_end
-		# 	self.grid[i].log_rho=log_rho
-		# 	self.grid[i].rho=np.exp(log_rho)
+		#Updating the end ghost zones, extrapolating using a power law density
+		for i in range(self.end+1, self.length):
+			log_rho=-2.*np.log(self.grid[i].rad/r_end)+log_rho_end
+			self.grid[i].log_rho=log_rho
+			self.grid[i].rho=np.exp(log_rho)
 
-		# #Updating the velocities at the end of the grid assuming a constant mdot.
-		# mdot=end_cell.rho*end_cell.vel*end_cell.rad**2
-		# for i in range(self.end+1, self.length):
-		# 	vel=mdot/self.grid[i].rho/self.grid[i].rad**2
-		# 	self.grid[i].vel=vel
-		# 	self.grid[i].update_aux()
+		#Updating the velocities at the end of the grid assuming a constant mdot.
+		mdot=end_cell.rho*end_cell.vel*end_cell.rad**2
+		for i in range(self.end+1, self.length):
+			vel=mdot/self.grid[i].rho/self.grid[i].rad**2
+			self.grid[i].vel=vel
+			self.grid[i].update_aux()
 
 
 
@@ -356,21 +359,22 @@ class Grid:
 		def update_img(n):
 			time=self.saved[n][0]
 			# ymin=0.9*min(self.saved[n][1][:,index])
-			sol.set_ydata(self.saved[n][1][:,index])
+			sol.set_ydata(self.saved[n,:,index])
 			#ax.set_ylim(ymin, ymin+yrange)
 			# for i in range(len(fields)):
 			# 	sol[i].set_ydata(self.saved[n][1][:,1])
 			if analytic_func:
 				analytic_sol.set_ydata(vec_analytic_func(self.radii))
 			#label.set_text(str(time))
-		# ymin=np.min(self.saved[:][1][:,index])
+		ymin=np.min(self.saved[:,:,index])
+		ymax=np.max(self.saved[:,:,index])
 		# ymax=np.max(self.saved[:][1][:,index])
 
 		fig,ax=plt.subplots()
-		sol,=ax.plot(self.radii, self.saved[0][1][:,index], 'rs')
+		sol,=ax.plot(self.radii, self.saved[0,:,index], self.symbol)
 		if index==0:
 			ax.set_yscale('log')
-		#ax.set_ylim(ymin, ymax)
+		ax.set_ylim(0.9*ymin, 1.1*ymax)
 
 		if analytic_func:
 			analytic_sol,=ax.plot(self.radii, vec_analytic_func(self.radii))
@@ -386,13 +390,12 @@ class Grid:
 		for i in range(len(fields)):
 			grid_prims[i]=self.get_field(fields[i])[1]
 		#Saving the state of the grid within list
-		self.saved.append((self.total_time, np.transpose(grid_prims)))
-		#self.saved.append(np.transpose(grid_prims))
+		#self.saved.append((self.total_time, np.transpose(grid_prims)))
+		self.saved=np.append(self.saved,[np.transpose(grid_prims)],0)
 
 	#Clear all of the info in the saved list
 	def clear_saved(self):
-		self.saved=[]
-			
+		self.saved=np.empty([self.length, 4])
 
 	#Take a single step in time
 	def _step(self):
