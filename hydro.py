@@ -129,7 +129,7 @@ class Grid:
 		self.time_stamps=[]
 
 		self.symbol=symbol
-		# self.bdry_rho=True
+
 
 
 	def q(self, rad):
@@ -139,19 +139,6 @@ class Grid:
 	def _add_ghosts(self, num_ghosts=3):
 		self.start=num_ghosts
 		self.end=self.end-num_ghosts
-		#self.length=self.length+2*num_ghosts
-		#Append and prepend ghost1 and ghost2 n times
-		#print num_ghosts
-		# for i in range(num_ghosts):
-		# 	print self.grid[0]
-		# 	ghost1=copy.deepcopy(self.grid[0])
-		# 	ghost2=copy.deepcopy(self.grid[-1])
-		# 	ghost1.rad=self.grid[0].rad-self.delta
-		# 	ghost2.rad=self.grid[-1].rad+self.delta
-
-		# 	self.grid.insert(0,ghost1)
-		# 	self.grid.append(ghost2)
-		#Start keeps track of where the actual grid starts	
 	
 
 	#Interpolating field (using zones wiht indices i1 and i2) to radius rad 
@@ -166,12 +153,6 @@ class Grid:
 
 	#Method to update the ghost cells
 	def _update_ghosts(self):
-		# #Interpolating the density for all of the ghost zones
-		# for i in range(1, self.start):
-		# 	log_rho=self._interp_zones(self.grid[i].rad, 0, self.start, 'log_rho')
-		# 	setattr(self.grid[i], 'log_rho', log_rho)
-		# 	self.grid[i].rho=np.exp(log_rho)
-
 		start_cell=copy.deepcopy(self.grid[self.start])
 		r_start=start_cell.rad
 		log_rho_start=start_cell.log_rho
@@ -181,11 +162,6 @@ class Grid:
 			self.grid[i].log_rho=log_rho
 			self.grid[i].rho=np.exp(log_rho)
 
-		# for i in range(1, self.start):
-		# 	log_rho=self._interp_zones(self.grid[i].rad, 0, self.start, 'log_rho')
-		# 	setattr(self.grid[i], 'log_rho', log_rho)
-		# #Calculating the mdot in the first real zone
-		# first_cell=copy.deepcopy(self.grid[self.start])
 		mdot=start_cell.rho*start_cell.vel*start_cell.rad**2
 
 		#Updating velocities in the ghost cells
@@ -323,8 +299,7 @@ class Grid:
 		self.time_cur=0
 		self.time_target=time
 		num_steps=0
-		#ims=[]
-		#fig,ax=plt.subplots()
+
 		#While we have not yet reached the target time
 		while self.time_cur<time:
 			# print self.time_cur
@@ -345,10 +320,7 @@ class Grid:
 
 		for i in range(4):
 			self.animate(index=i, analytic_func=analytic_func[i])
-		# if field_animate:
-		# 	self.animate(analytic_func=analytic_func)
-			# field_ani=animation.ArtistAnimation(fig, ims, interval=50, repeat_delay=3000,blit=True)
-			# field_ani.save('sol_'+field_animate+'.mp4', dpi=200)
+
 		plt.clf()
 
 
@@ -358,17 +330,13 @@ class Grid:
 			vec_analytic_func=np.vectorize(analytic_funcs)
 		def update_img(n):
 			time=self.saved[n][0]
-			# ymin=0.9*min(self.saved[n][1][:,index])
 			sol.set_ydata(self.saved[n,:,index])
-			#ax.set_ylim(ymin, ymin+yrange)
-			# for i in range(len(fields)):
-			# 	sol[i].set_ydata(self.saved[n][1][:,1])
+
 			if analytic_func:
 				analytic_sol.set_ydata(vec_analytic_func(self.radii))
 			#label.set_text(str(time))
 		ymin=np.min(self.saved[:,:,index])
 		ymax=np.max(self.saved[:,:,index])
-		# ymax=np.max(self.saved[:][1][:,index])
 
 		fig,ax=plt.subplots()
 		sol,=ax.plot(self.radii, self.saved[0,:,index], self.symbol)
@@ -413,9 +381,6 @@ class Grid:
 
 	#Substeps
 	def _sub_step(self, gamma, zeta):
-		# f=self.get_field(field)[1]
-		# g=f[:]
-
 		#Calculating the derivatives of the field
 		for field in self.fields:
 			for i in range(self.start,self.end+1):
@@ -427,15 +392,6 @@ class Grid:
 				f=getattr(self.grid[i],field)+gamma*self.time_derivs[i][field]*self.delta_t
 				g=f+zeta*self.time_derivs[i][field]*self.delta_t
 				setattr(self.grid[i], field, g)
-
-		# for i in range(self.start, self.end+1):
-		# 	fprime=self.dfield_dt(i, field)
-		# 	f[i]=g[i]+gamma*self.delta_t*fprime
-		# 	g[i]=f[i]+zeta*self.delta_t*fprime
-
-		#Updating the the grid with the results of a single time step
-		# for i in range(self.start, self.end+1):
-		# 	setattr(self.grid[i], field+'_tmp', f[i])
 
 
 	#Extracting the array corresponding to a particular field from the grid as well as an array of radii
