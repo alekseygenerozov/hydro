@@ -84,6 +84,7 @@ class Grid:
 		assert n>1
 
 		self.fields=['log_rho', 'vel', 'temp']
+		self.out_fields=['rho', 'vel', 'temp', 'frho']
 
 		self.M=M
 		if q:
@@ -318,7 +319,7 @@ class Grid:
 				if num_steps>max_steps:
 					break
 
-		for i in range(4):
+		for i in range(len(self.out_fields)):
 			self.animate(index=i, analytic_func=analytic_func[i])
 
 		plt.clf()
@@ -329,41 +330,51 @@ class Grid:
 		if analytic_func:
 			vec_analytic_func=np.vectorize(analytic_funcs)
 		def update_img(n):
-			time=self.saved[n][0]
+			time=self.time_stamps[n]
 			sol.set_ydata(self.saved[n,:,index])
 
 			if analytic_func:
 				analytic_sol.set_ydata(vec_analytic_func(self.radii))
-			#label.set_text(str(time))
+			label.set_text(str(time))
 		ymin=np.min(self.saved[:,:,index])
 		ymax=np.max(self.saved[:,:,index])
 
 		fig,ax=plt.subplots()
+		label=ax.text(0.02, 0.95, '', transform=ax.transAxes)	
+
 		sol,=ax.plot(self.radii, self.saved[0,:,index], self.symbol)
 		if index==0:
 			ax.set_yscale('log')
+
 		ax.set_ylim(0.9*ymin, 1.1*ymax)
 
 		if analytic_func:
 			analytic_sol,=ax.plot(self.radii, vec_analytic_func(self.radii))
-		#label=ax[0].text(0.02, 0.95, '', transform=ax.transAxes)	
-
+		
+		#Exporting animation
 		sol_ani=animation.FuncAnimation(fig,update_img,len(self.saved),interval=50)
-		sol_ani.save('sol'+str(index)+'.mp4', dpi=200)
+		sol_ani.save('sol_'+self.out_fields[index]+'.mp4', dpi=200)
+
+		# plt.close()
 
 	#Save the state of the grid
 	def save(self):
-		fields=['rho', 'vel', 'temp', 'frho']
-		grid_prims=np.zeros((len(fields), self.length))
-		for i in range(len(fields)):
-			grid_prims[i]=self.get_field(fields[i])[1]
+		#fields=['rho', 'vel', 'temp', 'frho']
+		grid_prims=np.zeros((len(self.out_fields), self.length))
+		for i in range(len(self.out_fields)):
+			grid_prims[i]=self.get_field(self.out_fields[i])[1]
+			if self.out_fields[i]=='vel':
+				grid_prims[i]=grid_prims[i]/self.get_field('cs')[1]
+
 		#Saving the state of the grid within list
 		#self.saved.append((self.total_time, np.transpose(grid_prims)))
 		self.saved=np.append(self.saved,[np.transpose(grid_prims)],0)
+		self.time_stamps.append(self.total_time)
 
 	#Clear all of the info in the saved list
 	def clear_saved(self):
 		self.saved=np.empty([self.length, 4])
+		self.time_stamps=[]
 
 	#Take a single step in time
 	def _step(self):
