@@ -5,13 +5,14 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 
+from math import e
+
 
 #Need better way of dealing with constants...
 G=6.67E-8
 kb=1.38E-16
 mp=1.67E-24
 M_sun=2.E33
-
 
 
 
@@ -79,7 +80,7 @@ class Grid:
 	"""Class stores (static) grid for solving Euler equations numerically"""
 
 	def __init__(self, r1, r2, f_initial, n=100, M=1.E6*M_sun, Mdot=1., num_ghosts=3, periodic=False, safety=0.6, Re=100., q=None, params=dict(),
-		floor=1.e-30, symbol='rs'):
+		floor=1.e-30, symbol='rs', logr=True):
 		assert r2>r1
 		assert n>1
 
@@ -99,10 +100,15 @@ class Grid:
 
 		self.floor=floor
 
-		#Getting list of radii
-		self.radii=np.linspace(r1+(delta/2.), r2-(delta/2.), n)
-		#Spacing of grid, which we for now assume to be uniform
-		self.delta=self.radii[1]-self.radii[0]
+		#Setting up the grid (either logarithmic or linear in r)
+		self.logr=logr
+		if logr:
+			self.radii=np.logspace(np.log(r1+(delta/2.)), np.log(r2-(delta/2.)), n, base=e)
+			# self.delta=self.radii[1]-self.radii[0]
+			# self.log_delta=np.log(self.radii[1])-np.log(self.radii[0])
+		else:
+			self.radii=np.linspace(r1+(delta/2.), r2-(delta/2.), n)
+			self.delta=self.radii[1]-self.radii[0]
 		#Attributes to store length of the list as well as start and end indices (useful for ghost zones)
 		self.length=n
 		self.start=0
@@ -206,9 +212,11 @@ class Grid:
 
 			return self.grid[i-left:i+right+1]
 
+
 	#Getting derivatives for a given field (density, velocity, etc.). If second is set to be true then the discretized 2nd
 	#deriv is evaluated instead of the first
 	def get_spatial_deriv(self, i, field, second=False):
+	# def get_spatial_deriv(self, i, func=getattr, second=False, args=()):
 		left=3
 		right=3
 		num_zones=left+right+1
@@ -219,23 +227,35 @@ class Grid:
 			field_list[i]=getattr(stencil[i], field)
 
 		#Coefficients we will use.
+		coeffs=np.array([-1., 9., -45., 0., 45., -9., 1.])/60.
 		if second:
-			coeffs=np.array([2., -27., 270., -490., 270., -27., 2.])/(180.*self.delta)
-		else:	
-			coeffs=np.array([-1., 9., -45., 0., 45., -9., 1.])/60.
-		return np.sum(field_list*coeffs)/self.delta
+			coeffs2=np.array([2., -27., 270., -490., 270., -27., 2.])/(180.*self.delta)
+			if self.logr:
+				return np.sum(1./self.grid[i].rad**2*((field_list*coeffs2)/self.delta-(field_list*coeffs)/self.delta))
+			else:
+				return np.sum(field_list*coeffs2)/self.delta
+				
+		else:
+			if self.logr:
+				return np.sum(field_list*coeffs)/(self.delta*self.radii[i])
+			else:
+				return np.sum(field_list*coeffs)/self.delta
 
 
 	#Evaluate Courant condition for the entire grid. This gives us an upper bound on the time step we may take 
 	def _cfl(self):
 		alpha_max=0.
+		delta_t=np.zeros(self.end-self.start+1)
+		print len(delta_t)
 		#Finding the maximum transport speed across the grid
-		for zone in self.grid:
-			zone_alpha_max=zone.alpha_max()
-			if zone_alpha_max>alpha_max:
-				alpha_max=zone_alpha_max
+		for i in range(self.start, self.end+1):
+			alpha_max=self.grid[i].alpha_max()
+			delta_t[i-self.start]=self.safety*self.delta/alpha_max
+
+			# if zone_alpha_max>alpha_max:
+			# 	alpha_max=zone_alpha_max
 		#Setting the time step
-		cfl_delta_t=self.safety*(self.delta/alpha_max)
+		cfl_delta_t=np.min(delta_t)
 		target_delta_t=self.time_target-self.time_cur
 		self.delta_t=min([target_delta_t, cfl_delta_t])
 
@@ -287,6 +307,7 @@ class Grid:
 		dv_dr_second=self.get_spatial_deriv(i, 'vel', second=True)
 		art_visc=min(self.grid[i].cs,  np.abs(self.grid[i].vel))*(self.radii[self.end]-self.radii[0])/self.Re
 
+		#Need to be able to handle for general potential in the future
 		return -vel*dv_dr-dlog_rho_dr*(kb*temp/mp)+(kb/mp)*dtemp_dr-(G*self.M)/rad**2+art_visc*dv_dr_second-(self.q(rad)*vel/rho)
 
 	#Evaluating the partial derivative of temperature with respect to time.
