@@ -108,7 +108,7 @@ class Grid:
 			# self.log_delta=np.log(self.radii[1])-np.log(self.radii[0])
 		else:
 			self.radii=np.linspace(r1+(delta/2.), r2-(delta/2.), n)
-			self.delta=self.radii[1]-self.radii[0]
+			#self.delta=self.radii[1]-self.radii[0]
 		#Attributes to store length of the list as well as start and end indices (useful for ghost zones)
 		self.length=n
 		self.start=0
@@ -127,6 +127,10 @@ class Grid:
 		else:
 			self.periodic=False
 			self._add_ghosts(num_ghosts=num_ghosts)
+		#Computing differences between all of the grid elements 
+		delta=np.diff(self.radii)
+		self.delta=np.append(delta[0], delta)
+
 		self.delta_t=0
 		self.time_cur=0
 		self.total_time=0
@@ -229,17 +233,17 @@ class Grid:
 		#Coefficients we will use.
 		coeffs=np.array([-1., 9., -45., 0., 45., -9., 1.])/60.
 		if second:
-			coeffs2=np.array([2., -27., 270., -490., 270., -27., 2.])/(180.*self.delta)
 			if self.logr:
-				return np.sum(1./self.grid[i].rad**2*((field_list*coeffs2)/self.delta-(field_list*coeffs)/self.delta))
+				return np.sum(1./self.grid[i].rad**2*((field_list*coeffs2)/self.delta-(field_list*coeffs)/self.delta[i]))
 			else:
-				return np.sum(field_list*coeffs2)/self.delta
+				coeffs2=np.array([2., -27., 270., -490., 270., -27., 2.])/(180.*self.delta[i])
+				return np.sum(field_list*coeffs2)/self.delta[i]
 				
 		else:
 			if self.logr:
 				return np.sum(field_list*coeffs)/(self.delta*self.radii[i])
 			else:
-				return np.sum(field_list*coeffs)/self.delta
+				return np.sum(field_list*coeffs)/self.delta[i]
 
 
 	#Evaluate Courant condition for the entire grid. This gives us an upper bound on the time step we may take 
@@ -250,7 +254,7 @@ class Grid:
 		#Finding the maximum transport speed across the grid
 		for i in range(self.start, self.end+1):
 			alpha_max=self.grid[i].alpha_max()
-			delta_t[i-self.start]=self.safety*self.delta/alpha_max
+			delta_t[i-self.start]=self.safety*self.delta[i]/alpha_max
 
 			# if zone_alpha_max>alpha_max:
 			# 	alpha_max=zone_alpha_max
