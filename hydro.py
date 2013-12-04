@@ -104,11 +104,8 @@ class Grid:
 		self.logr=logr
 		if logr:
 			self.radii=np.logspace(np.log(r1+(delta/2.)), np.log(r2-(delta/2.)), n, base=e)
-			# self.delta=self.radii[1]-self.radii[0]
-			# self.log_delta=np.log(self.radii[1])-np.log(self.radii[0])
 		else:
 			self.radii=np.linspace(r1+(delta/2.), r2-(delta/2.), n)
-			#self.delta=self.radii[1]-self.radii[0]
 		#Attributes to store length of the list as well as start and end indices (useful for ghost zones)
 		self.length=n
 		self.start=0
@@ -127,9 +124,17 @@ class Grid:
 		else:
 			self.periodic=False
 			self._add_ghosts(num_ghosts=num_ghosts)
+
+
 		#Computing differences between all of the grid elements 
 		delta=np.diff(self.radii)
-		self.delta=np.append(delta[0], delta)
+		print delta
+		self.delta=np.insert(delta, 0, delta[0])
+		print self.delta
+
+		delta_log=np.diff(np.log(self.radii))
+		self.delta_log=np.insert(delta_log, 0, delta_log[0])
+
 
 		self.delta_t=0
 		self.time_cur=0
@@ -234,14 +239,16 @@ class Grid:
 		coeffs=np.array([-1., 9., -45., 0., 45., -9., 1.])/60.
 		if second:
 			if self.logr:
-				return np.sum(1./self.grid[i].rad**2*((field_list*coeffs2)/self.delta-(field_list*coeffs)/self.delta[i]))
+				coeffs2=np.array([2., -27., 270., -490., 270., -27., 2.])/(180.*self.delta_log[i])
+				return (1./self.grid[i].rad**2/self.delta_log[i])*(np.sum(field_list*coeffs2)
+					-np.sum(field_list*coeffs))
 			else:
 				coeffs2=np.array([2., -27., 270., -490., 270., -27., 2.])/(180.*self.delta[i])
 				return np.sum(field_list*coeffs2)/self.delta[i]
 				
 		else:
 			if self.logr:
-				return np.sum(field_list*coeffs)/(self.delta*self.radii[i])
+				return np.sum(field_list*coeffs)/(self.delta_log[i]*self.radii[i])
 			else:
 				return np.sum(field_list*coeffs)/self.delta[i]
 
@@ -249,12 +256,11 @@ class Grid:
 	#Evaluate Courant condition for the entire grid. This gives us an upper bound on the time step we may take 
 	def _cfl(self):
 		alpha_max=0.
-		delta_t=np.zeros(self.end-self.start+1)
-		print len(delta_t)
+		delta_t=np.zeros(self.length)
 		#Finding the maximum transport speed across the grid
-		for i in range(self.start, self.end+1):
+		for i in range(0, self.length):
 			alpha_max=self.grid[i].alpha_max()
-			delta_t[i-self.start]=self.safety*self.delta[i]/alpha_max
+			delta_t[i]=self.safety*self.delta[i]/alpha_max
 
 			# if zone_alpha_max>alpha_max:
 			# 	alpha_max=zone_alpha_max
@@ -333,8 +339,12 @@ class Grid:
 				self.save()
 			#self.save()
 
-			#Taking a single time-step
-			self._step()	
+			self._step()
+			# #Taking a single time-step
+			# try:
+			# 	self._step()
+			# except:
+			# 	break	
 			
 			self.time_cur+=self.delta_t
 			self.total_time+=self.delta_t
