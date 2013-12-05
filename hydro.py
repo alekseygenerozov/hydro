@@ -7,6 +7,8 @@ import matplotlib.animation as animation
 
 from math import e
 
+import subprocess
+
 
 #Need better way of dealing with constants...
 G=6.67E-8
@@ -14,6 +16,13 @@ kb=1.38E-16
 mp=1.67E-24
 M_sun=2.E33
 
+
+##Run a command from the bash shell
+def bash_command(cmd):
+    process=subprocess.Popen(['/bin/bash', '-c',cmd],  stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+    return process.communicate()[0]
+    # process.wait()
+    # return process
 
 
 
@@ -85,7 +94,7 @@ class Grid:
 		assert n>1
 
 		self.fields=['log_rho', 'vel', 'temp']
-		self.out_fields=['rho', 'vel', 'temp', 'frho']
+		self.out_fields=['t', 'rad' ,'rho', 'vel', 'temp', 'frho']
 
 		self.M=M
 		if q:
@@ -141,7 +150,7 @@ class Grid:
 		self.total_time=0
 		self.time_target=0
 
-		self.saved=np.empty([0, self.length, 4])
+		self.saved=np.empty([0, self.length, 6])
 		self.time_stamps=[]
 
 		self.symbol=symbol
@@ -326,17 +335,22 @@ class Grid:
 
 	#Evolve the system forward for time, time. If field is specified then we create a movie showing the solution for 
 	#the field as a function of time
-	def evolve(self, time, max_steps=None,  analytic_func=[None, None, None, None]):
+	def evolve(self, time, max_steps=None,  analytic_func=[None, None, None, None, None, None]):
 		#Initialize the current and target times
 		self.time_cur=0
 		self.time_target=time
 		num_steps=0
 
+		fname='tmp'
+
+		bash_command('rm '+fname)
+		out=file(fname, 'a')
 		#While we have not yet reached the target time
 		while self.time_cur<time:
 			# print self.time_cur
 			if num_steps%5==0:
 				self.save()
+				np.savetxt(out, self.saved[-1])
 			#self.save()
 
 			self._step()
@@ -354,7 +368,7 @@ class Grid:
 				if num_steps>max_steps:
 					break
 
-		for i in range(len(self.out_fields)):
+		for i in range(1, len(self.out_fields)):
 			self.animate(index=i, analytic_func=analytic_func[i])
 
 		plt.clf()
@@ -397,9 +411,12 @@ class Grid:
 		#fields=['rho', 'vel', 'temp', 'frho']
 		grid_prims=np.zeros((len(self.out_fields), self.length))
 		for i in range(len(self.out_fields)):
-			grid_prims[i]=self.get_field(self.out_fields[i])[1]
-			if self.out_fields[i]=='vel':
-				grid_prims[i]=grid_prims[i]/self.get_field('cs')[1]
+			if i==0:
+				grid_prims[i].fill(self.total_time)
+			else:
+				grid_prims[i]=self.get_field(self.out_fields[i])[1]
+				if self.out_fields[i]=='vel':
+					grid_prims[i]=grid_prims[i]/self.get_field('cs')[1]
 
 		#Saving the state of the grid within list
 		#self.saved.append((self.total_time, np.transpose(grid_prims)))
