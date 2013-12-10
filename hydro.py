@@ -8,13 +8,14 @@ import matplotlib.animation as animation
 from math import e
 
 import subprocess
+import astropy.constants as const
 
 
-#Need better way of dealing with constants...
-G=6.67E-8
-kb=1.38E-16
-mp=1.67E-24
-M_sun=2.E33
+#Constants
+G=const.G.cgs.value
+M_sun=const.M_sun.cgs.value
+kb=const.k_B.cgs.value
+mp=const.m_p.cgs.value
 
 
 ##Run a command from the bash shell
@@ -112,7 +113,7 @@ class Grid:
 		#Setting up the grid (either logarithmic or linear in r)
 		self.logr=logr
 		if logr:
-			self.radii=np.logspace(np.log(r1+(delta/2.)), np.log(r2-(delta/2.)), n, base=e)
+			self.radii=np.logspace(np.log(r1), np.log(r2), n, base=e)
 		else:
 			self.radii=np.linspace(r1+(delta/2.), r2-(delta/2.), n)
 		#Attributes to store length of the list as well as start and end indices (useful for ghost zones)
@@ -137,9 +138,9 @@ class Grid:
 
 		#Computing differences between all of the grid elements 
 		delta=np.diff(self.radii)
-		print delta
+		#print delta
 		self.delta=np.insert(delta, 0, delta[0])
-		print self.delta
+		#print self.delta
 
 		delta_log=np.diff(np.log(self.radii))
 		self.delta_log=np.insert(delta_log, 0, delta_log[0])
@@ -246,6 +247,12 @@ class Grid:
 
 		#Coefficients we will use.
 		coeffs=np.array([-1., 9., -45., 0., 45., -9., 1.])/60.
+
+		# if second:
+		# 	coeffs2=np.array([2., -27., 270., -490., 270., -27., 2.])/(180.*self.delta[i])
+		# 	return np.sum(field_list*coeffs2)/self.delta[i]
+		# else:
+		# 	return np.sum(field_list*coeffs)/self.delta[i]
 		if second:
 			if self.logr:
 				coeffs2=np.array([2., -27., 270., -490., 270., -27., 2.])/(180.*self.delta_log[i])
@@ -348,9 +355,12 @@ class Grid:
 		#While we have not yet reached the target time
 		while self.time_cur<time:
 			# print self.time_cur
+			# self.save()
+			# np.savetxt(out, self.saved[-1])
 			if num_steps%5==0:
 				self.save()
 				np.savetxt(out, self.saved[-1])
+				print self.total_time/self.time_target
 			#self.save()
 
 			self._step()
