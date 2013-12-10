@@ -53,10 +53,11 @@ class Zone:
 
 	#Equation of state. Note this could be default in the future there could be functionality to override this.
 	def eos(self):
-		gamma=5./3.
+		#gamma=5./3.
+		#gamma=1.01
 		mu=1.
 		self.pres=self.rho*kb*self.temp/(mu*mp)
-		self.cs=np.sqrt(gamma*kb*self.temp/(mu*mp))
+		self.cs=np.sqrt(kb*self.temp/(mu*mp))
 
 	# #Method which updates all of the primitive variables in the grid after each time step
 	# def update(self):
