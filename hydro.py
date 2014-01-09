@@ -402,9 +402,10 @@ class Grid:
 		fig,ax=plt.subplots()
 		label=ax.text(0.02, 0.95, '', transform=ax.transAxes)	
 
-		sol,=ax.plot(self.radii, self.saved[0,:,index], self.symbol)
-		if index==0:
+		if index==2:
 			ax.set_yscale('log')
+		sol,=ax.plot(self.radii, self.saved[0,:,index], self.symbol)
+
 
 		ax.set_ylim(0.9*ymin, 1.1*ymax)
 

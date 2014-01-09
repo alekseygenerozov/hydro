@@ -26,7 +26,7 @@ c_s=np.sqrt(kb*temp/mp)
 rc=G*m*M_sun/(2*c_s**2)
 
 rmin=3.E11
-rmax=4.E12
+rmax=3.E12
 
 
 ##Run a command from the bash shell
@@ -37,7 +37,7 @@ def bash_command(cmd):
     # return process
 
 
-def delta_src(rad, mdot=400., delta=1.E10, r_0=1.25E12, r_1=2.E12, tol=1.E10):
+def delta_src(rad, mdot=1600., delta=1.E10, r_0=1.25E12, r_1=2.E12, tol=1.E10):
     #return mdot*(1-np.tanh((rad-r_0)*(rad-r_1)/(4*delta**2)))
     return mdot*(1./(4.*np.pi*rad**2))*(1./(np.sqrt(2.*np.pi)*delta))*np.exp(-(rad-r_0)**2/(2.*delta**2))
     #if r_0-tol<rad<r_0+tol:
@@ -117,8 +117,8 @@ d=dict(log=True)
 # grid=hydro.Grid(rmin, rmax, background, M=M_sun, n=100, safety=0.6, Re=100, params=d, floor=floor,
 #     q=power_src, symbol='r', logr=False)
 # grid.evolve(50*tcross,analytic_func=[None, None, None, None, None, None])
-grid=hydro.Grid(rmin, rmax, background, M=M_sun, n=100, safety=0.6, Re=100./np.sqrt(5./3.), params=d, floor=floor, symbol='r', logr=False, q=delta_src)
-grid.evolve(2.5*tcross,analytic_func=[None, None, None, None, None, None])
+grid=hydro.Grid(rmin, rmax, background, M=M_sun, n=200, safety=0.6, Re=100./np.sqrt(5./3.), params=d, floor=floor, symbol='r', logr=False,q=delta_src)
+grid.evolve(2.*tcross,analytic_func=[None, None, None, None, None, None])
 
 
 #bash_command('cp '+'tmp tmp_log')
