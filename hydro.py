@@ -270,6 +270,11 @@ class Grid:
 				return np.sum(field_list*coeffs)/self.delta[i]
 
 
+	def get_laplacian(self, i, field):
+		return self.get_spatial_deriv(i, field, second=True)+(2./self.radii[i])*(self.get_spatial_deriv(i, field, second=True))
+
+
+
 	#Evaluate Courant condition for the entire grid. This gives us an upper bound on the time step we may take 
 	def _cfl(self):
 		alpha_max=0.
@@ -331,11 +336,11 @@ class Grid:
 		dlog_rho_dr=self.get_spatial_deriv(i, 'log_rho')
 		dtemp_dr=self.get_spatial_deriv(i, 'temp')
 		dv_dr=self.get_spatial_deriv(i, 'vel')
-		dv_dr_second=self.get_spatial_deriv(i, 'vel', second=True)
+		lap_vel=self.get_laplacian(i, 'vel')
 		art_visc=min(self.grid[i].cs,  np.abs(self.grid[i].vel))*(self.radii[self.end]-self.radii[0])/self.Re
 
 		#Need to be able to handle for general potential in the future
-		return -vel*dv_dr-dlog_rho_dr*(kb*temp/mp)+(kb/mp)*dtemp_dr-(G*self.M)/rad**2+art_visc*dv_dr_second-(self.q(rad)*vel/rho)
+		return -vel*dv_dr-dlog_rho_dr*(kb*temp/mp)+(kb/mp)*dtemp_dr-(G*self.M)/rad**2+art_visc*lap_vel-(self.q(rad)*vel/rho)
 
 	#Evaluating the partial derivative of temperature with respect to time.
 	def dtemp_dt(self, i):
@@ -404,10 +409,11 @@ class Grid:
 
 		if index==2:
 			ax.set_yscale('log')
+			ax.set_ylim(self.floor, 10.**3*self.floor)
 		sol,=ax.plot(self.radii, self.saved[0,:,index], self.symbol)
 
-
-		ax.set_ylim(0.9*ymin, 1.1*ymax)
+		if index==3:
+			ax.set_ylim(-3, 3)
 
 		if analytic_func:
 			analytic_sol,=ax.plot(self.radii, vec_analytic_func(self.radii))
