@@ -271,7 +271,7 @@ class Grid:
 
 
 	def get_laplacian(self, i, field):
-		return self.get_spatial_deriv(i, field, second=True)+(2./self.radii[i])*(self.get_spatial_deriv(i, field, second=True))
+		return self.get_spatial_deriv(i, field, second=True)+(2./self.radii[i])*(self.get_spatial_deriv(i, field))
 
 
 
@@ -336,7 +336,8 @@ class Grid:
 		dlog_rho_dr=self.get_spatial_deriv(i, 'log_rho')
 		dtemp_dr=self.get_spatial_deriv(i, 'temp')
 		dv_dr=self.get_spatial_deriv(i, 'vel')
-		lap_vel=self.get_laplacian(i, 'vel')
+		#lap_vel=self.get_laplacian(i, 'vel')
+		lap_vel=self.get_spatial_deriv(i, 'vel', 'second')
 		art_visc=min(self.grid[i].cs,  np.abs(self.grid[i].vel))*(self.radii[self.end]-self.radii[0])/self.Re
 
 		#Need to be able to handle for general potential in the future
