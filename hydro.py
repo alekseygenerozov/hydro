@@ -336,8 +336,8 @@ class Grid:
 		dlog_rho_dr=self.get_spatial_deriv(i, 'log_rho')
 		dtemp_dr=self.get_spatial_deriv(i, 'temp')
 		dv_dr=self.get_spatial_deriv(i, 'vel')
-		#lap_vel=self.get_laplacian(i, 'vel')
-		lap_vel=self.get_spatial_deriv(i, 'vel', 'second')
+		lap_vel=self.get_laplacian(i, 'vel')
+		#lap_vel=self.get_spatial_deriv(i, 'vel', 'second')
 		art_visc=min(self.grid[i].cs,  np.abs(self.grid[i].vel))*(self.radii[self.end]-self.radii[0])/self.Re
 
 		#Need to be able to handle for general potential in the future
@@ -355,10 +355,14 @@ class Grid:
 		self.time_target=time
 		num_steps=0
 
-		fname='tmp'
+		params_name='params'
+		fparams=file(params_name, 'w')
+		fparams.write('Re={0} rin={1:8.7e} rout={2:8.7e} floor={3:8.7e} n={4}'.format(self.Re, self.radii[0], 
+			self.radii[-1], self.floor, self.length))
 
-		bash_command('rm '+fname)
-		out=file(fname, 'a')
+		out_name='tmp'
+		bash_command('rm '+out_name)
+		fout=file(out_name, 'a')
 		#While we have not yet reached the target time
 		while self.time_cur<time:
 			# print self.time_cur
@@ -366,7 +370,7 @@ class Grid:
 			# np.savetxt(out, self.saved[-1])
 			if num_steps%5==0:
 				self.save()
-				np.savetxt(out, self.saved[-1])
+				np.savetxt(fout, self.saved[-1])
 				print self.total_time/self.time_target
 			#self.save()
 
