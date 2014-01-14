@@ -78,6 +78,10 @@ class Zone:
 	def alpha_max(self):
 		return max([np.abs(self.vel+self.cs), np.abs(self.vel-self.cs)])
 
+	def bernoulli(self):
+		return 0.5*self.vel**2+self.cs**2*self.log_rho-G*self.M/self.rad
+
+
 
 
 
@@ -161,6 +165,18 @@ class Grid:
 
 	def q(self, rad):
 		return 0.
+
+	def _bernoulli_diff(self):
+		return self.grid[self.end].bernoulli()-self.grid[self.start].bernoulli()
+
+	def _bernoulli_check(self):
+		#Integating the momentum source term
+		integral=0.
+		for i in range(self.start, self.end):
+			integral+=-self.q(self.radii[i])*self.grid[i].vel*self.delta[i]/self.grid[i].rho
+			
+		return [self.grid[self.start].bernoulli(),self.grid[self.end].bernoulli(), self._bernoulli_diff(),integral]
+
 
 	#Adding ghost zones onto the edges of the grid (moving the start of the grid)
 	def _add_ghosts(self, num_ghosts=3):
@@ -272,7 +288,6 @@ class Grid:
 
 	def get_laplacian(self, i, field):
 		return self.get_spatial_deriv(i, field, second=True)+(2./self.radii[i])*(self.get_spatial_deriv(i, field))
-
 
 
 	#Evaluate Courant condition for the entire grid. This gives us an upper bound on the time step we may take 
