@@ -174,7 +174,7 @@ class Grid:
 		integral=0.
 		for i in range(self.start, self.end):
 			integral+=-self.q(self.radii[i])*self.grid[i].vel*self.delta[i]/self.grid[i].rho
-			
+
 		return [self.grid[self.start].bernoulli(),self.grid[self.end].bernoulli(), self._bernoulli_diff(),integral]
 
 
@@ -356,7 +356,7 @@ class Grid:
 		art_visc=min(self.grid[i].cs,  np.abs(self.grid[i].vel))*(self.radii[self.end]-self.radii[0])/self.Re
 
 		#Need to be able to handle for general potential in the future
-		return -vel*dv_dr-dlog_rho_dr*(kb*temp/mp)+(kb/mp)*dtemp_dr-(G*self.M)/rad**2+art_visc*lap_vel-(self.q(rad)*vel/rho)
+		return -vel*dv_dr-dlog_rho_dr*(kb*temp/mp)+(kb/mp)*dtemp_dr-(G*self.M)/rad**2+art_visc*lap_vel#-(self.q(rad)*vel/rho)
 
 	#Evaluating the partial derivative of temperature with respect to time.
 	def dtemp_dt(self, i):
