@@ -117,7 +117,7 @@ d=dict(log=True)
 # grid=hydro.Grid(rmin, rmax, background, M=M_sun, n=100, safety=0.6, Re=100, params=d, floor=floor,
 #     q=power_src, symbol='r', logr=False)
 # grid.evolve(50*tcross,analytic_func=[None, None, None, None, None, None])
-grid=hydro.Grid(rmin, rmax, parker, M=M_sun, n=100, safety=0.6, Re=90., params=d, floor=floor, symbol='r', logr=True)
+grid=hydro.Grid(rmin, rmax, parker, M=M_sun, n=100, safety=0.6, Re=150., params=d, symbol='r', logr=False)
 grid.evolve(3.*tcross,analytic_func=[None, None, None, None, None, None])
 
 

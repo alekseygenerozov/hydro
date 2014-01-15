@@ -196,39 +196,58 @@ class Grid:
 
 	#Method to update the ghost cells
 	def _update_ghosts(self):
-		start_cell=copy.deepcopy(self.grid[self.start])
-		r_start=start_cell.rad
-		log_rho_start=start_cell.log_rho
-		#Updating the end ghost zones, extrapolating using a power law density
-		for i in range(0, self.start):
-			log_rho=-1.5*np.log(self.grid[i].rad/r_start)+log_rho_start
-			self.grid[i].log_rho=log_rho
-			self.grid[i].rho=np.exp(log_rho)
+		for i in range(1, self.start):
+			rho=self._interp_zones(self.grid[i].rad, 0, self.start, 'rho')
+	        setattr(self.grid[i], 'rho', rho)
+		#Calculating the mdot in the first real zone
+		first_cell=copy.deepcopy(self.grid[self.start])
+		mdot=first_cell.rho*first_cell.vel*first_cell.rad**2
 
-		mdot=start_cell.rho*start_cell.vel*start_cell.rad**2
-
-		#Updating velocities in the ghost cells
+	    #Updating velocities in the ghost cells
 		for i in range(0, self.start):
 			vel=mdot/self.grid[i].rho/self.grid[i].rad**2
-			setattr(self.grid[i], 'vel', vel)
-			self.grid[i].update_aux()
+	        setattr(self.grid[i], 'vel', vel)
+	        self.grid[i].update_aux()
 
-		end_cell=copy.deepcopy(self.grid[self.end])
-		r_end=end_cell.rad
-		log_rho_end=end_cell.log_rho
-
-		#Updating the end ghost zones, extrapolating using a power law density
+	    #Updating the end ghost zones, copy everything except for the radius
 		for i in range(self.end+1, self.length):
-			log_rho=-2.*np.log(self.grid[i].rad/r_end)+log_rho_end
-			self.grid[i].log_rho=log_rho
-			self.grid[i].rho=np.exp(log_rho)
+			tmp=copy.deepcopy(self.grid[self.end])
+	        rad=self.grid[i].rad
+	        self.grid[i]=tmp        
+	        self.grid[i].rad=rad
+		# start_cell=copy.deepcopy(self.grid[self.start])
+		# r_start=start_cell.rad
+		# log_rho_start=start_cell.log_rho
+		# #Updating the end ghost zones, extrapolating using a power law density
+		# for i in range(0, self.start):
+		# 	log_rho=-1.5*np.log(self.grid[i].rad/r_start)+log_rho_start
+		# 	self.grid[i].log_rho=log_rho
+		# 	self.grid[i].rho=np.exp(log_rho)
 
-		#Updating the velocities at the end of the grid assuming a constant mdot.
-		mdot=end_cell.rho*end_cell.vel*end_cell.rad**2
-		for i in range(self.end+1, self.length):
-			vel=mdot/self.grid[i].rho/self.grid[i].rad**2
-			self.grid[i].vel=vel
-			self.grid[i].update_aux()
+		# mdot=start_cell.rho*start_cell.vel*start_cell.rad**2
+
+		# #Updating velocities in the ghost cells
+		# for i in range(0, self.start):
+		# 	vel=mdot/self.grid[i].rho/self.grid[i].rad**2
+		# 	setattr(self.grid[i], 'vel', vel)
+		# 	self.grid[i].update_aux()
+
+		# end_cell=copy.deepcopy(self.grid[self.end])
+		# r_end=end_cell.rad
+		# log_rho_end=end_cell.log_rho
+
+		# #Updating the end ghost zones, extrapolating using a power law density
+		# for i in range(self.end+1, self.length):
+		# 	log_rho=-2.*np.log(self.grid[i].rad/r_end)+log_rho_end
+		# 	self.grid[i].log_rho=log_rho
+		# 	self.grid[i].rho=np.exp(log_rho)
+
+		# #Updating the velocities at the end of the grid assuming a constant mdot.
+		# mdot=end_cell.rho*end_cell.vel*end_cell.rad**2
+		# for i in range(self.end+1, self.length):
+		# 	vel=mdot/self.grid[i].rho/self.grid[i].rad**2
+		# 	self.grid[i].vel=vel
+		# 	self.grid[i].update_aux()
 
 
 
