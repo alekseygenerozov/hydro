@@ -351,8 +351,8 @@ class Grid:
 		dlog_rho_dr=self.get_spatial_deriv(i, 'log_rho')
 		dtemp_dr=self.get_spatial_deriv(i, 'temp')
 		dv_dr=self.get_spatial_deriv(i, 'vel')
-		lap_vel=self.get_laplacian(i, 'vel')
-		#lap_vel=self.get_spatial_deriv(i, 'vel', 'second')
+		#lap_vel=self.get_laplacian(i, 'vel')
+		lap_vel=self.get_spatial_deriv(i, 'vel', 'second')
 		art_visc=min(self.grid[i].cs,  np.abs(self.grid[i].vel))*(self.radii[self.end]-self.radii[0])/self.Re
 
 		#Need to be able to handle for general potential in the future
@@ -430,10 +430,11 @@ class Grid:
 		if index==2:
 			ax.set_yscale('log')
 			ax.set_ylim(self.floor, 10.**3*self.floor)
+		if index==3:
+			ax.set_ylim(0, 1.5)
 		sol,=ax.plot(self.radii, self.saved[0,:,index], self.symbol)
 
-		if index==3:
-			ax.set_ylim(-3, 3)
+
 
 		if analytic_func:
 			analytic_sol,=ax.plot(self.radii, vec_analytic_func(self.radii))
@@ -442,7 +443,7 @@ class Grid:
 		sol_ani=animation.FuncAnimation(fig,update_img,len(self.saved),interval=50)
 		sol_ani.save('sol_'+self.out_fields[index]+'.mp4', dpi=200)
 
-		# plt.close()
+		plt.close()
 
 	#Save the state of the grid
 	def save(self):
