@@ -25,7 +25,7 @@ m=1.
 c_s=np.sqrt(kb*temp/mp)
 rc=G*m*M_sun/(2*c_s**2)
 
-rmin=3.E11
+rmin=5.E11
 rmax=1.E12
 
 
@@ -117,8 +117,8 @@ d=dict(log=True)
 # grid=hydro.Grid(rmin, rmax, background, M=M_sun, n=100, safety=0.6, Re=100, params=d, floor=floor,
 #     q=power_src, symbol='r', logr=False)
 # grid.evolve(50*tcross,analytic_func=[None, None, None, None, None, None])
-grid=hydro.Grid(rmin, rmax, parker, M=M_sun, n=100, safety=0.6, Re=100., params=d, floor=floor, symbol='r', logr=True)
-grid.evolve(2.*tcross,analytic_func=[None, None, None, None, None, None], max_steps=1)
+grid=hydro.Grid(rmin, rmax, parker, M=M_sun, n=100, safety=0.6, Re=90., params=d, floor=floor, symbol='r', logr=True)
+grid.evolve(3.*tcross,analytic_func=[None, None, None, None, None, None])
 
 
 #bash_command('cp '+'tmp tmp_log')
