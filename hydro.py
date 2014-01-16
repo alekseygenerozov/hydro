@@ -198,7 +198,7 @@ class Grid:
 	def _update_ghosts(self):
 		for i in range(1, self.start):
 			rho=self._interp_zones(self.grid[i].rad, 0, self.start, 'rho')
-	        setattr(self.grid[i], 'rho', rho)
+			setattr(self.grid[i], 'rho', rho)
 		#Calculating the mdot in the first real zone
 		first_cell=copy.deepcopy(self.grid[self.start])
 		mdot=first_cell.rho*first_cell.vel*first_cell.rad**2
@@ -206,15 +206,15 @@ class Grid:
 	    #Updating velocities in the ghost cells
 		for i in range(0, self.start):
 			vel=mdot/self.grid[i].rho/self.grid[i].rad**2
-	        setattr(self.grid[i], 'vel', vel)
-	        self.grid[i].update_aux()
+			setattr(self.grid[i], 'vel', vel)
+			self.grid[i].update_aux()
 
 	    #Updating the end ghost zones, copy everything except for the radius
 		for i in range(self.end+1, self.length):
 			tmp=copy.deepcopy(self.grid[self.end])
-	        rad=self.grid[i].rad
-	        self.grid[i]=tmp        
-	        self.grid[i].rad=rad
+			rad=self.grid[i].rad
+			self.grid[i]=tmp        
+			self.grid[i].rad=rad
 		# start_cell=copy.deepcopy(self.grid[self.start])
 		# r_start=start_cell.rad
 		# log_rho_start=start_cell.log_rho
