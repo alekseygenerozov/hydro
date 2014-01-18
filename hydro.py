@@ -259,8 +259,8 @@ class Grid:
 		#Getting stencil for current grid point
 		stencil=self._get_stencil(i, left=left, right=right)
 		field_list=np.zeros(num_zones)
-		for i in range(num_zones):
-			field_list[i]=getattr(stencil[i], field)
+		for j in range(num_zones):
+			field_list[j]=getattr(stencil[j], field)
 
 		#Coefficients we will use.
 		coeffs=np.array([-1., 9., -45., 0., 45., -9., 1.])/60.
