@@ -278,8 +278,8 @@ class Grid:
 		#Getting stencil for current grid point
 		stencil=self._get_stencil(i, left=left, right=right)
 		field_list=np.zeros(num_zones)
-		for i in range(num_zones):
-			field_list[i]=getattr(stencil[i], field)
+		for j in range(num_zones):
+			field_list[j]=getattr(stencil[j], field)
 
 		#Coefficients we will use.
 		coeffs=np.array([-1., 9., -45., 0., 45., -9., 1.])/60.
@@ -374,8 +374,8 @@ class Grid:
 		lap_vel=self.get_spatial_deriv(i, 'vel', 'second')
 		art_visc=min(self.grid[i].cs,  np.abs(self.grid[i].vel))*(self.radii[self.length-1]-self.radii[0])/self.Re
 
-		if np.abs(rad-7.51E11)/rad<0.01:
-			import pdb; pdb.set_trace();
+		# if np.abs(rad-7.51E11)/rad<0.01:
+		# 	import pdb; pdb.set_trace();
 
 		#Need to be able to handle for general potential in the future
 		return -vel*dv_dr-dlog_rho_dr*(kb*temp/mp)+(kb/mp)*dtemp_dr-(G*self.M)/rad**2+art_visc*lap_vel-(self.q(rad)*vel/rho)
