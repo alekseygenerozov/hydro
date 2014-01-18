@@ -26,7 +26,7 @@ c_s=np.sqrt(kb*temp/mp)
 rc=G*m*M_sun/(2*c_s**2)
 
 rmin=5.E11
-rmax=1.E12
+rmax=5.E12
 
 
 ##Run a command from the bash shell
@@ -105,7 +105,8 @@ def background(rad, rho_0=0.9*floor, temp=temp, log=True):
     return np.array([rho_0, 0., temp])
     
 
-    
+def deriv_test(rad, log=True):
+    return [np.log(2*floor), rad**2, 1.]    
 
 
 
@@ -117,8 +118,8 @@ d=dict(log=True)
 # grid=hydro.Grid(rmin, rmax, background, M=M_sun, n=100, safety=0.6, Re=100, params=d, floor=floor,
 #     q=power_src, symbol='r', logr=False)
 # grid.evolve(50*tcross,analytic_func=[None, None, None, None, None, None])
-grid=hydro.Grid(rmin, rmax, parker, M=M_sun, n=200, safety=0.6, Re=200., params=d, symbol='r', logr=True)
-grid.evolve(3.*tcross,analytic_func=[None, None, None, None, None, None], max_steps=10)
+grid=hydro.Grid(rmin, rmax, parker, M=M_sun, n=100, safety=0.6, Re=150., params=d, symbol='r', logr=True, floor=floor)
+grid.evolve(3*tcross,analytic_func=[None, None, None, None, None, None], max_steps=0)
 
 
 #bash_command('cp '+'tmp tmp_log')

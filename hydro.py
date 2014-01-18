@@ -209,12 +209,12 @@ class Grid:
 			setattr(self.grid[i], 'vel', vel)
 			self.grid[i].update_aux()
 
-	    #Updating the end ghost zones, copy everything except for the radius
-		for i in range(self.end+1, self.length):
-			tmp=copy.deepcopy(self.grid[self.end])
-			rad=self.grid[i].rad
-			self.grid[i]=tmp        
-			self.grid[i].rad=rad
+	 #    #Updating the end ghost zones, copy everything except for the radius
+		# for i in range(self.end+1, self.length):
+		# 	tmp=copy.deepcopy(self.grid[self.end])
+		# 	rad=self.grid[i].rad
+		# 	self.grid[i]=tmp        
+		# 	self.grid[i].rad=rad
 		# start_cell=copy.deepcopy(self.grid[self.start])
 		# r_start=start_cell.rad
 		# log_rho_start=start_cell.log_rho
@@ -232,22 +232,22 @@ class Grid:
 		# 	setattr(self.grid[i], 'vel', vel)
 		# 	self.grid[i].update_aux()
 
-		# end_cell=copy.deepcopy(self.grid[self.end])
-		# r_end=end_cell.rad
-		# log_rho_end=end_cell.log_rho
+		end_cell=copy.deepcopy(self.grid[self.end])
+		r_end=end_cell.rad
+		log_rho_end=end_cell.log_rho
 
-		# #Updating the end ghost zones, extrapolating using a power law density
-		# for i in range(self.end+1, self.length):
-		# 	log_rho=-2.*np.log(self.grid[i].rad/r_end)+log_rho_end
-		# 	self.grid[i].log_rho=log_rho
-		# 	self.grid[i].rho=np.exp(log_rho)
+		#Updating the end ghost zones, extrapolating using a power law density
+		for i in range(self.end+1, self.length):
+			log_rho=-2.*np.log(self.grid[i].rad/r_end)+log_rho_end
+			self.grid[i].log_rho=log_rho
+			self.grid[i].rho=np.exp(log_rho)
 
-		# #Updating the velocities at the end of the grid assuming a constant mdot.
-		# mdot=end_cell.rho*end_cell.vel*end_cell.rad**2
-		# for i in range(self.end+1, self.length):
-		# 	vel=mdot/self.grid[i].rho/self.grid[i].rad**2
-		# 	self.grid[i].vel=vel
-		# 	self.grid[i].update_aux()
+		#Updating the velocities at the end of the grid assuming a constant mdot.
+		mdot=end_cell.rho*end_cell.vel*end_cell.rad**2
+		for i in range(self.end+1, self.length):
+			vel=mdot/self.grid[i].rho/self.grid[i].rad**2
+			self.grid[i].vel=vel
+			self.grid[i].update_aux()
 
 
 
@@ -372,7 +372,10 @@ class Grid:
 		dv_dr=self.get_spatial_deriv(i, 'vel')
 		#lap_vel=self.get_laplacian(i, 'vel')
 		lap_vel=self.get_spatial_deriv(i, 'vel', 'second')
-		art_visc=min(self.grid[i].cs,  np.abs(self.grid[i].vel))*(self.radii[self.end]-self.radii[0])/self.Re
+		art_visc=min(self.grid[i].cs,  np.abs(self.grid[i].vel))*(self.radii[self.length-1]-self.radii[0])/self.Re
+
+		if np.abs(rad-7.51E11)/rad<0.01:
+			import pdb; pdb.set_trace();
 
 		#Need to be able to handle for general potential in the future
 		return -vel*dv_dr-dlog_rho_dr*(kb*temp/mp)+(kb/mp)*dtemp_dr-(G*self.M)/rad**2+art_visc*lap_vel-(self.q(rad)*vel/rho)
@@ -450,7 +453,7 @@ class Grid:
 			ax.set_yscale('log')
 			#ax.set_ylim(self.floor, 10.**3*self.floor)
 		elif index==3:
-			ax.set_ylim(0.4, 2.)
+			ax.set_ylim(0.4, 5.)
 		else:
 			ax.set_ylim(0.9*ymin, 1.1*ymax)
 		sol,=ax.plot(self.radii, self.saved[0,:,index], self.symbol)
