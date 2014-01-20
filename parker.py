@@ -18,7 +18,7 @@ M_sun=2.E33
 # kb=const.k_B.cgs.value
 # mp=const.m_p.cgs.value
 
-floor=1.E-31
+floor=2.E-31
 
 temp=1.e6
 m=1.
@@ -26,7 +26,7 @@ c_s=np.sqrt(kb*temp/mp)
 rc=G*m*M_sun/(2*c_s**2)
 
 rmin=6.E11
-rmax=1.2E12
+rmax=5.E12
 
 
 ##Run a command from the bash shell
@@ -117,7 +117,7 @@ d=dict(log=True)
 # grid=hydro.Grid(rmin, rmax, background, M=M_sun, n=100, safety=0.6, Re=100, params=d, floor=floor,
 #     q=power_src, symbol='r', logr=False)
 # grid.evolve(50*tcross,analytic_func=[None, None, None, None, None, None])
-grid=hydro.Grid(rmin, rmax, background, M=M_sun, n=200, safety=0.6, Re=90., params=d, floor=floor, symbol='r', logr=False, q=delta_src)
+grid=hydro.Grid(rmin, rmax, background, M=M_sun, n=200, safety=0.6, Re=90., params=d, floor=floor, symbol='r', logr=True, q=delta_src)
 grid.evolve(10*tcross,analytic_func=[None, None, None, None, None, None])
 
 

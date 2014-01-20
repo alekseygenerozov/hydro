@@ -344,8 +344,8 @@ class Grid:
 		temp=self.grid[i].temp
 		# assert rad>0
 		# #If the density zero of goes negative return zero to avoid numerical issues
-		# if rho<=self.floor:
-		#  	return 0
+		if rho<=self.floor:
+		 	return 0
 
 		# dpres_dr=self.get_spatial_deriv(i, 'pres')
 		dlog_rho_dr=self.get_spatial_deriv(i, 'log_rho')
