@@ -18,7 +18,7 @@ M_sun=2.E33
 # kb=const.k_B.cgs.value
 # mp=const.m_p.cgs.value
 
-floor=3.E-31
+floor=1.E-31
 
 temp=1.e6
 m=1.
@@ -117,7 +117,7 @@ d=dict(log=True)
 # grid=hydro.Grid(rmin, rmax, background, M=M_sun, n=100, safety=0.6, Re=100, params=d, floor=floor,
 #     q=power_src, symbol='r', logr=False)
 # grid.evolve(50*tcross,analytic_func=[None, None, None, None, None, None])
-grid=hydro.Grid(rmin, rmax, background, M=M_sun, n=200, safety=0.6, Re=100./np.sqrt(5./3.), params=d, floor=floor, symbol='r', logr=False, q=delta_src)
+grid=hydro.Grid(rmin, rmax, background, M=M_sun, n=200, safety=0.6, Re=90., params=d, floor=floor, symbol='r', logr=False, q=delta_src)
 grid.evolve(10*tcross,analytic_func=[None, None, None, None, None, None])
 
 

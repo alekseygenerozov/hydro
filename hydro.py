@@ -344,8 +344,8 @@ class Grid:
 		temp=self.grid[i].temp
 		# assert rad>0
 		# #If the density zero of goes negative return zero to avoid numerical issues
-		if rho<=self.floor:
-		 	return 0
+		# if rho<=self.floor:
+		#  	return 0
 
 		# dpres_dr=self.get_spatial_deriv(i, 'pres')
 		dlog_rho_dr=self.get_spatial_deriv(i, 'log_rho')
@@ -429,11 +429,15 @@ class Grid:
 
 		if index==2:
 			ax.set_yscale('log')
-			ax.set_ylim(self.floor, 10.**3*self.floor)
-		sol,=ax.plot(self.radii, self.saved[0,:,index], self.symbol)
+			ax.set_ylim(0.9*self.floor, 10.**3*self.floor)
+		else:
+			ax.set_ylim(-3,3)
+		# elif index==3:
+		# 	ax.set_ylim(-3, 3)
+		# else:
+		# 	ax.set_ylim(ymin-0.1*np.abs(ymin), ymax+0.1*np.abs(ymax))
 
-		if index==3:
-			ax.set_ylim(-3, 3)
+		sol,=ax.plot(self.radii, self.saved[0,:,index], self.symbol)
 
 		if analytic_func:
 			analytic_sol,=ax.plot(self.radii, vec_analytic_func(self.radii))
@@ -493,6 +497,10 @@ class Grid:
 				f=getattr(self.grid[i],field)+gamma*self.time_derivs[i][field]*self.delta_t
 				g=f+zeta*self.time_derivs[i][field]*self.delta_t
 				setattr(self.grid[i], field, g)
+
+
+
+
 
 
 	#Extracting the array corresponding to a particular field from the grid as well as an array of radii
