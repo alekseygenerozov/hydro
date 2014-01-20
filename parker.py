@@ -1,3 +1,7 @@
+
+#!/usr/bin/env python
+
+import argparse
 import astropy.constants as const
 import numpy as np
 from scipy import optimize
@@ -9,24 +13,20 @@ import matplotlib.pyplot as plt
 import subprocess
 
 
-G=6.67E-8
-kb=1.38E-16
-mp=1.67E-24
-M_sun=2.E33
-# G=const.G.cgs.value
-# M_sun=const.M_sun.cgs.value
-# kb=const.k_B.cgs.value
-# mp=const.m_p.cgs.value
+G=const.G.cgs.value
+M_sun=const.M_sun.cgs.value
+kb=const.k_B.cgs.value
+mp=const.m_p.cgs.value
 
-floor=2.E-31
+# floor=2.E-31
 
-temp=1.e6
-m=1.
-c_s=np.sqrt(kb*temp/mp)
-rc=G*m*M_sun/(2*c_s**2)
+# temp=1.e6
+# m=1.
+# c_s=np.sqrt(kb*temp/mp)
+# rc=G*m*M_sun/(2*c_s**2)
 
-rmin=6.E11
-rmax=5.E12
+# rmin=6.E11
+# rmax=5.E12
 
 
 ##Run a command from the bash shell
@@ -51,7 +51,7 @@ def power_src(rad, a=1.*10**-11, n=-2):
 
     
 
-def parker(rad, temp=temp, mdot=1.E10, m=m, pert=1., log=False):
+def parker(rad, temp=1.E6, mdot=1.E10, m=1., pert=1., log=False):
     c_s=np.sqrt(kb*temp/mp)
     rc=G*m*M_sun/(2*c_s**2)
     
@@ -72,7 +72,7 @@ def parker(rad, temp=temp, mdot=1.E10, m=m, pert=1., log=False):
     
     return np.array([rho, vel, temp])
 
-def bondi(rad, temp=temp, mdot=1.E10, m=m, pert=1., log=True):
+def bondi(rad, temp=1.E6, mdot=1.E10, m=1., pert=1., log=True):
     c_s=np.sqrt(kb*temp/mp)
     rc=G*m*M_sun/(2*c_s**2)
     
@@ -99,37 +99,78 @@ def bondi(rad, temp=temp, mdot=1.E10, m=m, pert=1., log=True):
     
 #    return np.array([rho, vel, temp])
 
-def background(rad, rho_0=0.9*floor, temp=temp, log=True):
+def background(rad, rho_0=0.9*2.E-31, temp=1.E6, log=True):
     if log:
         rho_0=np.log(rho_0)
     return np.array([rho_0, 0., temp])
     
+def tcross(rmin, rmax, temp):
+    return (rmax-rmin)/c_s(temp)
+
+def c_s(temp):
+    return np.sqrt(kb*temp/mp)
+
 
     
 
 
+def main():
+    parser=argparse.ArgumentParser(description='Wrapper for running hydro code')
+    parser.add_argument('-n','--n', help='number of grid zones', type=int, default=200)
+    parser.add_argument('-Re', '--Re', help='Reynolds number',type=float, default=90.)
+    parser.add_argument('-rmin', '--rmin', help='inner radius of the grid', type=float,default=6.E11)
+    parser.add_argument('-rmax', '--rmax', type=float, default=1.2E12)
+    parser.add_argument('-M', '--M', help='Central mass',type=float, default=M_sun)
+    parser.add_argument('-q','--q', action='store_true')
+    parser.add_argument('-logr', '--logr', help='Turn on log grid', action='store_true')
+    parser.add_argument('-t', '--temp', help='temperature (assuming isothermal)', type=float, default=1.E6)
+    parser.add_argument('-s', '--sym', help='symbol to be used for plotting', default='r')
+    parser.add_argument('-i', '--init', help='initial condition function', default='background', choices=['background', 'parker', 'bondi'])
 
-c_s=np.sqrt(kb*temp/mp)
-#Sound-crossing time
-tcross=(rmax-rmin)/c_s
-d=dict(log=True)
+    args=parser.parse_args()
+    M=args.M
+    n=args.n
+    Re=args.Re
+    rmin=args.rmin
+    rmax=args.rmax
+    temp=args.temp
+    logr=args.logr
+    q=args.q
+    sym=args.sym
 
-# grid=hydro.Grid(rmin, rmax, background, M=M_sun, n=100, safety=0.6, Re=100, params=d, floor=floor,
-#     q=power_src, symbol='r', logr=False)
-# grid.evolve(50*tcross,analytic_func=[None, None, None, None, None, None])
-grid=hydro.Grid(rmin, rmax, background, M=M_sun, n=200, safety=0.6, Re=90., params=d, floor=floor, symbol='r', logr=True, q=delta_src)
-grid.evolve(10*tcross,analytic_func=[None, None, None, None, None, None])
+    if args.init=='bondi':
+        init=bondi
+    elif args.init=='parker':
+        init=parker
+    else:
+        init=background
+
+    if args.q:
+        q=delta_src
+    else:
+        q=''
+    # c_s=np.sqrt(kb*temp/mp)
+    # #Sound-crossing time
+    # tcross=(rmax-rmin)/c_s
+    # d=dict(log=True)
+
+    # grid=hydro.Grid(rmin, rmax, background, M=M_sun, n=100, safety=0.6, Re=100, params=d, floor=floor,
+    #     q=power_src, symbol='r', logr=False)
+    # grid.evolve(50*tcross,analytic_func=[None, None, None, None, None, None])
+
+    grid=hydro.Grid(rmin, rmax, init, M=M, n=n, safety=0.6, Re=Re, floor=0., symbol=sym, logr=logr, q=q)
+    grid.evolve(2*tcross(rmin, rmax, temp),analytic_func=[None, None, None, None, None, None])
 
 
-#bash_command('cp '+'tmp tmp_log')
+    #bash_command('cp '+'tmp tmp_log')
 
-# grid=hydro.Grid(rmin, rmax, background, M=M_sun, n=100, safety=0.6, Re=150, params=d, floor=floor, q=delta_src,
-#     symbol='rs', logr=False)
-# grid.evolve(3*tcross,analytic_func=[None, None, None, None, None, None])
+    # grid=hydro.Grid(rmin, rmax, background, M=M_sun, n=100, safety=0.6, Re=150, params=d, floor=floor, q=delta_src,
+    #     symbol='rs', logr=False)
+    # grid.evolve(3*tcross,analytic_func=[None, None, None, None, None, None])
 
 
-print 'be',grid._bernoulli_check()
-print 4*np.pi*(grid.grid[grid.length-1].frho-grid.grid[0].frho)
+    print 'be',grid._bernoulli_check()
+    print 4*np.pi*(grid.grid[grid.length-1].frho-grid.grid[0].frho)
 
 # for i in range(2,3):
 #     rmax=i*1.E12
@@ -140,4 +181,5 @@ print 4*np.pi*(grid.grid[grid.length-1].frho-grid.grid[0].frho)
 #     plt.savefig('test'+str(i)+'.eps')
 
 
-
+if __name__ == '__main__':
+    main()
