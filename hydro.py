@@ -94,7 +94,7 @@ class Zone:
 class Grid:
 	"""Class stores (static) grid for solving Euler equations numerically"""
 
-	def __init__(self, r1, r2, f_initial, n=100, M=1.E6*M_sun, Mdot=1., num_ghosts=3, periodic=False, safety=0.6, Re=100., q=None, params=dict(),
+	def __init__(self, r1, r2, f_initial, n=100, M=1.E6*M_sun, Mdot=1., num_ghosts=3, periodic=False, safety=0.6, Re=100., q=None, params=dict(), params_delta=dict(),
 		floor=1.e-30, symbol='rs', logr=True):
 		assert r2>r1
 		assert n>1
@@ -103,8 +103,10 @@ class Grid:
 		self.out_fields=['t', 'rad' ,'rho', 'vel', 'temp', 'frho']
 
 		self.M=M
+		self.params_delta=params_delta	
 		if q:
 			self.q=q
+
 
 		self.Mdot=Mdot
 		#Grid will be stored as list of zones
@@ -163,7 +165,7 @@ class Grid:
 
 
 
-	def q(self, rad):
+	def q(self, rad, **kwargs):
 		return 0.
 
 	def _bernoulli_diff(self):
@@ -326,14 +328,14 @@ class Grid:
 		vel=self.grid[i].vel
 
 		#return -cs*drho_dr+art_visc*drho_dr_second
-		return -vel*self.get_spatial_deriv(i, 'log_rho')-(1/rad**2)*self.get_spatial_deriv(i, 'r2vel')+self.q(rad)/rho
+		return -vel*self.get_spatial_deriv(i, 'log_rho')-(1/rad**2)*self.get_spatial_deriv(i, 'r2vel')+self.q(rad, **self.params_delta)/rho
 
 	#Partial derivative of density with respect to time
 	def drho_dt(self, i):
 		rad=self.grid[i].rad
 
 		#return -cs*drho_dr+art_visc*drho_dr_second
-		return -(1./rad)**2*self.get_spatial_deriv(i, 'frho')+self.q(rad)
+		return -(1./rad)**2*self.get_spatial_deriv(i, 'frho')+self.q(rad, **self.params_delta)
 
 	#Evaluating the partial derivative of velocity with respect to time
 	def dvel_dt(self, i):
