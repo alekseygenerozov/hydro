@@ -97,9 +97,9 @@ def bondi(rad, temp=1.E6, mdot=1.E10, m=1., pert=1., log=True):
 #    rho=mdot/(4*np.pi*rad**2*np.abs(vel))
 #    return np.array([rho, vel, temp])
 
-def background(rad, rho_0=2.E-31, temp=1.E6, log=True, r0=5.E11):
+def background(rad, rho_0=2.E-31, temp=1.E6, log=True, r0=5.E11, n=0.):
     if log:
-        rho_0=np.log(rho_0*(rad/r0)**-2)
+        rho_0=np.log(rho_0*(rad/r0)**n)
     return np.array([rho_0, 0., temp])
     
 def tcross(rmin, rmax, temp):
