@@ -372,8 +372,8 @@ class Grid:
 
 		params_name='params'
 		fparams=file(params_name, 'w')
-		fparams.write('Re={0} rin={1:8.7e} rout={2:8.7e} floor={3:8.7e} n={4}'.format(self.Re, self.radii[0], 
-			self.radii[-1], self.floor, self.length))
+		fparams.write('Re={0} rin={1:8.7e} rout={2:8.7e} floor={3:8.7e} n={4} log={5}'.format(self.Re, self.radii[0], 
+			self.radii[-1], self.floor, self.length, self.logr))
 
 		out_name='tmp'
 		bash_command('rm '+out_name)

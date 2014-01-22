@@ -36,7 +36,7 @@ def bash_command(cmd):
     # return process
 
 
-def delta_src(rad, mdot=6.E14, delta=1.E16, r_0=8.E17, r_1=2.E12, tol=1.E10):
+def delta_src(rad, mdot=600., delta=1.E10, r_0=1.E12, r_1=2.E12, tol=1.E10):
     #return mdot*(1-np.tanh((rad-r_0)*(rad-r_1)/(4*delta**2)))
     return mdot*(1./(4.*np.pi*rad**2))*(1./(np.sqrt(2.*np.pi)*delta))*np.exp(-(rad-r_0)**2/(2.*delta**2))
     #if r_0-tol<rad<r_0+tol:
