@@ -430,8 +430,9 @@ class Grid:
 		if index==2:
 			ax.set_yscale('log')
 			#ax.set_ylim(0.9*self.floor, 10.**3*self.floor)
-		else:
-			ax.set_ylim(-3,3)
+		ax.set_ylim(ymin-0.1*np.abs(ymin), ymax+0.1*np.abs(ymax))
+		# else:
+		# 	ax.set_ylim(-3,3)
 		# elif index==3:
 		# 	ax.set_ylim(-3, 3)
 		# else:

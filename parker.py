@@ -95,12 +95,11 @@ def bondi(rad, temp=1.E6, mdot=1.E10, m=1., pert=1., log=True):
 #def free_fall(rad, mdot=1.E10, m=1., temp=1.e6):
 #    vel=-np.sqrt(2*G*m*M_sun/rad)
 #    rho=mdot/(4*np.pi*rad**2*np.abs(vel))
-    
 #    return np.array([rho, vel, temp])
 
-def background(rad, rho_0=2.E-31, temp=1.E6, log=True):
+def background(rad, rho_0=2.E-31, temp=1.E6, log=True, r0=5.E11):
     if log:
-        rho_0=np.log(rho_0)
+        rho_0=np.log(rho_0*(rad/r0)**-2)
     return np.array([rho_0, 0., temp])
     
 def tcross(rmin, rmax, temp):
