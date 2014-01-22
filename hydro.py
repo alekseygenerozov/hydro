@@ -11,6 +11,7 @@ import subprocess
 import astropy.constants as const
 
 
+
 #Constants
 G=const.G.cgs.value
 M_sun=const.M_sun.cgs.value
@@ -97,12 +98,13 @@ class Grid:
 	def __init__(self, r1, r2, f_initial, n=100, M=1.E6*M_sun, Mdot=1., num_ghosts=3, periodic=False, safety=0.6, Re=100., q=None, params=dict(), params_delta=dict(),
 		floor=1.e-30, symbol='rs', logr=True):
 		assert r2>r1
-		assert n>1
+		assert n>2*num_ghosts
 
 		self.fields=['log_rho', 'vel', 'temp']
 		self.out_fields=['t', 'rad' ,'rho', 'vel', 'temp', 'frho']
 
 		self.M=M
+		self.params=params
 		self.params_delta=params_delta	
 		if q:
 			self.q=q
@@ -162,7 +164,6 @@ class Grid:
 		self.time_stamps=[]
 
 		self.symbol=symbol
-
 
 
 	def q(self, rad, **kwargs):
@@ -374,8 +375,8 @@ class Grid:
 
 		params_name='params'
 		fparams=file(params_name, 'w')
-		fparams.write('Re={0} rin={1:8.7e} rout={2:8.7e} floor={3:8.7e} n={4} log={5}'.format(self.Re, self.radii[0], 
-			self.radii[-1], self.floor, self.length, self.logr))
+		fparams.write('Re={0} rin={1:8.7e} rout={2:8.7e} floor={3:8.7e} n={4} log={5} M={6:8.7e} q_params={7} init_params={8}'.format(self.Re, self.radii[0], 
+			self.radii[-1], self.floor, self.length, self.logr, self.M, self.params_delta, self.params))
 
 		out_name='tmp'
 		bash_command('rm '+out_name)
