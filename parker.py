@@ -24,7 +24,6 @@ mp=const.m_p.cgs.value
 # m=1.
 # c_s=np.sqrt(kb*temp/mp)
 # rc=G*m*M_sun/(2*c_s**2)
-
 # rmin=6.E11
 # rmax=5.E12
 
@@ -37,7 +36,7 @@ def bash_command(cmd):
     # return process
 
 
-def delta_src(rad, mdot=600., delta=1.E10, r_0=8.E11, r_1=2.E12, tol=1.E10):
+def delta_src(rad, mdot=6.E14, delta=1.E16, r_0=8.E17, r_1=2.E12, tol=1.E10):
     #return mdot*(1-np.tanh((rad-r_0)*(rad-r_1)/(4*delta**2)))
     return mdot*(1./(4.*np.pi*rad**2))*(1./(np.sqrt(2.*np.pi)*delta))*np.exp(-(rad-r_0)**2/(2.*delta**2))
     #if r_0-tol<rad<r_0+tol:
@@ -99,7 +98,7 @@ def bondi(rad, temp=1.E6, mdot=1.E10, m=1., pert=1., log=True):
     
 #    return np.array([rho, vel, temp])
 
-def background(rad, rho_0=0.9*2.E-31, temp=1.E6, log=True):
+def background(rad, rho_0=2.E-31, temp=1.E6, log=True):
     if log:
         rho_0=np.log(rho_0)
     return np.array([rho_0, 0., temp])
