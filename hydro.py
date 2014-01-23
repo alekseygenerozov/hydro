@@ -124,7 +124,8 @@ class Grid:
 		if logr:
 			self.radii=np.logspace(np.log(r1), np.log(r2), n, base=e)
 		else:
-			self.radii=np.linspace(r1+(delta/2.), r2-(delta/2.), n)
+			#self.radii=np.linspace(r1+(delta/2.), r2-(delta/2.), n)
+			self.radii=np.linspace(r1, r2, n)
 		#Attributes to store length of the list as well as start and end indices (useful for ghost zones)
 		self.length=n
 		self.start=0
