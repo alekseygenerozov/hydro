@@ -54,13 +54,11 @@ def parker(rad, temp=1.E6, mdot=1.E10, m=1., pert=1., log=False):
     c_s=np.sqrt(kb*temp/mp)
     rc=G*m*M_sun/(2*c_s**2)
     
-    #guess=0.5
     f=(rc/rad)**4*np.exp(4*(1-(rc/rad))-1)
     if (rad<=rc):
-        vel=np.sqrt(-lambertw(-f))
+        vel=np.real(np.sqrt(-lambertw(-f)))
     else:
-        vel=np.sqrt(-lambertw(-f, -1))
-    #vel=optimize.fsolve(vel_parker, guess, args=(rc, rad))[0]
+        vel=np.real(np.sqrt(-lambertw(-f, -1)))
     
     vel*=c_s
     vel*=pert

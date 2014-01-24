@@ -23,9 +23,6 @@ mp=const.m_p.cgs.value
 def bash_command(cmd):
     process=subprocess.Popen(['/bin/bash', '-c',cmd],  stdin=subprocess.PIPE, stdout=subprocess.PIPE)
     return process.communicate()[0]
-    # process.wait()
-    # return process
-
 
 
 class Zone:
@@ -44,27 +41,15 @@ class Zone:
 		self.log_rho=prims[0]
 		self.vel=prims[1]
 		self.temp=prims[2]
-		#Temporary storage for all of the primitive variables
-		# self.rho_tmp=self.rho
-		# self.vel_tmp=self.vel
-		# self.temp_tmp=self.temp
 
 		#Updating non-primitive variables within zone
 		self.update_aux()
 
 	#Equation of state. Note this could be default in the future there could be functionality to override this.
 	def eos(self):
-		#gamma=5./3.
-		#gamma=1.01
 		mu=1.
 		self.pres=self.rho*kb*self.temp/(mu*mp)
 		self.cs=np.sqrt(kb*self.temp/(mu*mp))
-
-	# #Method which updates all of the primitive variables in the grid after each time step
-	# def update(self):
-	# 	for field in ['rho', 'vel', 'temp']:
-	# 		val=getattr(self, field+'_tmp')
-	# 		setattr(self, field, val)
 
 	#Method which will be used to update non-primitive vars. 
 	def update_aux(self):
@@ -83,20 +68,11 @@ class Zone:
 		return 0.5*self.vel**2+self.cs**2*self.log_rho-G*self.M/self.rad
 
 
-
-
-
-
-
-
-
-
-
 class Grid:
 	"""Class stores (static) grid for solving Euler equations numerically"""
 
 	def __init__(self, r1, r2, f_initial, n=100, M=1.E6*M_sun, Mdot=1., num_ghosts=3, safety=0.6, Re=100., q=None, params=dict(), params_delta=dict(),
-		floor=1.e-30, symbol='rs', logr=True):
+		floor=1.e-30, symbol='rs', logr=True, bdry_fixed=False):
 		assert r2>r1
 		assert n>2*num_ghosts
 
@@ -139,6 +115,7 @@ class Grid:
 			self.grid.append(Zone(rad=rad, prims=prims, M=M))
 
 		self._add_ghosts(num_ghosts=num_ghosts)
+		self.bdry_fixed=bdry_fixed
 
 		#Computing differences between all of the grid elements 
 		delta=np.diff(self.radii)
@@ -148,7 +125,6 @@ class Grid:
 
 		delta_log=np.diff(np.log(self.radii))
 		self.delta_log=np.insert(delta_log, 0, delta_log[0])
-
 
 		self.delta_t=0
 		self.time_cur=0
@@ -160,12 +136,14 @@ class Grid:
 
 		self.symbol=symbol
 
+	#Unless overloaded the default source term is 0
 	def q(self, rad, **kwargs):
 		return 0.
 
 	def _bernoulli_diff(self):
 		return self.grid[self.end].bernoulli()-self.grid[self.start].bernoulli()
 
+	#Check on bernoulli parameter
 	def _bernoulli_check(self):
 		#Integating the momentum source term
 		integral=0.
@@ -265,10 +243,9 @@ class Grid:
 			else:
 				return np.sum(field_list*coeffs)/self.delta[i]
 
-
+	#Calculate laplacian in spherical coords. 
 	def get_laplacian(self, i, field):
 		return self.get_spatial_deriv(i, field, second=True)+(2./self.radii[i])*(self.get_spatial_deriv(i, field))
-
 
 	#Evaluate Courant condition for the entire grid. This gives us an upper bound on the time step we may take 
 	def _cfl(self):
@@ -279,8 +256,6 @@ class Grid:
 			alpha_max=self.grid[i].alpha_max()
 			delta_t[i]=self.safety*self.delta[i]/alpha_max
 
-			# if zone_alpha_max>alpha_max:
-			# 	alpha_max=zone_alpha_max
 		#Setting the time step
 		cfl_delta_t=np.min(delta_t)
 		target_delta_t=self.time_target-self.time_cur
@@ -389,22 +364,20 @@ class Grid:
 		def update_img(n):
 			time=self.time_stamps[n]
 			sol.set_ydata(self.saved[n,:,index])
-
-			if analytic_func:
-				analytic_sol.set_ydata(vec_analytic_func(self.radii))
 			label.set_text(str(time))
+
+		#Setting up for plotting
 		ymin=np.min(self.saved[:,:,index])
 		ymax=np.max(self.saved[:,:,index])
-
 		fig,ax=plt.subplots()
 		label=ax.text(0.02, 0.95, '', transform=ax.transAxes)	
-
 		if index==2:
 			ax.set_yscale('log')
 		ax.set_ylim(ymin-0.1*np.abs(ymin), ymax+0.1*np.abs(ymax))
 
+		#Plot solution/initial condition/(maybe) analytic solution
 		sol,=ax.plot(self.radii, self.saved[0,:,index], self.symbol)
-		ax.plot(self.radii, self.saved[0,:,index], self.symbol)
+		ax.plot(self.radii, self.saved[0,:,index], 'b')
 		if analytic_func:
 			analytic_sol,=ax.plot(self.radii, vec_analytic_func(self.radii))
 		
@@ -462,11 +435,6 @@ class Grid:
 				f=getattr(self.grid[i],field)+gamma*self.time_derivs[i][field]*self.delta_t
 				g=f+zeta*self.time_derivs[i][field]*self.delta_t
 				setattr(self.grid[i], field, g)
-
-
-
-
-
 
 	#Extracting the array corresponding to a particular field from the grid as well as an array of radii
 	def get_field(self, field):
