@@ -179,8 +179,8 @@ class Grid:
 		#If the inner bdry is fixed...(appropriate for Parker wind)
 		if self.bdry_fixed:
 			for i in range(1, self.start):
-				rho=self._interp_zones(r_start, 0, self.start, 'rho')
-				setattr(self.grid[i], 'rho', rho)
+				self.grid[i].log_rho=self._interp_zones(self.grid[i].rad, 0, self.start, 'log_rho')
+				self.grid[i].rho=np.exp(self.grid[i].log_rho)
 		#Updating the starting ghost zones, extrapolating using rho prop r^-3/2
 		else:
 			for i in range(0, self.start):
