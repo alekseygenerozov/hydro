@@ -57,6 +57,7 @@ class Zone:
 		self.eos()
 		self.r2vel=self.rad**2*self.vel
 		self.frho=self.rad**2*self.vel*self.rho
+		self.be=self.bernoulli()
 		# self.visc=self.cs*self.vel
 
 
@@ -77,7 +78,7 @@ class Grid:
 		assert n>2*num_ghosts
 
 		self.fields=['log_rho', 'vel', 'temp']
-		self.out_fields=['t', 'rad' ,'rho', 'vel', 'temp', 'frho']
+		self.out_fields=['rho', 'vel', 'temp', 'frho', 'be']
 
 		self.M=M
 		self.params=params
@@ -131,7 +132,7 @@ class Grid:
 		self.total_time=0
 		self.time_target=0
 
-		self.saved=np.empty([0, self.length, 6])
+		self.saved=np.empty([0, self.length, 5])
 		self.time_stamps=[]
 
 		self.symbol=symbol
@@ -337,15 +338,15 @@ class Grid:
 		fparams.write('Re={0} rin={1:8.7e} rout={2:8.7e} floor={3:8.7e} n={4} log={5} M={6:8.7e} q_params={7} init_params={8}'.format(self.Re, self.radii[0], 
 			self.radii[-1], self.floor, self.length, self.logr, self.M, self.params_delta, self.params))
 
-		#Output file to write to 
-		out_name='tmp'
-		bash_command('rm '+out_name)
-		fout=file(out_name, 'a')
+		# #Output file to write to 
+		# out_name='tmp'
+		# bash_command('rm '+out_name)
+		# fout=file(out_name, 'a')
 		#While we have not yet reached the target time
 		while self.time_cur<time:
 			if num_steps%5==0:
 				self.save()
-				np.savetxt(fout, self.saved[-1])
+				#np.savetxt(fout, self.saved[-1])
 				print self.total_time/self.time_target
 
 			#Take step and increment current time
