@@ -95,7 +95,7 @@ class Zone:
 class Grid:
 	"""Class stores (static) grid for solving Euler equations numerically"""
 
-	def __init__(self, r1, r2, f_initial, n=100, M=1.E6*M_sun, Mdot=1., num_ghosts=3, periodic=False, safety=0.6, Re=100., q=None, params=dict(), params_delta=dict(),
+	def __init__(self, r1, r2, f_initial, n=100, M=1.E6*M_sun, Mdot=1., num_ghosts=3, safety=0.6, Re=100., q=None, params=dict(), params_delta=dict(),
 		floor=1.e-30, symbol='rs', logr=True):
 		assert r2>r1
 		assert n>2*num_ghosts
@@ -108,7 +108,6 @@ class Grid:
 		self.params_delta=params_delta	
 		if q:
 			self.q=q
-
 
 		self.Mdot=Mdot
 		#Grid will be stored as list of zones
@@ -134,17 +133,12 @@ class Grid:
 		self.time_derivs=np.zeros(n, dtype={'names':[self.fields[0], self.fields[1], self.fields[2]], 'formats':['float64',
 			'float64', 'float64']})
 
-
 		#Initializing the grid using the initial value function f_initial
 		for rad in self.radii:
 			prims=f_initial(rad, **params)
 			self.grid.append(Zone(rad=rad, prims=prims, M=M))
-		if periodic:
-			self.periodic=True
-		else:
-			self.periodic=False
-			self._add_ghosts(num_ghosts=num_ghosts)
 
+		self._add_ghosts(num_ghosts=num_ghosts)
 
 		#Computing differences between all of the grid elements 
 		delta=np.diff(self.radii)
@@ -166,7 +160,6 @@ class Grid:
 
 		self.symbol=symbol
 
-
 	def q(self, rad, **kwargs):
 		return 0.
 
@@ -181,13 +174,11 @@ class Grid:
 			
 		return [self.grid[self.start].bernoulli(),self.grid[self.end].bernoulli(), self._bernoulli_diff(),integral]
 
-
 	#Adding ghost zones onto the edges of the grid (moving the start of the grid)
 	def _add_ghosts(self, num_ghosts=3):
 		self.start=num_ghosts
 		self.end=self.end-num_ghosts
 	
-
 	#Interpolating field (using zones wiht indices i1 and i2) to radius rad 
 	def _interp_zones(self, rad, i1, i2, field):
 		rad1=self.grid[i1].rad
@@ -197,60 +188,50 @@ class Grid:
 		val2=getattr(self.grid[i2],field)
 		return np.interp(np.log(rad), [np.log(rad1), np.log(rad2)], [val1, val2])
 
-
-	#Method to update the ghost cells
+	#Applying boundary conditions
 	def _update_ghosts(self):
-		start_cell=copy.deepcopy(self.grid[self.start])
-		r_start=start_cell.rad
-		log_rho_start=start_cell.log_rho
-		#Updating the end ghost zones, extrapolating using a power law density
+		self._dens_extrapolate()
+		self._mdot_adjust()
+
+	#Extrapolate densities to the ghost zones
+	def _dens_extrapolate(self):
+		r_start=self.grid[self.start].rad
+		log_rho_start=self.grid[self.start].log_rho
+		#Updating the starting ghost zones, extrapolating using rho prop r^-3/2
 		for i in range(0, self.start):
 			log_rho=-1.5*np.log(self.grid[i].rad/r_start)+log_rho_start
 			self.grid[i].log_rho=log_rho
 			self.grid[i].rho=np.exp(log_rho)
-
-		mdot=start_cell.rho*start_cell.vel*start_cell.rad**2
-
-		#Updating velocities in the ghost cells
-		for i in range(0, self.start):
-			vel=mdot/self.grid[i].rho/self.grid[i].rad**2
-			setattr(self.grid[i], 'vel', vel)
-			self.grid[i].update_aux()
-
-		end_cell=copy.deepcopy(self.grid[self.end])
-		r_end=end_cell.rad
-		log_rho_end=end_cell.log_rho
-
+		#Updating the end ghost zones
+		r_end=self.grid[self.end].rad
+		log_rho_end=self.grid[self.end].log_rho
 		#Updating the end ghost zones, extrapolating using a power law density
 		for i in range(self.end+1, self.length):
 			log_rho=-2.*np.log(self.grid[i].rad/r_end)+log_rho_end
 			self.grid[i].log_rho=log_rho
 			self.grid[i].rho=np.exp(log_rho)
 
-		#Updating the velocities at the end of the grid assuming a constant mdot.
-		mdot=end_cell.rho*end_cell.vel*end_cell.rad**2
+	#Enforce constant mdot across the boundaries (bondary condition for velocity)
+	def _mdot_adjust(self):
+		#Start zones 
+		frho=self.grid[self.start].frho
+		for i in range(0, self.start):
+			vel=frho/self.grid[i].rho/self.grid[i].rad**2
+			self.grid[i].vel=vel
+			self.grid[i].update_aux()
+		#End zones
+		frho=self.grid[self.end].frho
 		for i in range(self.end+1, self.length):
-			vel=mdot/self.grid[i].rho/self.grid[i].rad**2
+			vel=frho/self.grid[i].rho/self.grid[i].rad**2
 			self.grid[i].vel=vel
 			self.grid[i].update_aux()
 
-
-
-
-
 	#Get stencil for a particular zone
 	def _get_stencil(self, i, left=3, right=3):
-		#Check that we will not fall off the edge of our grid
-		if self.periodic:
-			stencil=[]
-			for j in range(-left, right+1):
-				stencil.append(self.grid[(i+j)%self.length])
-			return stencil
-		else:
-			assert i-left>=0
-			assert i+right<self.length
+		assert i-left>=0
+		assert i+right<self.length
 
-			return self.grid[i-left:i+right+1]
+		return self.grid[i-left:i+right+1]
 
 
 	#Getting derivatives for a given field (density, velocity, etc.). If second is set to be true then the discretized 2nd
@@ -269,11 +250,6 @@ class Grid:
 		#Coefficients we will use.
 		coeffs=np.array([-1., 9., -45., 0., 45., -9., 1.])/60.
 
-		# if second:
-		# 	coeffs2=np.array([2., -27., 270., -490., 270., -27., 2.])/(180.*self.delta[i])
-		# 	return np.sum(field_list*coeffs2)/self.delta[i]
-		# else:
-		# 	return np.sum(field_list*coeffs)/self.delta[i]
 		if second:
 			if self.logr:
 				coeffs2=np.array([2., -27., 270., -490., 270., -27., 2.])/(180.*self.delta_log[i])
@@ -341,13 +317,12 @@ class Grid:
 
 	#Evaluating the partial derivative of velocity with respect to time
 	def dvel_dt(self, i):
-		#return 0.
 		rad=self.grid[i].rad
 		vel=self.grid[i].vel
 		rho=self.grid[i].rho
 		temp=self.grid[i].temp
-		# assert rad>0
-		# #If the density zero of goes negative return zero to avoid numerical issues
+
+		#If the density zero of goes negative return zero to avoid numerical issues
 		if rho<=self.floor:
 		 	return 0
 
@@ -360,7 +335,7 @@ class Grid:
 		art_visc=min(self.grid[i].cs,  np.abs(self.grid[i].vel))*(self.radii[self.end]-self.radii[0])/self.Re
 
 		#Need to be able to handle for general potential in the future
-		return -vel*dv_dr-dlog_rho_dr*(kb*temp/mp)+(kb/mp)*dtemp_dr-(G*self.M)/rad**2+art_visc*lap_vel-(self.q(rad)*vel/rho)
+		return -vel*dv_dr-dlog_rho_dr*(kb*temp/mp)-(kb/mp)*dtemp_dr-(G*self.M)/rad**2+art_visc*lap_vel-(self.q(rad)*vel/rho)
 
 	#Evaluating the partial derivative of temperature with respect to time.
 	def dtemp_dt(self, i):
@@ -374,43 +349,36 @@ class Grid:
 		self.time_target=time
 		num_steps=0
 
+		#Writing numerical params used in the current run to file
 		params_name='params'
 		fparams=file(params_name, 'w')
 		fparams.write('Re={0} rin={1:8.7e} rout={2:8.7e} floor={3:8.7e} n={4} log={5} M={6:8.7e} q_params={7} init_params={8}'.format(self.Re, self.radii[0], 
 			self.radii[-1], self.floor, self.length, self.logr, self.M, self.params_delta, self.params))
 
+		#Output file to write to 
 		out_name='tmp'
 		bash_command('rm '+out_name)
 		fout=file(out_name, 'a')
 		#While we have not yet reached the target time
 		while self.time_cur<time:
-			# print self.time_cur
-			# self.save()
-			# np.savetxt(out, self.saved[-1])
 			if num_steps%5==0:
 				self.save()
 				np.savetxt(fout, self.saved[-1])
 				print self.total_time/self.time_target
-			#self.save()
 
+			#Take step and increment current time
 			self._step()
-			# #Taking a single time-step
-			# try:
-			# 	self._step()
-			# except:
-			# 	break	
-			
 			self.time_cur+=self.delta_t
 			self.total_time+=self.delta_t
 			num_steps+=1
-
+			#If we have exceeded the max number of allowed steps then break
 			if max_steps:
 				if num_steps>max_steps:
 					break
 
+		#For all of the field we would like to output, output movie.
 		for i in range(1, len(self.out_fields)):
 			self.animate(index=i, analytic_func=analytic_func[i])
-
 		plt.clf()
 
 
@@ -433,17 +401,10 @@ class Grid:
 
 		if index==2:
 			ax.set_yscale('log')
-			#ax.set_ylim(0.9*self.floor, 10.**3*self.floor)
 		ax.set_ylim(ymin-0.1*np.abs(ymin), ymax+0.1*np.abs(ymax))
-		# else:
-		# 	ax.set_ylim(-3,3)
-		# elif index==3:
-		# 	ax.set_ylim(-3, 3)
-		# else:
-		# 	ax.set_ylim(ymin-0.1*np.abs(ymin), ymax+0.1*np.abs(ymax))
 
 		sol,=ax.plot(self.radii, self.saved[0,:,index], self.symbol)
-
+		ax.plot(self.radii, self.saved[0,:,index], self.symbol)
 		if analytic_func:
 			analytic_sol,=ax.plot(self.radii, vec_analytic_func(self.radii))
 		
@@ -451,7 +412,6 @@ class Grid:
 		sol_ani=animation.FuncAnimation(fig,update_img,len(self.saved),interval=50)
 		sol_ani.save('sol_'+self.out_fields[index]+'.mp4', dpi=200)
 
-		# plt.close()
 
 	#Save the state of the grid
 	def save(self):
