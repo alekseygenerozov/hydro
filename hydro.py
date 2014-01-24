@@ -175,11 +175,18 @@ class Grid:
 	def _dens_extrapolate(self):
 		r_start=self.grid[self.start].rad
 		log_rho_start=self.grid[self.start].log_rho
+
+		#If the inner bdry is fixed...(appropriate for Parker wind)
+		if self.bdry_fixed:
+			for i in range(1, self.start):
+				rho=self._interp_zones(r_start, 0, self.start, 'rho')
+				setattr(self.grid[i], 'rho', rho)
 		#Updating the starting ghost zones, extrapolating using rho prop r^-3/2
-		for i in range(0, self.start):
-			log_rho=-1.5*np.log(self.grid[i].rad/r_start)+log_rho_start
-			self.grid[i].log_rho=log_rho
-			self.grid[i].rho=np.exp(log_rho)
+		else:
+			for i in range(0, self.start):
+				log_rho=-1.5*np.log(self.grid[i].rad/r_start)+log_rho_start
+				self.grid[i].log_rho=log_rho
+				self.grid[i].rho=np.exp(log_rho)
 		#Updating the end ghost zones
 		r_end=self.grid[self.end].rad
 		log_rho_end=self.grid[self.end].log_rho
