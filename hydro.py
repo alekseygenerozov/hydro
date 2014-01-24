@@ -453,7 +453,7 @@ class Grid:
 			ax.set_yscale('log')
 			#ax.set_ylim(self.floor, 10.**3*self.floor)
 		elif index==3:
-			ax.set_ylim(0.4, 5.)
+			ax.set_ylim(0.4, 3.)
 		else:
 			ax.set_ylim(0.9*ymin, 1.1*ymax)
 		sol,=ax.plot(self.radii, self.saved[0,:,index], self.symbol)

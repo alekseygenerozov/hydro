@@ -26,7 +26,7 @@ c_s=np.sqrt(kb*temp/mp)
 rc=G*m*M_sun/(2*c_s**2)
 
 rmin=5.E11
-rmax=1.E12
+rmax=5.E12
 
 
 ##Run a command from the bash shell
