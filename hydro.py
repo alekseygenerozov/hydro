@@ -1,5 +1,7 @@
 import numpy as np
 import copy
+import warnings
+from scipy import integrate
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -141,17 +143,39 @@ class Grid:
 	def q(self, rad, **kwargs):
 		return 0.
 
-	def _bernoulli_diff(self):
-		return self.grid[self.end].bernoulli()-self.grid[self.start].bernoulli()
+	# def _bernoulli_diff(self):
+	# 	return self.grid[self.end].bernoulli()-self.grid[self.start].bernoulli()
 
 	#Check on bernoulli parameter
 	def _bernoulli_check(self):
+		be1=self.grid[self.start].bernoulli()
+		be2=self.grid[self.end].bernoulli()
+		flux=be2-be1
 		#Integating the momentum source term
 		integral=0.
 		for i in range(self.start, self.end):
-			integral+=-self.q(self.radii[i])*self.grid[i].vel*self.delta[i]/self.grid[i].rho
-			
-		return [self.grid[self.start].bernoulli(),self.grid[self.end].bernoulli(), self._bernoulli_diff(),integral]
+			integral+=-self.q(self.radii[i], **self.params_delta)*self.grid[i].vel*self.delta[i]/self.grid[i].rho	
+		with warnings.catch_warnings():
+			warnings.simplefilter("ignore")
+			pdiff=(flux-integral)/integral
+
+		return [be1, be2, flux, integral, pdiff]
+		# return [self.grid[self.start].bernoulli(),self.grid[self.end].bernoulli(), self._bernoulli_diff(),integral]
+
+	#Check difference in Mdot across the grid against the mass source term
+	def _mdot_check(self):
+		frho1=self.grid[self.start].frho
+		frho2=self.grid[self.end].frho
+		flux=4*np.pi*(frho2-frho1)
+		#Integarting the mass source term
+		f=lambda r:4*np.pi*r**2*self.q(r, **self.params_delta)
+		integral=integrate.quad(f, self.radii[self.start], self.radii[self.end])[0]
+		
+		with warnings.catch_warnings():
+			warnings.simplefilter("ignore")
+			pdiff=(flux-integral)/integral
+
+		return [frho1, frho2, flux, integral, pdiff]
 
 	#Adding ghost zones onto the edges of the grid (moving the start of the grid)
 	def _add_ghosts(self, num_ghosts=3):
@@ -333,9 +357,8 @@ class Grid:
 		num_steps=0
 
 		#Writing numerical params used in the current run to file
-		params_name='params'
-		fparams=file(params_name, 'w')
-		fparams.write('Re={0} rin={1:8.7e} rout={2:8.7e} floor={3:8.7e} n={4} log={5} M={6:8.7e} q_params={7} init_params={8}'.format(self.Re, self.radii[0], 
+		fparams=file('params', 'w')
+		fparams.write('Re={0:8.7e} rin={1:8.7e} rout={2:8.7e} floor={3:8.7e} n={4} log={5} M={6:8.7e} q_params={7} init_params={8}'.format(self.Re, self.radii[0], 
 			self.radii[-1], self.floor, self.length, self.logr, self.M, self.params_delta, self.params))
 
 		# #Output file to write to 
@@ -360,8 +383,14 @@ class Grid:
 					break
 
 		#For all of the field we would like to output, output movie.
-		for i in range(1, len(self.out_fields)):
+		for i in range(0, len(self.out_fields)):
 			self.animate(index=i, analytic_func=analytic_func[i])
+
+		mdot_check=self._mdot_check()
+		be_check=self._bernoulli_check()
+		check=file('check', 'w')
+		check.write('mdot: frho1={0:8.7e} frho2={1:8.7e} flux={2:8.7e} mdot={3:8.7e} percent diff={4:8.7e}\n\n'.format(mdot_check[0], mdot_check[1], mdot_check[2], mdot_check[3], mdot_check[4]))
+		check.write('be: be1={0:8.7e} be2={1:8.7e} flux={2:8.7e} -\int(q*v/rho)={3:8.7e} percent diff={4:8.7e}'.format(be_check[0], be_check[1], be_check[2], be_check[3], be_check[4]))
 		plt.clf()
 
 
@@ -379,7 +408,7 @@ class Grid:
 		ymax=np.max(self.saved[:,:,index])
 		fig,ax=plt.subplots()
 		label=ax.text(0.02, 0.95, '', transform=ax.transAxes)	
-		if index==2:
+		if index==0:
 			ax.set_yscale('log')
 		ax.set_ylim(ymin-0.1*np.abs(ymin), ymax+0.1*np.abs(ymax))
 
@@ -399,12 +428,9 @@ class Grid:
 		#fields=['rho', 'vel', 'temp', 'frho']
 		grid_prims=np.zeros((len(self.out_fields), self.length))
 		for i in range(len(self.out_fields)):
-			if i==0:
-				grid_prims[i].fill(self.total_time)
-			else:
-				grid_prims[i]=self.get_field(self.out_fields[i])[1]
-				if self.out_fields[i]=='vel':
-					grid_prims[i]=grid_prims[i]/self.get_field('cs')[1]
+			grid_prims[i]=self.get_field(self.out_fields[i])[1]
+			if self.out_fields[i]=='vel':
+				grid_prims[i]=grid_prims[i]/self.get_field('cs')[1]
 
 		#Saving the state of the grid within list
 		#self.saved.append((self.total_time, np.transpose(grid_prims)))
