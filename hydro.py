@@ -157,7 +157,7 @@ class Grid:
 			integral+=-self.q(self.radii[i], **self.params_delta)*self.grid[i].vel*self.delta[i]/self.grid[i].rho	
 		with warnings.catch_warnings():
 			warnings.simplefilter("ignore")
-			pdiff=(flux-integral)/integral
+			pdiff=(flux-integral)*100./integral
 
 		return [be1, be2, flux, integral, pdiff]
 		# return [self.grid[self.start].bernoulli(),self.grid[self.end].bernoulli(), self._bernoulli_diff(),integral]
@@ -173,7 +173,7 @@ class Grid:
 		
 		with warnings.catch_warnings():
 			warnings.simplefilter("ignore")
-			pdiff=(flux-integral)/integral
+			pdiff=(flux-integral)*100./integral
 
 		return [frho1, frho2, flux, integral, pdiff]
 
