@@ -43,15 +43,23 @@ class Zone:
 		self.log_rho=prims[0]
 		self.vel=prims[1]
 		self.temp=prims[2]
-
+		#Entropy
+		self.s()
 		#Updating non-primitive variables within zone
 		self.update_aux()
 
 	#Equation of state. Note this could be default in the future there could be functionality to override this.
 	def eos(self):
 		mu=1.
+		self.temp()
 		self.pres=self.rho*kb*self.temp/(mu*mp)
 		self.cs=np.sqrt(kb*self.temp/(mu*mp))
+
+	def entropy(self):
+		self.s=kb*np.log(self.temp**1.5/np.exp(self.log_rho))
+
+	def temp(self):
+		self.temp=1./np.exp(self.log_rho)*np.exp(self.entropy/kb)**(2./3.)
 
 	#Method which will be used to update non-primitive vars. 
 	def update_aux(self):
@@ -75,11 +83,11 @@ class Grid:
 	"""Class stores (static) grid for solving Euler equations numerically"""
 
 	def __init__(self, r1, r2, f_initial, n=100, M=1.E6*M_sun, Mdot=1., num_ghosts=3, safety=0.6, Re=100., q=None, params=dict(), params_delta=dict(),
-		floor=1.e-30, symbol='rs', logr=True, bdry_fixed=False):
+		floor=1.e-30, symbol='rs', logr=True, bdry_fixed=False, gamma=5./3.):
 		assert r2>r1
 		assert n>2*num_ghosts
 
-		self.fields=['log_rho', 'vel', 'temp']
+		self.fields=['log_rho', 'vel', 's']
 		self.out_fields=['rho', 'vel', 'temp', 'frho', 'be']
 
 		self.M=M
@@ -87,6 +95,7 @@ class Grid:
 		self.params_delta=params_delta	
 		if q:
 			self.q=q
+		self.gamma=gamma
 
 		self.Mdot=Mdot
 		#Grid will be stored as list of zones
@@ -193,8 +202,19 @@ class Grid:
 
 	#Applying boundary conditions
 	def _update_ghosts(self):
+		self._s_adjust()
 		self._dens_extrapolate()
 		self._mdot_adjust()
+
+	def _s_adjust(self):
+		s_start=self.grid[self.start].s
+		for i in range(0, self.start):
+			self.grid[i]=s_start
+		s_end=self.grid[self.end].s
+		for i in range(self.end+1, self.length):
+			self.grid[i]=s_end
+
+
 
 	#Extrapolate densities to the ghost zones
 	def _dens_extrapolate(self):
@@ -299,10 +319,10 @@ class Grid:
 			return self.drho_dt(i)
 		elif field=='vel':
 			return self.dvel_dt(i)
-		elif field=='temp':
-			return self.dtemp_dt(i)
 		elif field=='log_rho':
 			return self.dlog_rho_dt(i)
+		elif field=='s':
+			return self.ds_dt(i)
 		else:
 			return 0.
 
@@ -345,8 +365,19 @@ class Grid:
 		return -vel*dv_dr-dlog_rho_dr*(kb*temp/mp)-(kb/mp)*dtemp_dr-(G*self.M)/rad**2+art_visc*lap_vel-(self.q(rad)*vel/rho)
 
 	#Evaluating the partial derivative of temperature with respect to time.
-	def dtemp_dt(self, i):
-		return 0.
+	# def dtemp_dt(self, i):
+	# 	return 0.
+
+	#Evaluating the partial derivative of entropy with respect to time
+	def ds_dt(self, i):
+		rho=self.grid[i].rho
+		temp=self.grid[i].temp
+		rad=self.grid[i].rad
+		cs=self.grid[i].cs
+		sigma2=G*self.M/rad
+
+		return self.q(rad, **self.params_delta)*(0.5*sigma2-self.gamma*cs**2/(self.gamma-1))
+
 
 	#Evolve the system forward for time, time. If field is specified then we create a movie showing the solution for 
 	#the field as a function of time
