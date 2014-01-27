@@ -19,6 +19,7 @@ G=const.G.cgs.value
 M_sun=const.M_sun.cgs.value
 kb=const.k_B.cgs.value
 mp=const.m_p.cgs.value
+h=const.h.cgs.value
 
 
 ##Run a command from the bash shell
@@ -56,10 +57,10 @@ class Zone:
 		self.cs=np.sqrt(kb*self.temp/(mu*mp))
 
 	def entropy(self):
-		self.s=kb*np.log(self.temp**1.5/np.exp(self.log_rho))
+		self.s=(kb/mp)*np.log(m/np.exp(self.rho)*(2.*np.pi*mp*kb*self.temp/h**2)**1.5+5./2.)
 
-	def temperature(self):
-		self.temp=(np.exp(self.log_rho)*np.exp(self.s/kb))**(2./3.)
+	# def temperature(self):
+	# 	self.temp=(np.exp(self.log_rho)*np.exp(self.s/kb))**(2./3.)
 
 	#Method which will be used to update non-primitive vars. 
 	def update_aux(self):
