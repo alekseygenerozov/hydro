@@ -58,16 +58,16 @@ class Zone:
 
 	#Temperature->Entropy
 	def entropy(self):
-		self.s=(kb/mp)*np.log(m/np.exp(self.rho)*(2.*np.pi*mp*kb*self.temp/h**2)**1.5+5./2.)
+		self.s=(kb/mp)*(np.log(mp/np.exp(self.log_rho)*(2.*np.pi*mp*kb*self.temp/h**2)**1.5)+5./2.)
 
 	#Entropy->Temperature
 	def temperature(self):
 		(np.exp(-5./3. + (2*mp*self.s)/(3.*kb))*
-			h**2*np.exp(self.log_rho)**(2./3.))/
-			(2.*kb*m*(5./3.)*np.pi)
+			h**2*np.exp(self.log_rho)**(2./3.))/(2.*kb*mp*(5./3.)*np.pi)
 
 	#Method which will be used to update non-primitive vars. 
 	def update_aux(self):
+		self.temperature()
 		self.rho=np.exp(self.log_rho)
 		self.eos()
 		self.r2vel=self.rad**2*self.vel
@@ -381,7 +381,7 @@ class Grid:
 		rad=self.grid[i].rad
 		cs=self.grid[i].cs
 		sigma2=G*self.M/rad
-		ds_dr=self.get_spatial_deriv('s')
+		ds_dr=self.get_spatial_deriv(i, 's')
 
 		return self.q(rad, **self.params_delta)*(0.5*sigma2+0.5*vel**2-self.gamma*cs**2/(self.gamma-1))/(rho*temp)-vel*ds_dr
 
