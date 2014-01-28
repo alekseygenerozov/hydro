@@ -56,11 +56,15 @@ class Zone:
 		self.pres=self.rho*kb*self.temp/(mu*mp)
 		self.cs=np.sqrt(kb*self.temp/(mu*mp))
 
+	#Temperature->Entropy
 	def entropy(self):
 		self.s=(kb/mp)*np.log(m/np.exp(self.rho)*(2.*np.pi*mp*kb*self.temp/h**2)**1.5+5./2.)
 
-	# def temperature(self):
-	# 	self.temp=(np.exp(self.log_rho)*np.exp(self.s/kb))**(2./3.)
+	#Entropy->Temperature
+	def temperature(self):
+		(np.exp(-5./3. + (2*mp*self.s)/(3.*kb))*
+			h**2*np.exp(self.log_rho)**(2./3.))/
+			(2.*kb*m*(5./3.)*np.pi)
 
 	#Method which will be used to update non-primitive vars. 
 	def update_aux(self):
@@ -377,8 +381,9 @@ class Grid:
 		rad=self.grid[i].rad
 		cs=self.grid[i].cs
 		sigma2=G*self.M/rad
+		ds_dr=self.get_spatial_deriv('s')
 
-		return self.q(rad, **self.params_delta)*(0.5*sigma2+0.5*vel**2-self.gamma*cs**2/(self.gamma-1))
+		return self.q(rad, **self.params_delta)*(0.5*sigma2+0.5*vel**2-self.gamma*cs**2/(self.gamma-1))/(rho*temp)-vel*ds_dr
 
 
 	#Evolve the system forward for time, time. If field is specified then we create a movie showing the solution for 
