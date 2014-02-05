@@ -53,17 +53,16 @@ class Zone:
 	def eos(self):
 		mu=1.
 		self.temperature()
-		self.pres=self.rho*kb*self.temp/(mu*mp)
+		self.pres=self.rho*kb*self.temp/(mu*mp)                                                                                                      
 		self.cs=np.sqrt(kb*self.temp/(mu*mp))
 
 	#Temperature->Entropy
 	def entropy(self):
-		self.s=(kb/mp)*(np.log(mp/np.exp(self.log_rho)*(2.*np.pi*mp*kb*self.temp/h**2)**1.5)+5./2.)
+		self.s=(kb/mp)*np.log(1./np.exp(self.log_rho)*(self.temp)**(3./2.))
 
 	#Entropy->Temperature
 	def temperature(self):
-		(np.exp(-5./3. + (2*mp*self.s)/(3.*kb))*
-			h**2*np.exp(self.log_rho)**(2./3.))/(2.*kb*mp*(5./3.)*np.pi)
+		self.temp=(np.exp(self.log_rho)*np.exp(mp*self.s/kb))**(2./3.)
 
 	#Method which will be used to update non-primitive vars. 
 	def update_aux(self):
@@ -75,14 +74,12 @@ class Zone:
 		self.be=self.bernoulli()
 		# self.visc=self.cs*self.vel
 
-
 	#Finding the maximum transport speed across the zone
 	def alpha_max(self):
 		return max([np.abs(self.vel+self.cs), np.abs(self.vel-self.cs)])
 
 	def bernoulli(self):
 		return 0.5*self.vel**2+self.cs**2*self.log_rho-G*self.M/self.rad
-
 
 class Grid:
 	"""Class stores (static) grid for solving Euler equations numerically"""
@@ -218,7 +215,6 @@ class Grid:
 		s_end=self.grid[self.end].s
 		for i in range(self.end+1, self.length):
 			self.grid[i].s=s_end
-
 
 
 	#Extrapolate densities to the ghost zones
@@ -380,10 +376,10 @@ class Grid:
 		vel=self.grid[i].vel
 		rad=self.grid[i].rad
 		cs=self.grid[i].cs
-		sigma2=G*self.M/rad
+		sigma=np.sqrt(G*self.M/rad)
 		ds_dr=self.get_spatial_deriv(i, 's')
 
-		return self.q(rad, **self.params_delta)*(0.5*sigma2+0.5*vel**2-self.gamma*cs**2/(self.gamma-1))/(rho*temp)-vel*ds_dr
+		return self.q(rad, **self.params_delta)*(0.5*sigma**2+0.5*vel**2-self.gamma*cs**2/(self.gamma-1))/(rho*temp)-vel*ds_dr
 
 
 	#Evolve the system forward for time, time. If field is specified then we create a movie showing the solution for 
