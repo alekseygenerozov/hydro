@@ -35,7 +35,7 @@ class Zone:
 	cell.
 
 	"""
-	def __init__(self, rad=1.E16, prims=(0,0,0), M=1.E6):
+	def __init__(self, rad=1.E16, prims=(0,0,0), M=1.E6, isot=False):
 		#Radius of grid zone and mass enclosed
 		self.rad=rad
 		self.M=M
@@ -44,6 +44,7 @@ class Zone:
 		self.log_rho=prims[0]
 		self.vel=prims[1]
 		self.temp=prims[2]
+		self.isot=isot
 		#Entropy
 		self.entropy()
 		#Updating non-primitive variables within zone
@@ -52,7 +53,8 @@ class Zone:
 	#Equation of state. Note this could be default in the future there could be functionality to override this.
 	def eos(self):
 		mu=1.
-		self.temperature()
+		if not self.isot:
+			self.temperature()
 		self.pres=self.rho*kb*self.temp/(mu*mp)                                                                                                      
 		self.cs=np.sqrt(kb*self.temp/(mu*mp))
 
@@ -66,7 +68,6 @@ class Zone:
 
 	#Method which will be used to update non-primitive vars. 
 	def update_aux(self):
-		self.temperature()
 		self.rho=np.exp(self.log_rho)
 		self.eos()
 		self.r2vel=self.rad**2*self.vel
@@ -85,11 +86,15 @@ class Grid:
 	"""Class stores (static) grid for solving Euler equations numerically"""
 
 	def __init__(self, r1, r2, f_initial, n=100, M=1.E6*M_sun, Mdot=1., num_ghosts=3, safety=0.6, Re=100., q=None, params=dict(), params_delta=dict(),
-		floor=1.e-30, symbol='rs', logr=True, bdry_fixed=False, gamma=5./3.):
+		floor=1.e-30, symbol='rs', logr=True, bdry_fixed=False, gamma=5./3., isot=False, tol=1.E-3):
 		assert r2>r1
 		assert n>2*num_ghosts
 
-		self.fields=['log_rho', 'vel', 's']
+		self.isot=isot
+		if self.isot:
+			self.fields=['log_rho', 'vel']
+		else:
+			self.fields=['log_rho', 'vel', 's']
 		self.out_fields=['rho', 'vel', 'temp', 'frho', 'be']
 
 		self.M=M
@@ -98,7 +103,6 @@ class Grid:
 		if q:
 			self.q=q
 		self.gamma=gamma
-
 		self.Mdot=Mdot
 		#Grid will be stored as list of zones
 		self.grid=[]
@@ -119,14 +123,12 @@ class Grid:
 		self.length=n
 		self.start=0
 		self.end=n-1
-
-		self.time_derivs=np.zeros(n, dtype={'names':[self.fields[0], self.fields[1], self.fields[2]], 'formats':['float64',
-			'float64', 'float64']})
+		self.time_derivs=np.zeros(n, dtype={'names':self.fields, 'formats':['float64', 'float64', 'float64']})
 
 		#Initializing the grid using the initial value function f_initial
 		for rad in self.radii:
 			prims=f_initial(rad, **params)
-			self.grid.append(Zone(rad=rad, prims=prims, M=M))
+			self.grid.append(Zone(rad=rad, prims=prims, M=M, isot=self.isot))
 
 		self._add_ghosts(num_ghosts=num_ghosts)
 		self.bdry_fixed=bdry_fixed
@@ -146,6 +148,8 @@ class Grid:
 		self.time_target=0
 
 		self.saved=np.empty([0, self.length, 5])
+		self.max_change=[]
+		self.tol=tol
 		self.time_stamps=[]
 
 		self.symbol=symbol
@@ -403,6 +407,11 @@ class Grid:
 		while self.time_cur<time:
 			if num_steps%5==0:
 				self.save()
+				if len(self.saved)>2:
+					max_change=np.max(np.abs((self.saved[-1]-self.saved[-2])/self.saved[-2]))
+					self.max_change.append(max_change)
+					if max_change<self.tol:
+						break
 				#np.savetxt(fout, self.saved[-1])
 				print self.total_time/self.time_target
 
