@@ -35,7 +35,7 @@ class Zone:
 	cell.
 
 	"""
-	def __init__(self, rad=1.E16, prims=(0,0,0), M=1.E6, isot=False):
+	def __init__(self, rad=1.E16, prims=(0,0,0), M=1.E6, isot=True):
 		#Radius of grid zone and mass enclosed
 		self.rad=rad
 		self.M=M
@@ -86,15 +86,16 @@ class Grid:
 	"""Class stores (static) grid for solving Euler equations numerically"""
 
 	def __init__(self, r1, r2, f_initial, n=100, M=1.E6*M_sun, Mdot=1., num_ghosts=3, safety=0.6, Re=100., q=None, params=dict(), params_delta=dict(),
-		floor=1.e-30, symbol='rs', logr=True, bdry_fixed=False, gamma=5./3., isot=False, tol=1.E-3):
+		floor=1.e-30, symbol='rs', logr=True, bdry_fixed=False, gamma=5./3., isot=False, tol=1.E-2):
 		assert r2>r1
 		assert n>2*num_ghosts
 
 		self.isot=isot
-		if self.isot:
-			self.fields=['log_rho', 'vel']
-		else:
-			self.fields=['log_rho', 'vel', 's']
+		self.fields=['log_rho', 'vel']
+		# if self.isot:
+		# 	self.fields=['log_rho', 'vel']
+		# else:
+		# 	self.fields=['log_rho', 'vel', 's']
 		self.out_fields=['rho', 'vel', 'temp', 'frho', 'be']
 
 		self.M=M
@@ -128,7 +129,7 @@ class Grid:
 		#Initializing the grid using the initial value function f_initial
 		for rad in self.radii:
 			prims=f_initial(rad, **params)
-			self.grid.append(Zone(rad=rad, prims=prims, M=M, isot=self.isot))
+			self.grid.append(Zone(rad=rad, prims=prims, M=M, isot=True))
 
 		self._add_ghosts(num_ghosts=num_ghosts)
 		self.bdry_fixed=bdry_fixed
@@ -385,6 +386,10 @@ class Grid:
 
 		return self.q(rad, **self.params_delta)*(0.5*sigma**2+0.5*vel**2-self.gamma*cs**2/(self.gamma-1))/(rho*temp)-vel*ds_dr
 
+	#Switch off isothermal equation of state for all zones within our grid.
+	def _isot_off(self):
+		for zone in self.grid:
+			zone.isot=False
 
 	#Evolve the system forward for time, time. If field is specified then we create a movie showing the solution for 
 	#the field as a function of time
@@ -404,7 +409,7 @@ class Grid:
 		# bash_command('rm '+out_name)
 		# fout=file(out_name, 'a')
 		#While we have not yet reached the target time
-		while self.time_cur<time:
+		while 1==1:
 			if num_steps%5==0:
 				self.save()
 				if len(self.saved)>2:
@@ -424,6 +429,32 @@ class Grid:
 			if max_steps:
 				if num_steps>max_steps:
 					break
+
+		if not self.isot:
+			self.saved=np.empty([0, self.length, 5])
+			self._isot_off()
+			self.fields=['log_rho', 'vel', 's']
+			self.time_derivs=np.zeros(self.length, dtype={'names':self.fields, 'formats':['float64', 'float64', 'float64']})
+			while 1==1:
+				if num_steps%5==0:
+					self.save()
+					if len(self.saved)>2:
+						max_change=np.max(np.abs((self.saved[-1]-self.saved[-2])/self.saved[-2]))
+						self.max_change.append(max_change)
+						if max_change<self.tol:
+							break
+					#np.savetxt(fout, self.saved[-1])
+					print self.total_time/self.time_target
+
+				#Take step and increment current time
+				self._step()
+				self.time_cur+=self.delta_t
+				self.total_time+=self.delta_t
+				num_steps+=1
+				#If we have exceeded the max number of allowed steps then break
+				if max_steps:
+					if num_steps>max_steps:
+						break
 
 		#For all of the field we would like to output, output movie.
 		for i in range(0, len(self.out_fields)):
