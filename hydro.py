@@ -390,26 +390,47 @@ class Grid:
 	def _isot_off(self):
 		for zone in self.grid:
 			zone.isot=False
+			zone.entropy()
 
-	#Evolve the system forward for time, time. If field is specified then we create a movie showing the solution for 
-	#the field as a function of time
-	def evolve(self, time, max_steps=None,  analytic_func=[None, None, None, None, None, None]):
-		#Initialize the current and target times
+	#High-level controller for solution. Several possible stop conditions (max_steps is reached, time is reached, convergence is reached)
+	def solve(self, time, max_steps=np.inf):
+		#Evolve isothermally
 		self.time_cur=0
 		self.time_target=time
-		num_steps=0
+		self._evolve(max_steps=max_steps)
+		#Turning off the isothermal flag and restarting the evolution
+		if not self.isot:
+			self.saved=np.empty([0, self.length, 5])
+			self._isot_off()
+			self.fields=['log_rho', 'vel', 's']
+			self.time_derivs=np.zeros(self.length, dtype={'names':self.fields, 'formats':['float64', 'float64', 'float64']})
+			self._evolve(max_steps=max_steps)
+		#Write solution movies and numerical parameters that were used to file.
+		self.write_sol()
 
+	#Method to write solution info to file
+	def write_sol(self):
 		#Writing numerical params used in the current run to file
 		fparams=file('params', 'w')
 		fparams.write('Re={0:8.7e} rin={1:8.7e} rout={2:8.7e} floor={3:8.7e} n={4} log={5} M={6:8.7e} q_params={7} init_params={8}'.format(self.Re, self.radii[0], 
 			self.radii[-1], self.floor, self.length, self.logr, self.M, self.params_delta, self.params))
 
-		# #Output file to write to 
-		# out_name='tmp'
-		# bash_command('rm '+out_name)
-		# fout=file(out_name, 'a')
+		#For all of the field we would like to output, output movie.
+		for i in range(0, len(self.out_fields)):
+			self.animate(index=i)
+		#Writing solution
+		mdot_check=self._mdot_check()
+		be_check=self._bernoulli_check()
+		check=file('check', 'w')
+		check.write('mdot: frho1={0:8.7e} frho2={1:8.7e} flux={2:8.7e} mdot={3:8.7e} percent diff={4:8.7e}\n\n'.format(mdot_check[0], mdot_check[1], mdot_check[2], mdot_check[3], mdot_check[4]))
+		check.write('be: be1={0:8.7e} be2={1:8.7e} flux={2:8.7e} -\int(q*v/rho)={3:8.7e} percent diff={4:8.7e}'.format(be_check[0], be_check[1], be_check[2], be_check[3], be_check[4]))
+		plt.clf()
+
+	#Lower level evolution method
+	def _evolve(self, max_steps=np.inf):
+		num_steps=0
 		#While we have not yet reached the target time
-		while 1==1:
+		while self.time_cur<self.time_target:
 			if num_steps%5==0:
 				self.save()
 				if len(self.saved)>2:
@@ -426,47 +447,8 @@ class Grid:
 			self.total_time+=self.delta_t
 			num_steps+=1
 			#If we have exceeded the max number of allowed steps then break
-			if max_steps:
-				if num_steps>max_steps:
-					break
-
-		if not self.isot:
-			self.saved=np.empty([0, self.length, 5])
-			self._isot_off()
-			self.fields=['log_rho', 'vel', 's']
-			self.time_derivs=np.zeros(self.length, dtype={'names':self.fields, 'formats':['float64', 'float64', 'float64']})
-			while 1==1:
-				if num_steps%5==0:
-					self.save()
-					if len(self.saved)>2:
-						max_change=np.max(np.abs((self.saved[-1]-self.saved[-2])/self.saved[-2]))
-						self.max_change.append(max_change)
-						if max_change<self.tol:
-							break
-					#np.savetxt(fout, self.saved[-1])
-					print self.total_time/self.time_target
-
-				#Take step and increment current time
-				self._step()
-				self.time_cur+=self.delta_t
-				self.total_time+=self.delta_t
-				num_steps+=1
-				#If we have exceeded the max number of allowed steps then break
-				if max_steps:
-					if num_steps>max_steps:
-						break
-
-		#For all of the field we would like to output, output movie.
-		for i in range(0, len(self.out_fields)):
-			self.animate(index=i, analytic_func=analytic_func[i])
-
-		mdot_check=self._mdot_check()
-		be_check=self._bernoulli_check()
-		check=file('check', 'w')
-		check.write('mdot: frho1={0:8.7e} frho2={1:8.7e} flux={2:8.7e} mdot={3:8.7e} percent diff={4:8.7e}\n\n'.format(mdot_check[0], mdot_check[1], mdot_check[2], mdot_check[3], mdot_check[4]))
-		check.write('be: be1={0:8.7e} be2={1:8.7e} flux={2:8.7e} -\int(q*v/rho)={3:8.7e} percent diff={4:8.7e}'.format(be_check[0], be_check[1], be_check[2], be_check[3], be_check[4]))
-		plt.clf()
-
+			if num_steps>max_steps:
+				break
 
 	#Create movie of solution
 	def animate(self,  analytic_func=None, index=1):
