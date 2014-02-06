@@ -365,7 +365,7 @@ class Grid:
 		dv_dr=self.get_spatial_deriv(i, 'vel')
 		lap_vel=self.get_laplacian(i, 'vel')
 		#lap_vel=self.get_spatial_deriv(i, 'vel', 'second')
-		art_visc=min(self.grid[i].cs,  np.abs(self.grid[i].vel))*(self.radii[self.end]-self.radii[0])/self.Re
+		art_visc=min(self.grid[i].cs,  np.abs(self.grid[i].vel))*(self.radii[i])/self.Re
 
 		#Need to be able to handle for general potential in the future
 		return -vel*dv_dr-dlog_rho_dr*(kb*temp/mp)-(kb/mp)*dtemp_dr-(G*self.M)/rad**2+art_visc*lap_vel-(self.q(rad)*vel/rho)
@@ -398,6 +398,7 @@ class Grid:
 		self.time_cur=0
 		self.time_target=time
 		self._evolve(max_steps=max_steps)
+		self.time_cur=0
 		#Turning off the isothermal flag and restarting the evolution
 		if not self.isot:
 			self.saved=np.empty([0, self.length, 5])
@@ -429,6 +430,7 @@ class Grid:
 	#Lower level evolution method
 	def _evolve(self, max_steps=np.inf):
 		num_steps=0
+		# self.epsilon=0
 		#While we have not yet reached the target time
 		while self.time_cur<self.time_target:
 			if num_steps%5==0:
@@ -443,6 +445,8 @@ class Grid:
 
 			#Take step and increment current time
 			self._step()
+			# if self.epsilon<1:
+			# 	self.epsilon+=0.01
 			self.time_cur+=self.delta_t
 			self.total_time+=self.delta_t
 			num_steps+=1
