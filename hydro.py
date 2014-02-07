@@ -496,7 +496,7 @@ class Grid:
 		for i in range(len(self.out_fields)):
 			grid_prims[i]=self.get_field(self.out_fields[i])[1]
 			if self.out_fields[i]=='vel':
-				grid_prims[i]=grid_prims[i]/self.vw
+				grid_prims[i]=grid_prims[i]/self.grid[i].cs
 
 		#Saving the state of the grid within list
 		#self.saved.append((self.total_time, np.transpose(grid_prims)))
