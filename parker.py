@@ -48,8 +48,14 @@ def delta_src(rad, mdot=600., delta=1.E10, r_0=1.E12, r_1=2.E12, tol=1.E10):
 def power_src(rad, a=1.*10**-11, n=-2):
     return a*(rad)**n
 
+#Source term from quataert 2004. Essentially a broken power law
+def quataert_src(rad, eta=-2., mdotw=6.7*10.**22, r1=2.4e17, r2=1.2e18):
+    a=mdotw/(4.*np.pi)/((r2**(eta+3)-r1**(eta+3))/(eta+3))
+    if rad<r2 and rad>r1:
+        return a*rad**eta
+    else:
+        return 0.
     
-
 def parker(rad, temp=1.E6, mdot=1.E10, m=1., pert=1., log=False):
     c_s=np.sqrt(kb*temp/mp)
     rc=G*m*M_sun/(2*c_s**2)

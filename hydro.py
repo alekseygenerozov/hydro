@@ -86,7 +86,7 @@ class Grid:
 	"""Class stores (static) grid for solving Euler equations numerically"""
 
 	def __init__(self, r1, r2, f_initial, n=100, M=1.E6*M_sun, Mdot=1., num_ghosts=3, safety=0.6, Re=100., Re_s=100., q=None, params=dict(), params_delta=dict(),
-		floor=1.e-30, symbol='rs', logr=True, bdry_fixed=False, gamma=5./3., isot=False, tol=1.E-2):
+		floor=1.e-30, symbol='rs', logr=True, bdry_fixed=False, gamma=5./3., isot=False, tol=1.E-2, vw=0):
 		assert r2>r1
 		assert n>2*num_ghosts
 
@@ -103,6 +103,7 @@ class Grid:
 		self.params_delta=params_delta	
 		if q:
 			self.q=q
+		self.vw=vw
 		self.gamma=gamma
 		self.Mdot=Mdot
 		#Grid will be stored as list of zones
@@ -366,7 +367,7 @@ class Grid:
 		dv_dr=self.get_spatial_deriv(i, 'vel')
 		lap_vel=self.get_laplacian(i, 'vel')
 		#lap_vel=self.get_spatial_deriv(i, 'vel', 'second')
-		art_visc=min(self.grid[i].cs,  np.abs(self.grid[i].vel))*(self.radii[i])/self.Re
+		art_visc=min(self.grid[i].cs,  np.abs(self.grid[i].vel))*(self.radii[self.end]-self.radii[self.start])/self.Re
 
 		#Need to be able to handle for general potential in the future
 		return -vel*dv_dr-dlog_rho_dr*(kb*temp/mp)-(kb/mp)*dtemp_dr-(G*self.M)/rad**2+art_visc*lap_vel-(self.q(rad)*vel/rho)
@@ -388,7 +389,7 @@ class Grid:
 		art_visc=np.abs(self.grid[i].s)*(self.radii[i])/self.Re_s
 
 
-		return self.q(rad, **self.params_delta)*(0.5*sigma**2+0.5*vel**2-self.gamma*cs**2/(self.gamma-1))/(rho*temp)-vel*ds_dr#+art_visc*lap_s
+		return self.q(rad, **self.params_delta)*(0.5*self.vw**2+0.5*vel**2-self.gamma*cs**2/(self.gamma-1))/(rho*temp)-vel*ds_dr#+art_visc*lap_s
 
 	#Switch off isothermal equation of state for all zones within our grid.
 	def _isot_off(self):
@@ -495,7 +496,7 @@ class Grid:
 		for i in range(len(self.out_fields)):
 			grid_prims[i]=self.get_field(self.out_fields[i])[1]
 			if self.out_fields[i]=='vel':
-				grid_prims[i]=grid_prims[i]/self.get_field('cs')[1]
+				grid_prims[i]=grid_prims[i]/self.vw
 
 		#Saving the state of the grid within list
 		#self.saved.append((self.total_time, np.transpose(grid_prims)))
