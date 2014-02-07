@@ -85,7 +85,7 @@ class Zone:
 class Grid:
 	"""Class stores (static) grid for solving Euler equations numerically"""
 
-	def __init__(self, r1, r2, f_initial, n=100, M=1.E6*M_sun, Mdot=1., num_ghosts=3, safety=0.6, Re=100., q=None, params=dict(), params_delta=dict(),
+	def __init__(self, r1, r2, f_initial, n=100, M=1.E6*M_sun, Mdot=1., num_ghosts=3, safety=0.6, Re=100., Re_s=100., q=None, params=dict(), params_delta=dict(),
 		floor=1.e-30, symbol='rs', logr=True, bdry_fixed=False, gamma=5./3., isot=False, tol=1.E-2):
 		assert r2>r1
 		assert n>2*num_ghosts
@@ -96,7 +96,7 @@ class Grid:
 		# 	self.fields=['log_rho', 'vel']
 		# else:
 		# 	self.fields=['log_rho', 'vel', 's']
-		self.out_fields=['rho', 'vel', 'temp', 'frho', 'be']
+		self.out_fields=['rho', 'vel', 'temp', 'frho', 'be', 's']
 
 		self.M=M
 		self.params=params
@@ -110,6 +110,7 @@ class Grid:
 		delta=float(r2-r1)/n
 		self.safety=safety
 		self.Re=Re
+		self.Re_s=Re_s
 
 		self.floor=floor
 
@@ -148,7 +149,7 @@ class Grid:
 		self.total_time=0
 		self.time_target=0
 
-		self.saved=np.empty([0, self.length, 5])
+		self.saved=np.empty([0, self.length, len(self.out_fields)])
 		self.max_change=[]
 		self.tol=tol
 		self.time_stamps=[]
@@ -383,8 +384,11 @@ class Grid:
 		cs=self.grid[i].cs
 		sigma=np.sqrt(G*self.M/rad)
 		ds_dr=self.get_spatial_deriv(i, 's')
+		lap_s=self.get_laplacian(i, 's')
+		art_visc=np.abs(self.grid[i].s)*(self.radii[i])/self.Re_s
 
-		return self.q(rad, **self.params_delta)*(0.5*sigma**2+0.5*vel**2-self.gamma*cs**2/(self.gamma-1))/(rho*temp)-vel*ds_dr
+
+		return self.q(rad, **self.params_delta)*(0.5*sigma**2+0.5*vel**2-self.gamma*cs**2/(self.gamma-1))/(rho*temp)-vel*ds_dr#+art_visc*lap_s
 
 	#Switch off isothermal equation of state for all zones within our grid.
 	def _isot_off(self):
@@ -401,7 +405,8 @@ class Grid:
 		self.time_cur=0
 		#Turning off the isothermal flag and restarting the evolution
 		if not self.isot:
-			self.saved=np.empty([0, self.length, 5])
+			print 'start non-isot'
+			self.saved=np.empty([0, self.length, len(self.out_fields)])
 			self._isot_off()
 			self.fields=['log_rho', 'vel', 's']
 			self.time_derivs=np.zeros(self.length, dtype={'names':self.fields, 'formats':['float64', 'float64', 'float64']})
