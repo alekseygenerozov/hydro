@@ -368,6 +368,7 @@ class Grid:
 		lap_vel=self.get_laplacian(i, 'vel')
 		#lap_vel=self.get_spatial_deriv(i, 'vel', 'second')
 		art_visc=min(self.grid[i].cs,  np.abs(self.grid[i].vel))*(self.radii[i])/self.Re
+		#art_visc=min(self.grid[i].cs,  np.abs(self.grid[i].vel))*(self.radii[self.end]-self.radii[0])*(self.delta[i]/np.mean(self.delta))/self.Re
 
 		#Need to be able to handle for general potential in the future
 		return -vel*dv_dr-dlog_rho_dr*(kb*temp/mp)-(kb/mp)*dtemp_dr-(G*self.M)/rad**2+art_visc*lap_vel-(self.q(rad)*vel/rho)
