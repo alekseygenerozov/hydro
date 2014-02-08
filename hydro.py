@@ -371,7 +371,7 @@ class Grid:
 		#art_visc=min(self.grid[i].cs,  np.abs(self.grid[i].vel))*(self.radii[self.end]-self.radii[0])*(self.delta[i]/np.mean(self.delta))/self.Re
 
 		#Need to be able to handle for general potential in the future
-		return -vel*dv_dr-dlog_rho_dr*(kb*temp/mp)-(kb/mp)*dtemp_dr-(G*self.M)/rad**2+art_visc*lap_vel-(self.q(rad)*vel/rho)
+		return -vel*dv_dr-dlog_rho_dr*(kb*temp/mp)-(kb/mp)*dtemp_dr-(G*self.M)/rad**2+art_visc*lap_vel-(self.q(rad, **self.params_delta)*vel/rho)
 
 	#Evaluating the partial derivative of temperature with respect to time.
 	# def dtemp_dt(self, i):
@@ -497,7 +497,7 @@ class Grid:
 		for i in range(len(self.out_fields)):
 			grid_prims[i]=self.get_field(self.out_fields[i])[1]
 			if self.out_fields[i]=='vel':
-				grid_prims[i]=grid_prims[i]/self.grid[i].cs
+				grid_prims[i]=grid_prims[i]/self.get_field('cs')[1]
 
 		#Saving the state of the grid within list
 		#self.saved.append((self.total_time, np.transpose(grid_prims)))

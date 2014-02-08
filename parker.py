@@ -44,12 +44,12 @@ def delta_src(rad, mdot=600., delta=1.E10, r_0=1.E12, r_1=2.E12, tol=1.E10):
     #else:
     #    return 0
     
-# #Power law source. Exponent and constant out from a
-# def power_src(rad, a=1.*10**-11, n=-2):
-#     return a*(rad)**n
-def power_src(rad, mdot=6.7*10.**22, eta=-2, r1=2.4e17, r2=1.2e18):
-    a=mdot/(4.*np.pi)/((r2**(eta+3)-r1**(eta+3))/(eta+3))
-    return a*rad**eta
+#Power law source. Exponent and constant out from a
+def power_src(rad, a=1.*10**-11, n=-2):
+    return a*(rad)**n
+# def power_src(rad, mdot=6.7*10.**22, eta=-2, r1=2.4e17, r2=1.2e18):
+#     a=mdot/(4.*np.pi)/((r2**(eta+3)-r1**(eta+3))/(eta+3))
+#     return a*rad**eta
 
 #Source term from quataert 2004. Essentially a broken power law
 def quataert_src(rad, eta=-2., mdotw=6.7*10.**22, r1=2.4e17, r2=1.2e18):
