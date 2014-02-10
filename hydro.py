@@ -86,7 +86,7 @@ class Grid:
 	"""Class stores (static) grid for solving Euler equations numerically"""
 
 	def __init__(self, r1, r2, f_initial, n=100, M=1.E6*M_sun, Mdot=1., num_ghosts=3, safety=0.6, Re=100., Re_s=100., q=None, params=dict(), params_delta=dict(),
-		floor=1.e-30, symbol='rs', logr=True, bdry_fixed=False, gamma=5./3., isot=False, tol=1.E-2, vw=0):
+		floor=1.e-30, symbol='rs', logr=True, bdry_fixed=False, gamma=5./3., isot=False, tol=1.E-3, vw=0):
 		assert r2>r1
 		assert n>2*num_ghosts
 
@@ -367,7 +367,7 @@ class Grid:
 		dv_dr=self.get_spatial_deriv(i, 'vel')
 		lap_vel=self.get_laplacian(i, 'vel')
 		#lap_vel=self.get_spatial_deriv(i, 'vel', 'second')
-		art_visc=min(self.grid[i].cs,  np.abs(self.grid[i].vel))*(self.radii[i])/self.Re
+		art_visc=min(self.grid[i].cs,  np.abs(self.grid[i].vel))*(self.radii[self.end]-self.radii[self.start])*(self.delta[i]/np.mean(self.delta))/self.Re
 		#art_visc=min(self.grid[i].cs,  np.abs(self.grid[i].vel))*(self.radii[self.end]-self.radii[0])*(self.delta[i]/np.mean(self.delta))/self.Re
 
 		#Need to be able to handle for general potential in the future
