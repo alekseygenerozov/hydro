@@ -54,11 +54,12 @@ class Zone:
 	#Equation of state. Note this could be default in the future there could be functionality to override this.
 	def eos(self):
 		mu=1.
+		self.pres=self.rho*kb*self.temp/(mu*mp)
 		if not self.isot:
 			self.temperature()
 			self.cs=np.sqrt(self.gamma*kb*self.temp/(mu*mp))
-		self.pres=self.rho*kb*self.temp/(mu*mp)                                                                                                      
-		self.cs=np.sqrt(kb*self.temp/(mu*mp))
+		else:                                                                                                     
+			self.cs=np.sqrt(kb*self.temp/(mu*mp))
 
 	#Temperature->Entropy
 	def entropy(self):
