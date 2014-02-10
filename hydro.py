@@ -35,7 +35,7 @@ class Zone:
 	cell.
 
 	"""
-	def __init__(self, rad=1.E16, prims=(0,0,0), M=1.E6, isot=True):
+	def __init__(self, rad=1.E16, prims=(0,0,0), M=1.E6, isot=True, gamma=5./3.):
 		#Radius of grid zone and mass enclosed
 		self.rad=rad
 		self.M=M
@@ -45,6 +45,7 @@ class Zone:
 		self.vel=prims[1]
 		self.temp=prims[2]
 		self.isot=isot
+		self.gamma=gamma
 		#Entropy
 		self.entropy()
 		#Updating non-primitive variables within zone
@@ -55,6 +56,7 @@ class Zone:
 		mu=1.
 		if not self.isot:
 			self.temperature()
+			self.cs=np.sqrt(self.gamma*kb*self.temp/(mu*mp))
 		self.pres=self.rho*kb*self.temp/(mu*mp)                                                                                                      
 		self.cs=np.sqrt(kb*self.temp/(mu*mp))
 
@@ -132,7 +134,7 @@ class Grid:
 		#Initializing the grid using the initial value function f_initial
 		for rad in self.radii:
 			prims=f_initial(rad, **params)
-			self.grid.append(Zone(rad=rad, prims=prims, M=M, isot=True))
+			self.grid.append(Zone(rad=rad, prims=prims, M=M, isot=True, gamma=gamma))
 
 		self._add_ghosts(num_ghosts=num_ghosts)
 		self.bdry_fixed=bdry_fixed
