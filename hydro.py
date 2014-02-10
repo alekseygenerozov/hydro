@@ -35,10 +35,11 @@ class Zone:
 	cell.
 
 	"""
-	def __init__(self, rad=1.E16, prims=(0,0,0), M=1.E6, isot=True, gamma=5./3.):
+	def __init__(self, rad=1.E16, prims=(0,0,0), M=1.E6, isot=True, gamma=5./3., mu=1.):
 		#Radius of grid zone and mass enclosed
 		self.rad=rad
 		self.M=M
+		self.mu=mu
 
 		#Primitive variables
 		self.log_rho=prims[0]
@@ -53,13 +54,12 @@ class Zone:
 
 	#Equation of state. Note this could be default in the future there could be functionality to override this.
 	def eos(self):
-		mu=1.
-		self.pres=self.rho*kb*self.temp/(mu*mp)
+		self.pres=self.rho*kb*self.temp/(self.mu*mp)
 		if not self.isot:
 			self.temperature()
-			self.cs=np.sqrt(self.gamma*kb*self.temp/(mu*mp))
+			self.cs=np.sqrt(self.gamma*kb*self.temp/(self.mu*mp))
 		else:                                                                                                     
-			self.cs=np.sqrt(kb*self.temp/(mu*mp))
+			self.cs=np.sqrt(kb*self.temp/(self.mu*mp))
 
 	#Temperature->Entropy
 	def entropy(self):
@@ -89,7 +89,7 @@ class Grid:
 	"""Class stores (static) grid for solving Euler equations numerically"""
 
 	def __init__(self, r1, r2, f_initial, n=100, M=1.E6*M_sun, Mdot=1., num_ghosts=3, safety=0.6, Re=100., Re_s=100., q=None, params=dict(), params_delta=dict(),
-		floor=1.e-30, symbol='rs', logr=True, bdry_fixed=False, gamma=5./3., isot=False, tol=1.E-3, vw=0, movies=True):
+		floor=1.e-30, symbol='rs', logr=True, bdry_fixed=False, gamma=5./3., isot=False, tol=1.E-3, vw=0, movies=True, mu=1.):
 		assert r2>r1
 		assert n>2*num_ghosts
 
@@ -103,6 +103,7 @@ class Grid:
 		self.out_fields=['rho', 'vel', 'temp', 'frho', 'be', 's']
 
 		self.M=M
+		self.mu=mu
 		self.params=params
 		self.params_delta=params_delta	
 		if q:
@@ -135,7 +136,7 @@ class Grid:
 		#Initializing the grid using the initial value function f_initial
 		for rad in self.radii:
 			prims=f_initial(rad, **params)
-			self.grid.append(Zone(rad=rad, prims=prims, M=M, isot=True, gamma=gamma))
+			self.grid.append(Zone(rad=rad, prims=prims, M=M, isot=True, gamma=gamma, mu=mu))
 
 		self._add_ghosts(num_ghosts=num_ghosts)
 		self.bdry_fixed=bdry_fixed
@@ -375,7 +376,7 @@ class Grid:
 		#art_visc=min(self.grid[i].cs,  np.abs(self.grid[i].vel))*(self.radii[self.end]-self.radii[0])*(self.delta[i]/np.mean(self.delta))/self.Re
 
 		#Need to be able to handle for general potential in the future
-		return -vel*dv_dr-dlog_rho_dr*(kb*temp/mp)-(kb/mp)*dtemp_dr-(G*self.M)/rad**2+art_visc*lap_vel-(self.q(rad, **self.params_delta)*vel/rho)
+		return -vel*dv_dr-dlog_rho_dr*kb*temp/(self.mu*mp)-(kb/(self.mu*mp))*dtemp_dr-(G*self.M)/rad**2+art_visc*lap_vel-(self.q(rad, **self.params_delta)*vel/rho)
 
 	#Evaluating the partial derivative of temperature with respect to time.
 	# def dtemp_dt(self, i):
