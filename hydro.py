@@ -63,11 +63,11 @@ class Zone:
 
 	#Temperature->Entropy
 	def entropy(self):
-		self.s=(kb/mp)*np.log(1./np.exp(self.log_rho)*(self.temp)**(3./2.))
+		self.s=(kb/(self.mu*mp))*np.log(1./np.exp(self.log_rho)*(self.temp)**(3./2.))
 
 	#Entropy->Temperature
 	def temperature(self):
-		self.temp=(np.exp(self.log_rho)*np.exp(mp*self.s/kb))**(2./3.)
+		self.temp=(np.exp(self.log_rho)*np.exp(self.mu*mp*self.s/kb))**(2./3.)
 
 	#Method which will be used to update non-primitive vars. 
 	def update_aux(self):
@@ -472,7 +472,7 @@ class Grid:
 			vec_analytic_func=np.vectorize(analytic_funcs)
 		def update_img(n):
 			time=self.time_stamps[n]
-			sol.set_ydata(self.saved[n,:,index])
+			sol.set_ydata(self.saved[n*50,:,index])
 			label.set_text(str(time))
 
 		#Setting up for plotting
@@ -491,8 +491,8 @@ class Grid:
 			analytic_sol,=ax.plot(self.radii, vec_analytic_func(self.radii))
 		
 		#Exporting animation
-		sol_ani=animation.FuncAnimation(fig,update_img,len(self.saved),interval=50)
-		sol_ani.save('sol_'+self.out_fields[index]+'.mp4', dpi=200)
+		sol_ani=animation.FuncAnimation(fig,update_img,len(self.saved)/50,interval=50, blit=True)
+		sol_ani.save('sol_'+self.out_fields[index]+'.mp4', dpi=100)
 
 
 	#Save the state of the grid
