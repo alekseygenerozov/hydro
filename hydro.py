@@ -69,6 +69,10 @@ class Zone:
 	def temperature(self):
 		self.temp=(np.exp(self.log_rho)*np.exp(self.mu*mp*self.s/kb))**(2./3.)
 
+	# #Calculate hearting in cell
+	# def heating(self):
+	# 	q*(self.v**2+self.vw**2-(self.gamma)/(self.gamma-1)*self.cs**2)
+
 	#Method which will be used to update non-primitive vars. 
 	def update_aux(self):
 		self.rho=np.exp(self.log_rho)
@@ -76,6 +80,7 @@ class Zone:
 		self.r2vel=self.rad**2*self.vel
 		self.frho=self.rad**2*self.vel*self.rho
 		self.be=self.bernoulli()
+		# self.Q=self.heating()
 		# self.visc=self.cs*self.vel
 
 	#Finding the maximum transport speed across the zone
@@ -83,7 +88,8 @@ class Zone:
 		return max([np.abs(self.vel+self.cs), np.abs(self.vel-self.cs)])
 
 	def bernoulli(self):
-		return 0.5*self.vel**2+self.cs**2*self.log_rho-G*self.M/self.rad
+		u=self.pres/(self.rho*(self.gamma-1.))
+		return 0.5*self.vel**2+(self.pres/self.rho)+u-G*self.M/self.rad
 
 class Grid:
 	"""Class stores (static) grid for solving Euler equations numerically"""
@@ -169,6 +175,30 @@ class Grid:
 	# def _bernoulli_diff(self):
 	# 	return self.grid[self.end].bernoulli()-self.grid[self.start].bernoulli()
 
+    #Check on entropy
+	def _s_check(self):
+		s1=self.grid[self.start].s
+		s2=self.grid[self.end].s
+		flux=s2-s1
+		#Integating the momentum source term
+		integral=0.
+		#Go through the grid integrating the source terms 
+		for i in range(self.start, self.end):
+			#Zone should have separate heating method
+			vel=self.grid[i].vel
+			rho=self.grid[i].rho
+			temp=self.grid[i].temp
+			cs=self.grid[i].cs
+			q=self.q(self.radii[i], **self.params_delta)
+			heating=q*(0.5*self.vw**2+0.5*vel**2-self.gamma*cs**2/(self.gamma-1))/(rho*temp*vel)
+
+			integral+=heating*self.delta[i]/(rho*vel*temp)
+		with warnings.catch_warnings():
+			warnings.simplefilter("ignore")
+			pdiff=(flux-integral)*100./integral
+
+		return [s1, s2, flux, integral, pdiff]
+
 	#Check on bernoulli parameter
 	def _bernoulli_check(self):
 		be1=self.grid[self.start].bernoulli()
@@ -176,8 +206,18 @@ class Grid:
 		flux=be2-be1
 		#Integating the momentum source term
 		integral=0.
+		#Go through the grid integrating the source terms 
 		for i in range(self.start, self.end):
-			integral+=-self.q(self.radii[i], **self.params_delta)*self.grid[i].vel*self.delta[i]/self.grid[i].rho	
+			#Zone should have separate heating method!!
+			vel=self.grid[i].vel
+			rho=self.grid[i].rho
+			temp=self.grid[i].temp
+			cs=self.grid[i].cs
+			q=self.q(self.radii[i], **self.params_delta)
+			heating=q*(0.5*self.vw**2+0.5*vel**2-self.gamma*cs**2/(self.gamma-1))/(rho*temp)
+
+			integral+=-q*vel*self.delta[i]/rho
+			integral+=-heating*self.delta[i]/(rho*vel)
 		with warnings.catch_warnings():
 			warnings.simplefilter("ignore")
 			pdiff=(flux-integral)*100./integral
@@ -220,6 +260,7 @@ class Grid:
 		self._dens_extrapolate()
 		self._mdot_adjust()
 
+	#Constant entropy across the ghost zones
 	def _s_adjust(self):
 		s_start=self.grid[self.start].s
 		for i in range(0, self.start):
@@ -433,9 +474,11 @@ class Grid:
 		#Writing solution
 		mdot_check=self._mdot_check()
 		be_check=self._bernoulli_check()
+		s_check=self._s_check()
 		check=file('check', 'w')
 		check.write('mdot: frho1={0:8.7e} frho2={1:8.7e} flux={2:8.7e} mdot={3:8.7e} percent diff={4:8.7e}\n\n'.format(mdot_check[0], mdot_check[1], mdot_check[2], mdot_check[3], mdot_check[4]))
-		check.write('be: be1={0:8.7e} be2={1:8.7e} flux={2:8.7e} -\int(q*v/rho)={3:8.7e} percent diff={4:8.7e}'.format(be_check[0], be_check[1], be_check[2], be_check[3], be_check[4]))
+		check.write('be: be1={0:8.7e} be2={1:8.7e} flux={2:8.7e} \int src={3:8.7e} percent diff={4:8.7e}\n\n'.format(be_check[0], be_check[1], be_check[2], be_check[3], be_check[4]))
+		check.write('s: s1={0:8.7e} s2={1:8.7e} flux={2:8.7e} \int src={3:8.7e} percent diff={4:8.7e}'.format(s_check[0], s_check[1], s_check[2], s_check[3], s_check[4]))
 		plt.clf()
 
 	#Lower level evolution method
