@@ -190,7 +190,7 @@ class Grid:
 			temp=self.grid[i].temp
 			cs=self.grid[i].cs
 			q=self.q(self.radii[i], **self.params_delta)
-			heating=q*(0.5*self.vw**2+0.5*vel**2-self.gamma*cs**2/(self.gamma-1))/(rho*temp*vel)
+			heating=q*(0.5*self.vw**2+0.5*vel**2-self.gamma*cs**2/(self.gamma-1))
 
 			integral+=heating*self.delta[i]/(rho*vel*temp)
 		with warnings.catch_warnings():
@@ -214,10 +214,10 @@ class Grid:
 			temp=self.grid[i].temp
 			cs=self.grid[i].cs
 			q=self.q(self.radii[i], **self.params_delta)
-			heating=q*(0.5*self.vw**2+0.5*vel**2-self.gamma*cs**2/(self.gamma-1))/(rho*temp)
+			heating=q*(0.5*self.vw**2+0.5*vel**2-self.gamma*cs**2/(self.gamma-1))
 
 			integral+=-q*vel*self.delta[i]/rho
-			integral+=-heating*self.delta[i]/(rho*vel)
+			integral+=heating*self.delta[i]/(rho*vel)
 		with warnings.catch_warnings():
 			warnings.simplefilter("ignore")
 			pdiff=(flux-integral)*100./integral
