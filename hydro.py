@@ -35,7 +35,7 @@ class Zone:
 	cell.
 
 	"""
-	def __init__(self, rad=1.E16, prims=(0,0,0), M=1.E6, isot=True, gamma=5./3., mu=1.):
+	def __init__(self, rad=1.E16, prims=(0,0,0), M=1.E6, isot=True, gamma=5./3., mu=1., vw=0.):
 		#Radius of grid zone and mass enclosed
 		self.rad=rad
 		self.M=M
@@ -47,6 +47,7 @@ class Zone:
 		self.temp=prims[2]
 		self.isot=isot
 		self.gamma=gamma
+		self.vw=vw
 		#Entropy
 		self.entropy()
 		#Updating non-primitive variables within zone
@@ -69,9 +70,9 @@ class Zone:
 	def temperature(self):
 		self.temp=(np.exp(self.log_rho)*np.exp(self.mu*mp*self.s/kb))**(2./3.)
 
-	# #Calculate hearting in cell
-	# def heating(self):
-	# 	q*(self.v**2+self.vw**2-(self.gamma)/(self.gamma-1)*self.cs**2)
+	#Calculate hearting in cell
+	def get_sp_heating(self):
+		return (0.5*self.vel**2+0.5*self.vw**2-(self.gamma)/(self.gamma-1)*(self.pres/self.rho))
 
 	#Method which will be used to update non-primitive vars. 
 	def update_aux(self):
@@ -80,6 +81,7 @@ class Zone:
 		self.r2vel=self.rad**2*self.vel
 		self.frho=self.rad**2*self.vel*self.rho
 		self.be=self.bernoulli()
+		self.sp_heating=self.get_sp_heating()
 		# self.Q=self.heating()
 		# self.visc=self.cs*self.vel
 
@@ -142,7 +144,7 @@ class Grid:
 		#Initializing the grid using the initial value function f_initial
 		for rad in self.radii:
 			prims=f_initial(rad, **params)
-			self.grid.append(Zone(rad=rad, prims=prims, M=M, isot=True, gamma=gamma, mu=mu))
+			self.grid.append(Zone(rad=rad, prims=prims, M=M, isot=True, gamma=gamma, mu=mu, vw=vw))
 
 		self._add_ghosts(num_ghosts=num_ghosts)
 		self.bdry_fixed=bdry_fixed
@@ -184,13 +186,12 @@ class Grid:
 		integral=0.
 		#Go through the grid integrating the source terms 
 		for i in range(self.start, self.end):
-			#Zone should have separate heating method
 			vel=self.grid[i].vel
 			rho=self.grid[i].rho
 			temp=self.grid[i].temp
 			cs=self.grid[i].cs
 			q=self.q(self.radii[i], **self.params_delta)
-			heating=q*(0.5*self.vw**2+0.5*vel**2-self.gamma*cs**2/(self.gamma-1))
+			heating=q*self.grid[i].sp_heating
 
 			integral+=heating*self.delta[i]/(rho*vel*temp)
 		with warnings.catch_warnings():
@@ -208,13 +209,12 @@ class Grid:
 		integral=0.
 		#Go through the grid integrating the source terms 
 		for i in range(self.start, self.end):
-			#Zone should have separate heating method!!
 			vel=self.grid[i].vel
 			rho=self.grid[i].rho
 			temp=self.grid[i].temp
 			cs=self.grid[i].cs
 			q=self.q(self.radii[i], **self.params_delta)
-			heating=q*(0.5*self.vw**2+0.5*vel**2-self.gamma*cs**2/(self.gamma-1))
+			heating=q*self.grid[i].sp_heating
 
 			integral+=-q*vel*self.delta[i]/rho
 			integral+=heating*self.delta[i]/(rho*vel)
@@ -435,7 +435,8 @@ class Grid:
 		lap_s=self.get_laplacian(i, 's')
 		art_visc=np.abs(self.grid[i].s)*(self.radii[self.end]-self.radii[self.start])*(self.delta[i]/np.mean(self.delta))/self.Re_s
 
-		return self.q(rad, **self.params_delta)*(0.5*self.vw**2+0.5*vel**2-self.gamma*cs**2/(self.gamma-1))/(rho*temp)-vel*ds_dr#+art_visc*lap_s
+		#return self.q(rad, **self.params_delta)*(0.5*self.vw**2+0.5*vel**2-self.gamma*cs**2/(self.gamma-1))/(rho*temp)-vel*ds_dr#+art_visc*lap_s
+		return self.q(rad, **self.params_delta)*self.grid[i].sp_heating/(rho*temp)-vel*ds_dr#+art_visc*lap_s
 	#Switch off isothermal equation of state for all zones within our grid.
 	def _isot_off(self):
 		for zone in self.grid:
