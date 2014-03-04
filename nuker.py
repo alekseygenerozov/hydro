@@ -4,8 +4,14 @@ import matplotlib.pyplot as plt
 
 from scipy import integrate
 from astropy.io import ascii
+import astropy.constants as const
 
-
+#Constants
+G=const.G.cgs.value
+M_sun=const.M_sun.cgs.value
+kb=const.k_B.cgs.value
+mp=const.m_p.cgs.value
+h=const.h.cgs.value
 #params=dict(Ib=17.16, alpha=1.26, beta=1.75, rb=343.3, gamma=0, Uv=7.)
 
 ##Derivative of nuker parameterized surface brightness profile
@@ -36,13 +42,36 @@ def nuker_params():
         d['Ib']=mub_to_Ib(table[i]['$\mu_b$'])
         d['mub']=table[i]['$\mu_b$']
         d['d']=table[i]['Distance']
+        d['M']=table[i]['$\\log_{10}(M_{\\bullet}/M_{\\odot})$\\tablenotemark{e}']
         galaxies[table[i]['Name']]=d
 
     return galaxies
 
 ##Construct number density profile based on surface brightness profile
 def get_rho(params=dict(Ib=17.16, alpha=1.26, beta=1.75, rb=343.3, gamma=0, Uv=7.)):
-    return lambda r: params['Uv']*inverse_abel(nuker_prime, r, **params)
+    def rho(r):
+        return params['Uv']*inverse_abel(nuker_prime, r, **params)
+    return rho
+
+##Getting the potential from the Nuker params
+def get_grad_phi(params=dict(Ib=17.16, alpha=1.26, beta=1.75, rb=343.3, gamma=0, Uv=7., M=1.e6)):
+    rho=get_rho(params)
+    def grad_phi(r):
+        grad_phi_bh=-G*params['M']/r**2
+        f=lambda r1: 4.*np.pi*r1**2.*rho(r1)
+        menc=integrate.quad(f, 0, r)[0]
+        grad_phi_s=-G*menc/r**2
+
+        return grad_phi_s+grad_phi_bh
+
+    return grad_phi
+
+##Getting mass source term from the Nuker params
+def get_q(eta, params=dict(Ib=17.16, alpha=1.26, beta=1.75, rb=343.3, gamma=0, Uv=7., M=1.e6)):
+    def q(r):
+        rho=get_rho(params)
+
+
 
 def main():    
     galaxies=nuker_params()
