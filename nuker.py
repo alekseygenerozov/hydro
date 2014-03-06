@@ -12,6 +12,8 @@ M_sun=const.M_sun.cgs.value
 kb=const.k_B.cgs.value
 mp=const.m_p.cgs.value
 h=const.h.cgs.value
+#Hubble time
+th=4.35*10**17
 #params=dict(Ib=17.16, alpha=1.26, beta=1.75, rb=343.3, gamma=0, Uv=7.)
 
 ##Derivative of nuker parameterized surface brightness profile
@@ -42,7 +44,7 @@ def nuker_params():
         d['Ib']=mub_to_Ib(table[i]['$\mu_b$'])
         d['mub']=table[i]['$\mu_b$']
         d['d']=table[i]['Distance']
-        d['M']=table[i]['$\\log_{10}(M_{\\bullet}/M_{\\odot})$\\tablenotemark{e}']
+        d['M']=M_sun*10.**table[i]['$\\log_{10}(M_{\\bullet}/M_{\\odot})$\\tablenotemark{e}']
         galaxies[table[i]['Name']]=d
 
     return galaxies
@@ -70,6 +72,7 @@ def get_grad_phi(params=dict(Ib=17.16, alpha=1.26, beta=1.75, rb=343.3, gamma=0,
 def get_q(eta, params=dict(Ib=17.16, alpha=1.26, beta=1.75, rb=343.3, gamma=0, Uv=7., M=1.e6)):
     def q(r):
         rho=get_rho(params)
+        return eta*rho/th
 
 
 
