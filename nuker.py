@@ -12,6 +12,7 @@ M_sun=const.M_sun.cgs.value
 kb=const.k_B.cgs.value
 mp=const.m_p.cgs.value
 h=const.h.cgs.value
+pc=const.pc.cgs.value
 #Hubble time
 th=4.35*10**17
 #params=dict(Ib=17.16, alpha=1.26, beta=1.75, rb=343.3, gamma=0, Uv=7.)
@@ -51,9 +52,11 @@ def nuker_params():
 
 class Galaxy:
     """Class to store info about Nuker galaxies"""
-    def __init__(self, gname, gdata, eta=0.1):
+    def __init__(self, gname, gdata, eta=0.1, cgs=True):
         self.params=gdata[gname]
         self.eta=eta
+        self.cgs=cgs
+
         self.rho=self.get_rho()
         self.M_enc=self.get_M_enc()
         self.q=self.get_q()
@@ -62,7 +65,10 @@ class Galaxy:
     ##Construct stellar density profile based on surface brightness profile
     def get_rho(self):
         def rho(r):
-            return self.params['Uv']*inverse_abel(nuker_prime, r, **self.params)
+            rho=self.params['Uv']*inverse_abel(nuker_prime, r, **self.params)
+            if self.cgs:
+                rho=M_sun*rho/pc**3
+            return rho
         return rho
 
     ##Construct the mass enclosed profile based on 
@@ -111,8 +117,8 @@ def main():
     galaxies=nuker_params()
 
     rad=np.logspace(0,3,100)   
-    g1=Galaxy('NGC4551', galaxies)
-    g2=Galaxy('NGC4168', galaxies)
+    g1=Galaxy('NGC4551', galaxies, cgs=False)
+    g2=Galaxy('NGC4168', galaxies, cgs=False)
     rho=map(g1.rho,rad)
     rho2=map(g2.rho, rad)
     rho_nick=np.genfromtxt('NGC4551_nick')
