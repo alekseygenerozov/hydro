@@ -136,7 +136,7 @@ class Grid:
 		self.q=np.array(map(q, self.radii))
 		self.M_enc=np.array(map(M_enc, self.radii))
 		self.phi=-G*(self.M_enc+M_bh)/self.radii
-		self.grad_phi=-G*(self.M_enc+M_bh)/self.radii**2
+		self.grad_phi=G*(self.M_enc+M_bh)/self.radii**2
 
 		rg=G*(M_bh)/c**2.
 		self.vw=np.empty_like(self.radii)
@@ -197,9 +197,8 @@ class Grid:
 			rho=self.grid[i].rho
 			temp=self.grid[i].temp
 			cs=self.grid[i].cs
-			q=self.q(self.radii[i], **self.params_delta)
-			heating=q*self.grid[i].sp_heating
-
+			# q=self.q(self.radii[i], **self.params_delta)
+			heating=self.q[i]*self.grid[i].sp_heating
 			integral+=heating*self.delta[i]/(rho*vel*temp)
 		with warnings.catch_warnings():
 			warnings.simplefilter("ignore")
@@ -220,10 +219,9 @@ class Grid:
 			rho=self.grid[i].rho
 			temp=self.grid[i].temp
 			cs=self.grid[i].cs
-			q=self.q(self.radii[i], **self.params_delta)
-			heating=q*self.grid[i].sp_heating
 
-			integral+=-q*vel*self.delta[i]/rho
+			heating=self.q[i]*self.grid[i].sp_heating
+			integral+=-self.q[i]*vel*self.delta[i]/rho
 			integral+=heating*self.delta[i]/(rho*vel)
 		with warnings.catch_warnings():
 			warnings.simplefilter("ignore")
@@ -238,8 +236,12 @@ class Grid:
 		frho2=self.grid[self.end].frho
 		flux=4*np.pi*(frho2-frho1)
 		#Integarting the mass source term
-		f=lambda r:4*np.pi*r**2*self.q(r, **self.params_delta)
-		integral=integrate.quad(f, self.radii[self.start], self.radii[self.end])[0]
+		# f=lambda r:4*np.pi*r**2*self.q(r, **self.params_delta)
+		# integral=integrate.quad(f, self.radii[self.start], self.radii[self.end])[0]
+		integral=0.
+		for i in range(self.start, self.end):
+			r=self.radii[i]
+			integral+=4*np.pi*r**2*self.q[i]*self.delta[i]
 		
 		with warnings.catch_warnings():
 			warnings.simplefilter("ignore")
@@ -424,7 +426,7 @@ class Grid:
 		#art_visc=min(self.grid[i].cs,  np.abs(self.grid[i].vel))*(self.radii[self.end]-self.radii[0])*(self.delta[i]/np.mean(self.delta))/self.Re
 
 		#Need to be able to handle for general potential in the future
-		return -vel*dv_dr-dlog_rho_dr*kb*temp/(self.mu*mp)-(kb/(self.mu*mp))*dtemp_dr-self.phi[i]+art_visc*lap_vel-(self.q[i]*vel/rho)
+		return -vel*dv_dr-dlog_rho_dr*kb*temp/(self.mu*mp)-(kb/(self.mu*mp))*dtemp_dr-self.grad_phi[i]+art_visc*lap_vel-(self.q[i]*vel/rho)
 
 	#Evaluating the partial derivative of temperature with respect to time.
 	# def dtemp_dt(self, i):

@@ -59,7 +59,6 @@ def get_rho(params=dict(Ib=17.16, alpha=1.26, beta=1.75, rb=343.3, gamma=0, Uv=7
 def get_M_enc(params=dict(Ib=17.16, alpha=1.26, beta=1.75, rb=343.3, gamma=0, Uv=7., M=1.e6)):
     rho=get_rho(params)
     def M_enc(r):
-        grad_phi_bh=-G*params['M']/r**2
         f=lambda r1: 4.*np.pi*r1**2.*rho(r1)
         return integrate.quad(f, 0, r)[0]
 
