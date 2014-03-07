@@ -20,6 +20,7 @@ M_sun=const.M_sun.cgs.value
 kb=const.k_B.cgs.value
 mp=const.m_p.cgs.value
 h=const.h.cgs.value
+c=const.c.cgs.value
 
 
 ##Run a command from the bash shell
@@ -35,10 +36,9 @@ class Zone:
 	cell.
 
 	"""
-	def __init__(self, rad=1.E16, prims=(0,0,0), M=1.E6, isot=True, gamma=5./3., mu=1., vw=0.):
-		#Radius of grid zone and mass enclosed
+	def __init__(self, rad=1.E16, prims=(0,0,0), phi=0., isot=True, gamma=5./3., mu=1., vw=0.):
+		#Radius of grid zone 
 		self.rad=rad
-		self.M=M
 		self.mu=mu
 
 		#Primitive variables
@@ -48,6 +48,7 @@ class Zone:
 		self.isot=isot
 		self.gamma=gamma
 		self.vw=vw
+		self.phi=phi
 		#Entropy
 		self.entropy()
 		#Updating non-primitive variables within zone
@@ -91,13 +92,13 @@ class Zone:
 
 	def bernoulli(self):
 		u=self.pres/(self.rho*(self.gamma-1.))
-		return 0.5*self.vel**2+(self.pres/self.rho)+u-G*self.M/self.rad
+		return 0.5*self.vel**2+(self.pres/self.rho)+u+self.phi
 
 class Grid:
 	"""Class stores (static) grid for solving Euler equations numerically"""
 
-	def __init__(self, r1, r2, f_initial, n=100, M=1.E6*M_sun, Mdot=1., num_ghosts=3, safety=0.6, Re=100., Re_s=100., q=None, params=dict(), params_delta=dict(),
-		floor=1.e-30, symbol='rs', logr=True, bdry_fixed=False, gamma=5./3., isot=False, tol=1.E-3, vw=0, movies=True, mu=1.):
+	def __init__(self, r1, r2, f_initial, M_bh, M_enc, q, n=100, num_ghosts=3, safety=0.6, Re=100., Re_s=100., params=dict(), params_delta=dict(),
+		floor=1.e-30, symbol='rs', logr=True, bdry_fixed=False, gamma=5./3., isot=False, tol=1.E-3,  movies=True, mu=1., vw=None):
 		assert r2>r1
 		assert n>2*num_ghosts
 
@@ -110,15 +111,12 @@ class Grid:
 		self.movies=movies
 		self.out_fields=['rho', 'vel', 'temp', 'frho', 'be', 's']
 
-		self.M=M
 		self.mu=mu
 		self.params=params
 		self.params_delta=params_delta	
-		if q:
-			self.q=q
-		self.vw=vw
+
+
 		self.gamma=gamma
-		self.Mdot=Mdot
 		#Grid will be stored as list of zones
 		self.grid=[]
 		delta=float(r2-r1)/n
@@ -133,8 +131,21 @@ class Grid:
 		if logr:
 			self.radii=np.logspace(np.log(r1), np.log(r2), n, base=e)
 		else:
-			#self.radii=np.linspace(r1+(delta/2.), r2-(delta/2.), n)
 			self.radii=np.linspace(r1, r2, n)
+		#Setting up source terms and potential throughout the grid.  
+		self.q=np.array(map(q, self.radii))
+		self.M_enc=np.array(map(M_enc, self.radii))
+		self.phi=-G*(self.M_enc+M_bh)/self.radii
+		self.grad_phi=-G*(self.M_enc+M_bh)/self.radii**2
+
+		rg=G*(M_bh)/c**2.
+		self.vw=np.empty_like(self.radii)
+		if vw:
+			self.vw.fill(vw)
+		else:
+			self.vw=c*((rg/self.radii)*(self.M_enc+M_bh)/M_bh)**0.5
+
+
 		#Attributes to store length of the list as well as start and end indices (useful for ghost zones)
 		self.length=n
 		self.start=0
@@ -142,9 +153,9 @@ class Grid:
 		self.time_derivs=np.zeros(n, dtype={'names':self.fields, 'formats':['float64', 'float64', 'float64']})
 
 		#Initializing the grid using the initial value function f_initial
-		for rad in self.radii:
-			prims=f_initial(rad, **params)
-			self.grid.append(Zone(rad=rad, prims=prims, M=M, isot=True, gamma=gamma, mu=mu, vw=vw))
+		for i in range(len(self.radii)):
+			prims=f_initial(self.radii[i], **params)
+			self.grid.append(Zone(rad=self.radii[i], prims=prims, isot=True, gamma=gamma, mu=mu, vw=self.vw[i], phi=self.phi[i]))
 
 		self._add_ghosts(num_ghosts=num_ghosts)
 		self.bdry_fixed=bdry_fixed
@@ -167,15 +178,11 @@ class Grid:
 		self.max_change=[]
 		self.tol=tol
 		self.time_stamps=[]
-
 		self.symbol=symbol
 
-	#Unless overloaded the default source term is 0
-	def q(self, rad, **kwargs):
-		return 0.
-
-	# def _bernoulli_diff(self):
-	# 	return self.grid[self.end].bernoulli()-self.grid[self.start].bernoulli()
+	# #Unless overloaded the default source term is 0
+	# def q(self, rad, **kwargs):
+	# 	return 0.
 
     #Check on entropy
 	def _s_check(self):
@@ -387,14 +394,14 @@ class Grid:
 		vel=self.grid[i].vel
 
 		#return -cs*drho_dr+art_visc*drho_dr_second
-		return -vel*self.get_spatial_deriv(i, 'log_rho')-(1/rad**2)*self.get_spatial_deriv(i, 'r2vel')+self.q(rad, **self.params_delta)/rho
+		return -vel*self.get_spatial_deriv(i, 'log_rho')-(1/rad**2)*self.get_spatial_deriv(i, 'r2vel')+self.q[i]/rho
 
 	#Partial derivative of density with respect to time
 	def drho_dt(self, i):
 		rad=self.grid[i].rad
 
 		#return -cs*drho_dr+art_visc*drho_dr_second
-		return -(1./rad)**2*self.get_spatial_deriv(i, 'frho')+self.q(rad, **self.params_delta)
+		return -(1./rad)**2*self.get_spatial_deriv(i, 'frho')+self.q[i]
 
 	#Evaluating the partial derivative of velocity with respect to time
 	def dvel_dt(self, i):
@@ -417,7 +424,7 @@ class Grid:
 		#art_visc=min(self.grid[i].cs,  np.abs(self.grid[i].vel))*(self.radii[self.end]-self.radii[0])*(self.delta[i]/np.mean(self.delta))/self.Re
 
 		#Need to be able to handle for general potential in the future
-		return -vel*dv_dr-dlog_rho_dr*kb*temp/(self.mu*mp)-(kb/(self.mu*mp))*dtemp_dr-(G*self.M)/rad**2+art_visc*lap_vel-(self.q(rad, **self.params_delta)*vel/rho)
+		return -vel*dv_dr-dlog_rho_dr*kb*temp/(self.mu*mp)-(kb/(self.mu*mp))*dtemp_dr-self.phi[i]+art_visc*lap_vel-(self.q[i]*vel/rho)
 
 	#Evaluating the partial derivative of temperature with respect to time.
 	# def dtemp_dt(self, i):
@@ -430,13 +437,12 @@ class Grid:
 		vel=self.grid[i].vel
 		rad=self.grid[i].rad
 		cs=self.grid[i].cs
-		sigma=np.sqrt(G*self.M/rad)
 		ds_dr=self.get_spatial_deriv(i, 's')
 		lap_s=self.get_laplacian(i, 's')
-		art_visc=np.abs(self.grid[i].s)*(self.radii[self.end]-self.radii[self.start])*(self.delta[i]/np.mean(self.delta))/self.Re_s
+		#art_visc=np.abs(self.grid[i].s)*(self.radii[self.end]-self.radii[self.start])*(self.delta[i]/np.mean(self.delta))/self.Re_s
 
 		#return self.q(rad, **self.params_delta)*(0.5*self.vw**2+0.5*vel**2-self.gamma*cs**2/(self.gamma-1))/(rho*temp)-vel*ds_dr#+art_visc*lap_s
-		return self.q(rad, **self.params_delta)*self.grid[i].sp_heating/(rho*temp)-vel*ds_dr#+art_visc*lap_s
+		return self.q[i]*self.grid[i].sp_heating/(rho*temp)-vel*ds_dr#+art_visc*lap_s
 	#Switch off isothermal equation of state for all zones within our grid.
 	def _isot_off(self):
 		for zone in self.grid:
@@ -465,8 +471,8 @@ class Grid:
 	def write_sol(self):
 		#Writing numerical params used in the current run to file
 		fparams=file('params', 'w')
-		fparams.write('Re={0:8.7e} rin={1:8.7e} rout={2:8.7e} floor={3:8.7e} n={4} log={5} M={6:8.7e} q_params={7} init_params={8}'.format(self.Re, self.radii[0], 
-			self.radii[-1], self.floor, self.length, self.logr, self.M, self.params_delta, self.params))
+		fparams.write('Re={0:8.7e} rin={1:8.7e} rout={2:8.7e} floor={3:8.7e} n={4} log={5}  q_params={6} init_params={7}'.format(self.Re, self.radii[0], 
+			self.radii[-1], self.floor, self.length, self.logr, self.params_delta, self.params))
 
 		#For all of the field we would like to output, output movie.
 		if self.movies:
