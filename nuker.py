@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from scipy import integrate
+from scipy.optimize import fsolve
 from astropy.io import ascii
 import astropy.constants as const
 
@@ -16,6 +17,9 @@ pc=const.pc.cgs.value
 #Hubble time
 th=4.35*10**17
 #params=dict(Ib=17.16, alpha=1.26, beta=1.75, rb=343.3, gamma=0, Uv=7.)
+
+def nuker(r, Ib=17.16, alpha=1.26, beta=1.75, rb=343.3, gamma=0, Uv=7., **kwargs):
+    return Ib*2.**((beta-gamma)/alpha)*(rb/r)**gamma*(1.+(r/rb)**alpha)**((gamma-beta)/alpha)
 
 ##Derivative of nuker parameterized surface brightness profile
 def nuker_prime(r, Ib=17.16, alpha=1.26, beta=1.75, rb=343.3, gamma=0, Uv=7., **kwargs):
@@ -58,17 +62,20 @@ class Galaxy:
         self.cgs=cgs
 
         self.rho=self.get_rho()
+        self.M_enc_circ=self.get_M_enc_circ()
         self.M_enc=self.get_M_enc()
         self.q=self.get_q()
+        self.rinf=self.get_rinf()
 
 
     ##Construct stellar density profile based on surface brightness profile
     def get_rho(self):
         def rho(r):
-            rho=self.params['Uv']*inverse_abel(nuker_prime, r, **self.params)
-            if self.cgs:
-                rho=M_sun*rho/pc**3
-            return rho
+            rho1=M_sun*self.params['Uv']*inverse_abel(nuker_prime, r, **self.params)
+            # if self.cgs:
+            #     rho1=M_sun*rho1/pc**3
+            return rho1
+
         return rho
 
     ##Construct the mass enclosed profile based on 
@@ -78,11 +85,24 @@ class Galaxy:
             return integrate.quad(f, 0, r)[0]
         return M_enc
 
+    def get_M_enc_circ(self):
+        def M_enc(r):
+            f=lambda r1:2.*np.pi*r1*M_sun*self.params['Uv']*nuker(r1, **self.params)
+            return integrate.quad(f, 0, r)[0]
+        return M_enc
+
     ##Construct the mass source term assuming some efficiency
     def get_q(self):
         def q(r):
-            self.eta*self.rho(self.params)/th
+            return self.eta*self.rho(r)/th
         return q
+
+    ##Getting the radius of influence: where the enclosed mass begins to equal the mass of the central BH. 
+    def get_rinf(self):
+        def mdiff(r):
+            return self.params['M']-self.M_enc_circ(r)
+
+        return fsolve(mdiff, 1)[0]
 
 # ##Getting the potential from the Nuker params
 # def get_M_enc(params=dict(Ib=17.16, alpha=1.26, beta=1.75, rb=343.3, gamma=0, Uv=7., M=1.e6)):

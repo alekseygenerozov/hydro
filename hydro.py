@@ -12,8 +12,6 @@ from math import e
 import subprocess
 import astropy.constants as const
 
-
-
 #Constants
 G=const.G.cgs.value
 M_sun=const.M_sun.cgs.value
@@ -21,7 +19,7 @@ kb=const.k_B.cgs.value
 mp=const.m_p.cgs.value
 h=const.h.cgs.value
 c=const.c.cgs.value
-
+pc=const.pc.cgs.value
 
 ##Run a command from the bash shell
 def bash_command(cmd):
@@ -133,8 +131,10 @@ class Grid:
 		else:
 			self.radii=np.linspace(r1, r2, n)
 		#Setting up source terms and potential throughout the grid.  
-		self.q=np.array(map(q, self.radii))
-		self.M_enc=np.array(map(M_enc, self.radii))
+		self.q=np.array(map(q, self.radii/pc))/pc**3
+		print self.q
+		self.M_enc=np.array(map(M_enc, self.radii/pc))
+
 		self.phi=-G*(self.M_enc+M_bh)/self.radii
 		self.grad_phi=G*(self.M_enc+M_bh)/self.radii**2
 
