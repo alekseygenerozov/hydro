@@ -501,8 +501,8 @@ class Grid:
 				if len(self.saved)>2:
 					max_change=np.max(np.abs((self.saved[-1]-self.saved[-2])/self.saved[-2]))
 					self.max_change.append(max_change)
-					if max_change<self.tol:
-						break
+					# if max_change<self.tol:
+					# 	break
 				#np.savetxt(fout, self.saved[-1])
 				print self.total_time/self.time_target
 
@@ -515,6 +515,7 @@ class Grid:
 			num_steps+=1
 			#If we have exceeded the max number of allowed steps then break
 			if num_steps>max_steps:
+				print "exceeded max number of allowed steps"
 				break
 
 	#Create movie of solution
