@@ -101,11 +101,11 @@ class Grid:
 		assert n>2*num_ghosts
 
 		self.isot=isot
-		self.fields=['log_rho', 'vel']
-		# if self.isot:
-		# 	self.fields=['log_rho', 'vel']
-		# else:
-		# 	self.fields=['log_rho', 'vel', 's']
+		#self.fields=['log_rho', 'vel']
+		if self.isot:
+			self.fields=['log_rho', 'vel']
+		else:
+			self.fields=['log_rho', 'vel', 's']
 		self.movies=movies
 		self.out_fields=['rho', 'vel', 'temp', 'frho', 'be', 's']
 
@@ -153,12 +153,12 @@ class Grid:
 		self.length=n
 		self.start=0
 		self.end=n-1
-		self.time_derivs=np.zeros(n, dtype={'names':self.fields, 'formats':['float64', 'float64', 'float64']})
+		self.time_derivs=np.zeros(n, dtype={'names':['log_rho', 'vel', 's'], 'formats':['float64', 'float64', 'float64']})
 
 		#Initializing the grid using the initial value function f_initial
 		for i in range(len(self.radii)):
 			prims=f_initial(self.radii[i], **params)
-			self.grid.append(Zone(rad=self.radii[i], prims=prims, isot=True, gamma=gamma, mu=mu, vw=self.vw[i], phi=self.phi[i]))
+			self.grid.append(Zone(rad=self.radii[i], prims=prims, isot=self.isot, gamma=gamma, mu=mu, vw=self.vw[i], phi=self.phi[i]))
 
 		self._add_ghosts(num_ghosts=num_ghosts)
 		self.bdry_fixed=bdry_fixed
@@ -449,7 +449,8 @@ class Grid:
 		#return self.q(rad, **self.params_delta)*(0.5*self.vw**2+0.5*vel**2-self.gamma*cs**2/(self.gamma-1))/(rho*temp)-vel*ds_dr#+art_visc*lap_s
 		return self.q[i]*self.grid[i].sp_heating/(rho*temp)-vel*ds_dr#+art_visc*lap_s
 	#Switch off isothermal equation of state for all zones within our grid.
-	def _isot_off(self):
+	def isot_off(self):
+		self.fields=['log_rho', 'vel', 's']
 		for zone in self.grid:
 			zone.isot=False
 			zone.entropy()
@@ -460,15 +461,15 @@ class Grid:
 		self.time_cur=0
 		self.time_target=time
 		self._evolve(max_steps=max_steps)
-		self.time_cur=0
-		#Turning off the isothermal flag and restarting the evolution
-		if not self.isot:
-			print 'start non-isot'
-			self.saved=np.empty([0, self.length, len(self.out_fields)])
-			self._isot_off()
-			self.fields=['log_rho', 'vel', 's']
-			self.time_derivs=np.zeros(self.length, dtype={'names':self.fields, 'formats':['float64', 'float64', 'float64']})
-			self._evolve(max_steps=max_steps)
+		# self.time_cur=0
+		# #Turning off the isothermal flag and restarting the evolution
+		# if not self.isot:
+		# 	print 'start non-isot'
+		# 	self.saved=np.empty([0, self.length, len(self.out_fields)])
+		# 	self._isot_off()
+		# 	self.fields=['log_rho', 'vel', 's']
+		# 	self.time_derivs=np.zeros(self.length, dtype={'names':self.fields, 'formats':['float64', 'float64', 'float64']})
+		# 	self._evolve(max_steps=max_steps)
 		#Write solution movies and numerical parameters that were used to file.
 		self.write_sol()
 
