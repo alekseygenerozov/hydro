@@ -96,7 +96,7 @@ class Grid:
 	"""Class stores (static) grid for solving Euler equations numerically"""
 
 	def __init__(self, r1, r2, f_initial, M_bh, M_enc, q, n=100, num_ghosts=3, safety=0.6, Re=100., Re_s=100., params=dict(), params_delta=dict(),
-		floor=1.e-30, symbol='rs', logr=True, bdry_fixed=False, gamma=5./3., isot=False, tol=1.E-3,  movies=True, mu=1., vw=None):
+		floor=1.e-30, symbol='rs', logr=True, bdry_fixed=False, gamma=5./3., isot=False, tol=1.E-3,  movies=True, mu=1., vw=None, qpc=True):
 		assert r2>r1
 		assert n>2*num_ghosts
 
@@ -131,8 +131,11 @@ class Grid:
 		else:
 			self.radii=np.linspace(r1, r2, n)
 		#Setting up source terms and potential throughout the grid.  
-		self.q=np.array(map(q, self.radii/pc))/pc**3
-		print self.q
+		if qpc:
+			self.q=np.array(map(q, self.radii/pc))/pc**3
+		else:
+			self.q=np.array(map(q, self.radii))
+
 		self.M_enc=np.array(map(M_enc, self.radii/pc))
 
 		self.phi=-G*(self.M_enc+M_bh)/self.radii
