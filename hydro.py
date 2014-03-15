@@ -96,7 +96,7 @@ class Grid:
 	"""Class stores (static) grid for solving Euler equations numerically"""
 
 	def __init__(self, r1, r2, f_initial, M_bh, M_enc, q, n=100, num_ghosts=3, safety=0.6, Re=100., Re_s=100., params=dict(), params_delta=dict(),
-		floor=1.e-30, symbol='rs', logr=True, bdry_fixed=False, gamma=5./3., isot=False, tol=1.E-3,  movies=True, mu=1., vw=None, qpc=True):
+		floor=1.e-30, symbol='rs', logr=True, bdry_fixed=False, gamma=5./3., isot=False, tol=1.E-3,  movies=True, mu=1., vw=0., qpc=True):
 		assert r2>r1
 		assert n>2*num_ghosts
 
@@ -142,11 +142,7 @@ class Grid:
 		self.grad_phi=G*(self.M_enc+M_bh)/self.radii**2
 
 		rg=G*(M_bh)/c**2.
-		self.vw=np.empty_like(self.radii)
-		if vw:
-			self.vw.fill(vw)
-		else:
-			self.vw=c*((rg/self.radii)*(self.M_enc+M_bh)/M_bh)**0.5
+		self.vw=c*((rg/self.radii)*(self.M_enc+M_bh)/M_bh+vw**2)**0.5
 
 
 		#Attributes to store length of the list as well as start and end indices (useful for ghost zones)
@@ -251,6 +247,12 @@ class Grid:
 			pdiff=(flux-integral)*100./integral
 
 		return [frho1, frho2, flux, integral, pdiff]
+
+	#Resetting the wind velocity to a new value; useful to turn off heating by winds. 
+	def reset_vw(self, vw):
+		self.vw=c*((rg/self.radii)*(self.M_enc+M_bh)/M_bh+vw**2)**0.5
+		for zone in self.grid:
+			zone.vw=vw
 
 	#Adding ghost zones onto the edges of the grid (moving the start of the grid)
 	def _add_ghosts(self, num_ghosts=3):
