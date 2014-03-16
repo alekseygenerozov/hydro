@@ -136,13 +136,16 @@ class Grid:
 		else:
 			self.q=np.array(map(q, self.radii))
 
-		self.M_enc=np.array(map(M_enc, self.radii/pc))
+		#M_tot is an array storing the mass enclosed for all radii on the grid. 
+		self.M_bh=M_bh
+		self.M_tot=np.array(map(M_enc, self.radii/pc))+M_bh
 
-		self.phi=-G*(self.M_enc+M_bh)/self.radii
-		self.grad_phi=G*(self.M_enc+M_bh)/self.radii**2
-
+		self.phi=-G*(self.M_tot)/self.radii
+		self.grad_phi=G*(self.M_tot)/self.radii**2
 		rg=G*(M_bh)/c**2.
-		self.vw=c*((rg/self.radii)*(self.M_enc+M_bh)/M_bh+vw**2)**0.5
+		self.rg=rg
+		#Effective wind velocity--includes contributions from the. 
+		self.vw=c*((self.rg/self.radii)*(self.M_tot/self.M_bh)+(vw**2/c**2))**0.5
 
 
 		#Attributes to store length of the list as well as start and end indices (useful for ghost zones)
@@ -248,11 +251,6 @@ class Grid:
 
 		return [frho1, frho2, flux, integral, pdiff]
 
-	#Resetting the wind velocity to a new value; useful to turn off heating by winds. 
-	def reset_vw(self, vw):
-		self.vw=c*((rg/self.radii)*(self.M_enc+M_bh)/M_bh+vw**2)**0.5
-		for zone in self.grid:
-			zone.vw=vw
 
 	#Adding ghost zones onto the edges of the grid (moving the start of the grid)
 	def _add_ghosts(self, num_ghosts=3):
@@ -456,6 +454,12 @@ class Grid:
 		for zone in self.grid:
 			zone.isot=False
 			zone.entropy()
+
+	#Resetting the wind velocity to a new value; useful to turn off heating by winds. 
+	def reset_vw(self, vw):
+		self.vw=c*((self.rg/self.radii)*(self.M_tot/self.M_bh)+(vw**2/c**2))**0.5
+		for i in range(len(self.grid)):
+			self.grid[i].vw=self.vw[i]
 
 	#High-level controller for solution. Several possible stop conditions (max_steps is reached, time is reached, convergence is reached)
 	def solve(self, time, max_steps=np.inf):
