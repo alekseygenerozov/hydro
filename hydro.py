@@ -11,6 +11,8 @@ from math import e
 
 import subprocess
 import astropy.constants as const
+import progressbar as progress
+import sys
 
 #Constants
 G=const.G.cgs.value
@@ -503,10 +505,12 @@ class Grid:
 	#Lower level evolution method
 	def _evolve(self, max_steps=np.inf):
 		num_steps=0
+		pbar=progress.ProgressBar(maxval=self.time_target, fd=sys.stdout).start()
 		# self.epsilon=0
 		#While we have not yet reached the target time
 		while self.time_cur<self.time_target:
 			if num_steps%5==0:
+				pbar.update(self.time_cur)
 				self.save()
 				if len(self.saved)>2:
 					max_change=np.max(np.abs((self.saved[-1]-self.saved[-2])/self.saved[-2]))
@@ -514,7 +518,7 @@ class Grid:
 					# if max_change<self.tol:
 					# 	break
 				#np.savetxt(fout, self.saved[-1])
-				print self.total_time/self.time_target
+				#print self.total_time/self.time_target
 
 			#Take step and increment current time
 			self._step()
@@ -527,6 +531,8 @@ class Grid:
 			if num_steps>max_steps:
 				print "exceeded max number of allowed steps"
 				break
+		pbar.finish()
+		print
 
 	#Create movie of solution
 	def animate(self,  analytic_func=None, index=1):
@@ -542,6 +548,7 @@ class Grid:
 		ymax=np.max(self.saved[:,:,index])
 		fig,ax=plt.subplots()
 		label=ax.text(0.02, 0.95, '', transform=ax.transAxes)	
+                ax.set_xscale('log')
 		if index==0:
 			ax.set_yscale('log')
 		ax.set_ylim(ymin-0.1*np.abs(ymin), ymax+0.1*np.abs(ymax))
