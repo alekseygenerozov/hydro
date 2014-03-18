@@ -481,6 +481,20 @@ class Grid:
 		#Write solution movies and numerical parameters that were used to file.
 		self.write_sol()
 
+	#Gradually perturb a given parameter to go to the desired value. 
+	def solve_adjust(self, time, param, target, n=10, max_steps=max_steps):
+		self.time_cur=0.
+		param_cur=getattr(self, param)
+	
+		self.time_target=time/float(n)
+		delta_param=(target-params)/float(n)
+		while not np.allclose(params_cur, target):
+			self._evolve(max_steps=max_steps)
+			params_cur+=delta_param
+			setattr(self,param,param_cur)
+			
+
+
 	#Method to write solution info to file
 	def write_sol(self):
 		#Writing numerical params used in the current run to file
