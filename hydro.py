@@ -483,16 +483,16 @@ class Grid:
 
 	#Gradually perturb a given parameter to go to the desired value. 
 	def solve_adjust(self, time, param, target, n=10, max_steps=np.inf):
-		self.time_cur=0.
+		self.time_cur=0
 		param_cur=getattr(self, param)
 	
 		interval=time/float(n)
-		self.target_time=interval
-		delta_param=(target-params)/float(n)
-		while not np.allclose(params_cur, target):
+		self.time_target=interval
+		delta_param=(target-param_cur)/float(n)
+		while not np.allclose(param_cur, target):
 			self._evolve(max_steps=max_steps)
-			params_cur+=delta_param
-			target_time+=interval
+			param_cur+=delta_param
+			self.time_target+=interval
 			setattr(self,param,param_cur)
 			
 	#Method to write solution info to file
