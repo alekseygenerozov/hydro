@@ -449,10 +449,10 @@ class Grid:
 		cs=self.grid[i].cs
 		ds_dr=self.get_spatial_deriv(i, 's')
 		lap_s=self.get_laplacian(i, 's')
-		#art_visc=np.abs(self.grid[i].s)*(self.radii[self.end]-self.radii[self.start])*(self.delta[i]/np.mean(self.delta))/self.Re_s
+		art_visc=min(self.grid[i].cs,  np.abs(self.grid[i].vel))*(self.radii[self.end]-self.radii[self.start])*(self.delta[i]/np.mean(self.delta))/self.Re_s
 
 		#return self.q(rad, **self.params_delta)*(0.5*self.vw**2+0.5*vel**2-self.gamma*cs**2/(self.gamma-1))/(rho*temp)-vel*ds_dr#+art_visc*lap_s
-		return self.q[i]*self.grid[i].sp_heating/(rho*temp)-vel*ds_dr#+art_visc*lap_s
+		return self.q[i]*self.grid[i].sp_heating/(rho*temp)-vel*ds_dr+art_visc*lap_s
 	#Switch off isothermal equation of state for all zones within our grid.
 	def isot_off(self):
 		self.fields=['log_rho', 'vel', 's']
