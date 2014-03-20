@@ -71,9 +71,9 @@ class Zone:
 	def temperature(self):
 		self.temp=(np.exp(self.log_rho)*np.exp(self.mu*mp*self.s/kb))**(2./3.)
 
-	# #Calculate hearting in cell
-	# def get_sp_heating(self):
-	# 	return (0.5*self.vel**2+0.5*self.vw**2-(self.gamma)/(self.gamma-1)*(self.pres/self.rho))
+	#Calculate hearting in cell
+	def get_sp_heating(self):
+		return (0.5*self.vel**2+0.5*self.vw[0]**2-(self.gamma)/(self.gamma-1)*(self.pres/self.rho))
 
 	#Method which will be used to update non-primitive vars. 
 	def update_aux(self):
@@ -82,9 +82,8 @@ class Zone:
 		self.r2vel=self.rad**2*self.vel
 		self.frho=self.rad**2*self.vel*self.rho
 		self.be=self.bernoulli()
-		# self.sp_heating=self.get_sp_heating()
-		# self.Q=self.heating()
-		# self.visc=self.cs*self.vel
+		self.sp_heating=self.get_sp_heating()
+
 
 	#Finding the maximum transport speed across the zone
 	def alpha_max(self):
@@ -92,7 +91,7 @@ class Zone:
 
 	def bernoulli(self):
 		u=self.pres/(self.rho*(self.gamma-1.))
-		return 0.5*self.vel**2+(self.pres/self.rho)+u+self.phi
+		return 0.5*self.vel**2+(self.pres/self.rho)+u+self.phi[0]
 
 class Grid:
 	"""Class stores (static) grid for solving Euler equations numerically"""
@@ -190,6 +189,7 @@ class Grid:
 	#Calculate hearting in cell
 	def get_sp_heating(self, i):
 		return (0.5*self.grid[i].vel**2+0.5*self.vw[i]**2-(self.gamma)/(self.gamma-1)*(self.grid[i].pres/self.grid[i].rho))
+		
 
     #Check on entropy
 	def _s_check(self):
@@ -205,7 +205,7 @@ class Grid:
 			temp=self.grid[i].temp
 			cs=self.grid[i].cs
 			# q=self.q(self.radii[i], **self.params_delta)
-			heating=self.q[i]*self.get_sp_heating(i)
+			heating=self.q[i]*self.grid[i].sp_heating
 			integral+=heating*self.delta[i]/(rho*vel*temp)
 		with warnings.catch_warnings():
 			warnings.simplefilter("ignore")
@@ -227,7 +227,7 @@ class Grid:
 			temp=self.grid[i].temp
 			cs=self.grid[i].cs
 
-			heating=self.q[i]*self.get_sp_heating(i)
+			heating=self.q[i]*self.grid[i].sp_heating
 			integral+=-self.q[i]*vel*self.delta[i]/rho
 			integral+=heating*self.delta[i]/(rho*vel)
 		with warnings.catch_warnings():
@@ -452,7 +452,7 @@ class Grid:
 		#art_visc=np.abs(self.grid[i].s)*(self.radii[self.end]-self.radii[self.start])*(self.delta[i]/np.mean(self.delta))/self.Re_s
 
 		#return self.q(rad, **self.params_delta)*(0.5*self.vw**2+0.5*vel**2-self.gamma*cs**2/(self.gamma-1))/(rho*temp)-vel*ds_dr#+art_visc*lap_s
-		return self.q[i]*self.get_sp_heating(i)/(rho*temp)-vel*ds_dr#+art_visc*lap_s
+		return self.q[i]*self.grid[i].sp_heating/(rho*temp)-vel*ds_dr#+art_visc*lap_s
 	#Switch off isothermal equation of state for all zones within our grid.
 	def isot_off(self):
 		self.fields=['log_rho', 'vel', 's']
