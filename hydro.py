@@ -109,7 +109,7 @@ class Grid:
 		else:
 			self.fields=['log_rho', 'vel', 's']
 		self.movies=movies
-		self.out_fields=['rho', 'vel', 'temp', 'frho', 'be', 's']
+		self.out_fields=['rho', 'vel', 'temp', 'frho', 'be', 's', 'cs']
 
 		self.mu=mu
 		self.params=params
@@ -147,7 +147,9 @@ class Grid:
 		rg=G*(M_bh)/c**2.
 		self.rg=rg
 		#Effective wind velocity--includes contributions from the. 
-		self.vw=c*((self.rg/self.radii)*(self.M_tot/self.M_bh)+(vw**2/c**2))**0.5
+		#self.vw=c*((self.rg/self.radii)*(self.M_tot/self.M_bh)+(vw**2/c**2))**0.5
+		self.vw=np.empty_like(self.radii)
+		self.vw.fill(c*((vw**2/c**2))**0.5)
 
 
 		#Attributes to store length of the list as well as start and end indices (useful for ghost zones)
@@ -465,9 +467,10 @@ class Grid:
 
 	#High-level controller for solution. Several possible stop conditions (max_steps is reached, time is reached, convergence is reached)
 	def solve(self, time, max_steps=np.inf):
-		#Evolve isothermally
 		self.time_cur=0
 		self.time_target=time
+		#For purposes of easy backup
+		self.save_pt=len(self.saved)-1
 		self._evolve(max_steps=max_steps)
 		# self.time_cur=0
 		# #Turning off the isothermal flag and restarting the evolution
@@ -483,6 +486,7 @@ class Grid:
 
 	#Gradually perturb a given parameter to go to the desired value. 
 	def solve_adjust(self, time, param, target, n=10, max_steps=np.inf):
+		self.save_pt=len(self.saved)-1
 		self.time_cur=0
 		param_cur=getattr(self, param)
 	
@@ -494,6 +498,8 @@ class Grid:
 			param_cur+=delta_param
 			self.time_target+=interval
 			setattr(self,param,param_cur)
+		self.write_sol()
+
 			
 	#Method to write solution info to file
 	def write_sol(self):
@@ -548,6 +554,16 @@ class Grid:
 		pbar.finish()
 		print
 
+	#Reverts grid to earlier state. Previous solution
+	def revert(self):
+		for i in range(len(self.grid)):
+			self.grid[i].log_rho=np.log(self.saved[self.save_pt,i,0])
+			self.grid[i].vel=self.saved[self.save_pt,i,1]*self.saved[self.save_pt,i,-1]
+			self.grid[i].temp=self.saved[self.save_pt,i,2]
+			if not self.isot:
+				self.grid[i].entropy()
+			self.grid[i].update_aux()
+
 	#Create movie of solution
 	def animate(self,  analytic_func=None, index=1):
 		if analytic_func:
@@ -596,6 +612,7 @@ class Grid:
 	def clear_saved(self):
 		self.saved=np.empty([self.length, 4])
 		self.time_stamps=[]
+		self.save_pt=0
 
 	#Take a single step in time
 	def _step(self):
