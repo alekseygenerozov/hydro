@@ -108,7 +108,7 @@ class Grid:
 		else:
 			self.fields=['log_rho', 'vel', 's']
 		self.movies=movies
-		self.out_fields=['rho', 'vel', 'temp', 'frho', 'be', 's', 'cs']
+		self.out_fields=['rad', 'rho', 'vel', 'temp', 'frho', 'be', 's', 'cs']
 
 		self.mu=mu
 		self.params=params
@@ -146,9 +146,9 @@ class Grid:
 		rg=G*(M_bh)/c**2.
 		self.rg=rg
 		#Effective wind velocity--includes contributions from the. 
-		#self.vw=c*((self.rg/self.radii)*(self.M_tot/self.M_bh)+(vw**2/c**2))**0.5
-		self.vw=np.empty_like(self.radii)
-		self.vw.fill(c*((vw**2/c**2))**0.5)
+		self.vw=c*((self.rg/self.radii)*(self.M_tot/self.M_bh)+(vw**2/c**2))**0.5
+		# self.vw=np.empty_like(self.radii)
+		# self.vw.fill(c*((vw**2/c**2))**0.5)
 
 
 		#Attributes to store length of the list as well as start and end indices (useful for ghost zones)
@@ -521,6 +521,7 @@ class Grid:
 		check.write('mdot: frho1={0:8.7e} frho2={1:8.7e} flux={2:8.7e} mdot={3:8.7e} percent diff={4:8.7e}\n\n'.format(mdot_check[0], mdot_check[1], mdot_check[2], mdot_check[3], mdot_check[4]))
 		check.write('be: be1={0:8.7e} be2={1:8.7e} flux={2:8.7e} \int src={3:8.7e} percent diff={4:8.7e}\n\n'.format(be_check[0], be_check[1], be_check[2], be_check[3], be_check[4]))
 		check.write('s: s1={0:8.7e} s2={1:8.7e} flux={2:8.7e} \int src={3:8.7e} percent diff={4:8.7e}'.format(s_check[0], s_check[1], s_check[2], s_check[3], s_check[4]))
+		np.savez('save', a=self.saved, b=self.time_stamps)
 		plt.clf()
 
 	#Lower level evolution method
@@ -556,11 +557,13 @@ class Grid:
 		print
 
 	#Reverts grid to earlier state. Previous solution
-	def revert(self):
+	def revert(self, index=None):
+		if not index:
+			index=self.save_pt
 		for i in range(len(self.grid)):
-			self.grid[i].log_rho=np.log(self.saved[self.save_pt,i,0])
-			self.grid[i].vel=self.saved[self.save_pt,i,1]*self.saved[self.save_pt,i,-1]
-			self.grid[i].temp=self.saved[self.save_pt,i,2]
+			self.grid[i].log_rho=np.log(self.saved[index,i,1])
+			self.grid[i].vel=self.saved[index,i,2]*self.saved[index,i,-1]
+			self.grid[i].temp=self.saved[index,i,3]
 			if not self.isot:
 				self.grid[i].entropy()
 			self.grid[i].update_aux()
