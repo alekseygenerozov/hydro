@@ -141,8 +141,8 @@ class Grid:
 		self.M_bh=M_bh
 		self.M_tot=np.array(map(M_enc, self.radii/pc))+M_bh
 
-		self.phi=-G*(self.M_tot)/self.radii
-		self.grad_phi=G*(self.M_tot)/self.radii**2
+		self.phi=-G*(self.M_bh)/self.radii
+		self.grad_phi=G*(self.M_bh)/self.radii**2
 		rg=G*(M_bh)/c**2.
 		self.rg=rg
 		#Effective wind velocity--includes contributions from the. 
