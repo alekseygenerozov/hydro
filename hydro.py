@@ -84,8 +84,8 @@ class Zone:
 		self.frho=self.rad**2*self.vel*self.rho
 		self.be=self.bernoulli()
 		self.sp_heating=self.get_sp_heating()
-		self.src_rho=self.q[0]
-		self.src_v=-(self.q[0]*self.vel/self.rho)
+		self.src_rho=self.q[0]*self.rad**2
+		self.src_v=-(self.q[0]*self.vel/self.rho)+(self.q[0]*self.sp_heating/(self.rho*self.vel))
 		if self.isot:
 			self.src_s=0.
 		else:
@@ -456,7 +456,7 @@ class Grid:
 		#lap_vel=self.get_spatial_deriv(i, 'vel', 'second')
 		art_visc=min(self.grid[i].cs,  np.abs(self.grid[i].vel))*(self.radii[self.end]-self.radii[self.start])*(self.delta[i]/np.mean(self.delta))/self.Re
 		#art_visc=min(self.grid[i].cs,  np.abs(self.grid[i].vel))*(self.radii[self.end]-self.radii[0])*(self.delta[i]/np.mean(self.delta))/self.Re
-
+		#art_visc=min(self.grid[i].cs,  np.abs(self.grid[i].vel))*(self.radii[self.end]-self.radii[0])/self.Re
 		#Need to be able to handle for general potential in the future
 		return -vel*dv_dr-dlog_rho_dr*kb*temp/(self.mu*mp)-(kb/(self.mu*mp))*dtemp_dr-self.grad_phi[i]+art_visc*lap_vel-(self.q[i]*vel/rho)
 
