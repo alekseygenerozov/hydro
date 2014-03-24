@@ -104,7 +104,7 @@ class Grid:
 	"""Class stores (static) grid for solving Euler equations numerically"""
 
 	def __init__(self, r1, r2, f_initial, M_bh, M_enc, q, n=100, num_ghosts=3, safety=0.6, Re=100., Re_s=100., params=dict(), params_delta=dict(),
-		floor=1.e-30, symbol='rs', logr=True, bdry_fixed=False, gamma=5./3., isot=False, tol=1.E-3,  movies=True, mu=1., vw=0., qpc=True):
+		floor=1.e-30, symbol='rs', logr=True, bdry_fixed=False, gamma=5./3., isot=False, tol=1.E-3,  movies=True, mu=1., vw=0., qpc=True, veff=False):
 		assert r2>r1
 		assert n>2*num_ghosts
 
@@ -154,10 +154,13 @@ class Grid:
 		self.grad_phi=G*(self.M_bh)/self.radii**2
 		rg=G*(M_bh)/c**2.
 		self.rg=rg
-		#Effective wind velocity--includes contributions from the. 
-		self.vw=c*((self.rg/self.radii)*(self.M_tot/self.M_bh)+(vw**2/c**2))**0.5
-		# self.vw=np.empty_like(self.radii)
-		# self.vw.fill(c*((vw**2/c**2))**0.5)
+
+		self.vw=np.empty_like(self.radii)
+		#Include heating from the velocity dispersion
+		if veff:
+			self.vw=c*((self.rg/self.radii)*(self.M_tot/self.M_bh)+(vw**2/c**2))**0.5
+		else:
+			self.vw.fill(c*((vw**2/c**2))**0.5)
 
 
 		#Attributes to store length of the list as well as start and end indices (useful for ghost zones)
