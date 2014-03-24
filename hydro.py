@@ -36,7 +36,7 @@ class Zone:
 	cell.
 
 	"""
-	def __init__(self, vw=np.array(0), phi=np.array(0), rad=1.E16, prims=(0,0,0), isot=True, gamma=5./3., mu=1.):
+	def __init__(self, vw=np.array(0), phi=np.array(0), q=np.array(0), rad=1.E16, prims=(0,0,0), isot=True, gamma=5./3., mu=1.):
 		#Radius of grid zone 
 		self.rad=rad
 		self.mu=mu
@@ -45,6 +45,7 @@ class Zone:
 		self.log_rho=prims[0]
 		self.vel=prims[1]
 		self.temp=prims[2]
+		self.q=q
 		self.isot=isot
 		self.gamma=gamma
 		self.vw=vw
@@ -83,6 +84,12 @@ class Zone:
 		self.frho=self.rad**2*self.vel*self.rho
 		self.be=self.bernoulli()
 		self.sp_heating=self.get_sp_heating()
+		self.src_rho=self.q[0]
+		self.src_v=-(self.q[0]*self.vel/self.rho)
+		if self.isot:
+			self.src_s=0.
+		else:
+			self.src_s=self.q[0]*self.sp_heating/(self.rho*self.vel*self.temp)
 
 
 	#Finding the maximum transport speed across the zone
@@ -109,6 +116,8 @@ class Grid:
 			self.fields=['log_rho', 'vel', 's']
 		self.movies=movies
 		self.out_fields=['rad', 'rho', 'vel', 'temp', 'frho', 'be', 's', 'cs']
+		self.cons_fields=['frho', 'be', 's']
+		self.src_fields=['src_rho', 'src_v', 'src_s']
 
 		self.mu=mu
 		self.params=params
@@ -160,7 +169,7 @@ class Grid:
 		#Initializing the grid using the initial value function f_initial
 		for i in range(len(self.radii)):
 			prims=f_initial(self.radii[i], **params)
-			self.grid.append(Zone(vw=self.vw[i:i+1],  phi=self.phi[i:i+1], rad=self.radii[i], prims=prims, isot=self.isot, gamma=gamma, mu=mu))
+			self.grid.append(Zone(vw=self.vw[i:i+1], q=self.q[i:i+1],  phi=self.phi[i:i+1], rad=self.radii[i], prims=prims, isot=self.isot, gamma=gamma, mu=mu))
 
 		self._add_ghosts(num_ghosts=num_ghosts)
 		self.bdry_fixed=bdry_fixed
@@ -180,6 +189,8 @@ class Grid:
 		self.time_target=0
 
 		self.saved=np.empty([0, self.length, len(self.out_fields)])
+		self.fdiff=np.empty([0, self.length-1, 7])
+
 		self.max_change=[]
 		self.tol=tol
 		self.time_stamps=[]
@@ -190,6 +201,18 @@ class Grid:
 	def get_sp_heating(self, i):
 		return (0.5*self.grid[i].vel**2+0.5*self.vw[i]**2-(self.gamma)/(self.gamma-1)*(self.grid[i].pres/self.grid[i].rho))
 		
+	def _cons_update(self):
+		#differences in fluxes and source terms
+		fdiff=np.empty([7, self.length-1])
+		fdiff[0]=self.radii[1:]
+		for i in range(3):
+			flux=self.get_field(self.cons_fields[i])[1]
+			#get differences in fluxes for all of the cells.
+			fdiff[i+1]=np.diff(flux)
+			#get the source terms for all of the cells.
+			fdiff[i+4]=(self.get_field(self.src_fields[i])[1]*self.delta)[1:]
+			
+		self.fdiff=np.append(self.fdiff,[np.transpose(fdiff)],0)
 
     #Check on entropy
 	def _s_check(self):
@@ -286,7 +309,6 @@ class Grid:
 		for i in range(self.end+1, self.length):
 			self.grid[i].s=s_end
 
-
 	#Extrapolate densities to the ghost zones
 	def _dens_extrapolate(self):
 		r_start=self.grid[self.start].rad
@@ -333,7 +355,6 @@ class Grid:
 		assert i+right<self.length
 
 		return self.grid[i-left:i+right+1]
-
 
 	#Getting derivatives for a given field (density, velocity, etc.). If second is set to be true then the discretized 2nd
 	#deriv is evaluated instead of the first
@@ -522,6 +543,7 @@ class Grid:
 		check.write('be: be1={0:8.7e} be2={1:8.7e} flux={2:8.7e} \int src={3:8.7e} percent diff={4:8.7e}\n\n'.format(be_check[0], be_check[1], be_check[2], be_check[3], be_check[4]))
 		check.write('s: s1={0:8.7e} s2={1:8.7e} flux={2:8.7e} \int src={3:8.7e} percent diff={4:8.7e}'.format(s_check[0], s_check[1], s_check[2], s_check[3], s_check[4]))
 		np.savez('save', a=self.saved, b=self.time_stamps)
+		np.savez('cons', a=self.fdiff)
 		plt.clf()
 
 	#Lower level evolution method
@@ -534,6 +556,7 @@ class Grid:
 			if num_steps%5==0:
 				pbar.update(self.time_cur)
 				self.save()
+				self._cons_update()
 				if len(self.saved)>2:
 					max_change=np.max(np.abs((self.saved[-1]-self.saved[-2])/self.saved[-2]))
 					self.max_change.append(max_change)
