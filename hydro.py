@@ -198,6 +198,10 @@ class Grid:
 		self.tol=tol
 		self.time_stamps=[]
 		self.symbol=symbol
+		f=open('params', 'w')
+		f.write(str(vars(self)))
+		log=open('log', 'w')
+		log.close()
 
 
 	#Calculate hearting in cell
@@ -477,9 +481,11 @@ class Grid:
 
 		#return self.q(rad, **self.params_delta)*(0.5*self.vw**2+0.5*vel**2-self.gamma*cs**2/(self.gamma-1))/(rho*temp)-vel*ds_dr#+art_visc*lap_s
 		return self.q[i]*self.grid[i].sp_heating/(rho*temp)-vel*ds_dr+art_visc*lap_s
+
 	#Switch off isothermal equation of state for all zones within our grid.
 	def isot_off(self):
-		self.fields=['log_rho', 'vel', 's']
+		self.set_param('isot', False)
+		self.set_param('fields', ['log_rho', 'vel', 's'])
 		for zone in self.grid:
 			zone.isot=False
 			zone.entropy()
@@ -509,6 +515,13 @@ class Grid:
 		#Write solution movies and numerical parameters that were used to file.
 		self.write_sol()
 
+	def set_param(self, param, value):
+		log=open('log', 'a')
+		old=getattr(self, param)
+		setattr(self,param,value)
+		log.write(param+' old:'+str(old)+' new:'+str(value)+' time:'+str(self.total_time)+'\n')
+		log.close()
+
 	#Gradually perturb a given parameter to go to the desired value. 
 	def solve_adjust(self, time, param, target, n=10, max_steps=np.inf):
 		self.save_pt=len(self.saved)-1
@@ -522,7 +535,7 @@ class Grid:
 			self._evolve(max_steps=max_steps)
 			param_cur+=delta_param
 			self.time_target+=interval
-			setattr(self,param,param_cur)
+			self.set_param(param,param_cur)
 		self.write_sol()
 
 			
