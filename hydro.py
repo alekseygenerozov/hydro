@@ -104,10 +104,12 @@ class Grid:
 	"""Class stores (static) grid for solving Euler equations numerically"""
 
 	def __init__(self, r1, r2, f_initial, M_bh, M_enc, q, n=100, num_ghosts=3, safety=0.6, Re=100., Re_s=100., params=dict(), params_delta=dict(),
-		floor=1.e-30, symbol='rs', logr=True, bdry_fixed=False, gamma=5./3., isot=False, tol=1.E-3,  movies=True, mu=1., vw=0., qpc=True, veff=False):
+		floor=1.e-30, symbol='rs', logr=True, bdry_fixed=False, gamma=5./3., isot=False, tol=1.E-3,  movies=True, mu=1., vw=0., qpc=True, veff=False,
+		const_visc=False):
 		assert r2>r1
 		assert n>2*num_ghosts
 
+		self.const_visc=False
 		self.isot=isot
 		#self.fields=['log_rho', 'vel']
 		if self.isot:
@@ -458,7 +460,10 @@ class Grid:
 		dv_dr=self.get_spatial_deriv(i, 'vel')
 		lap_vel=self.get_laplacian(i, 'vel')
 		#lap_vel=self.get_spatial_deriv(i, 'vel', 'second')
-		art_visc=min(self.grid[i].cs,  np.abs(self.grid[i].vel))*(self.radii[self.end]-self.radii[self.start])*(self.delta[i]/np.mean(self.delta))/self.Re
+		art_visc=min(self.grid[i].cs,  np.abs(self.grid[i].vel))*(self.radii[self.end]-self.radii[self.start])/self.Re
+		#Have cell size dependent correction to the artificial viscosity.
+		if not self.const_visc:
+			art_visc*=(self.delta[i]/np.mean(self.delta))
 		#art_visc=min(self.grid[i].cs,  np.abs(self.grid[i].vel))*(self.radii[self.end]-self.radii[0])*(self.delta[i]/np.mean(self.delta))/self.Re
 		#art_visc=min(self.grid[i].cs,  np.abs(self.grid[i].vel))*(self.radii[self.end]-self.radii[0])/self.Re
 		#Need to be able to handle for general potential in the future
@@ -541,11 +546,6 @@ class Grid:
 			
 	#Method to write solution info to file
 	def write_sol(self):
-		#Writing numerical params used in the current run to file
-		fparams=file('params', 'w')
-		fparams.write('Re={0:8.7e} rin={1:8.7e} rout={2:8.7e} floor={3:8.7e} n={4} log={5}  q_params={6} init_params={7}'.format(self.Re, self.radii[0], 
-			self.radii[-1], self.floor, self.length, self.logr, self.params_delta, self.params))
-
 		#For all of the field we would like to output, output movie.
 		if self.movies:
 			for i in range(0, len(self.out_fields)):
