@@ -12,6 +12,7 @@ from math import e
 import subprocess
 import astropy.constants as const
 import progressbar as progress
+import ipyani
 import sys
 
 #Constants
@@ -105,7 +106,7 @@ class Grid:
 
 	def __init__(self, r1, r2, f_initial, M_bh, M_enc, q, n=100, num_ghosts=3, safety=0.6, Re=100., Re_s=100., params=dict(), params_delta=dict(),
 		floor=1.e-30, symbol='rs', logr=True, bdry_fixed=False, gamma=5./3., isot=False, tol=1.E-3,  movies=True, mu=1., vw=0., qpc=True, veff=False,
-		const_visc=False):
+		const_visc=False, outdir='./'):
 		assert r2>r1
 		assert n>2*num_ghosts
 
@@ -117,6 +118,7 @@ class Grid:
 		else:
 			self.fields=['log_rho', 'vel', 's']
 		self.movies=movies
+		self.outdir=outdir
 		self.out_fields=['rad', 'rho', 'vel', 'temp', 'frho', 'be', 's', 'cs']
 		self.cons_fields=['frho', 'be', 's']
 		self.src_fields=['src_rho', 'src_v', 'src_s']
@@ -547,9 +549,9 @@ class Grid:
 	#Method to write solution info to file
 	def write_sol(self):
 		#For all of the field we would like to output, output movie.
-		if self.movies:
-			for i in range(0, len(self.out_fields)):
-				self.animate(index=i)
+		# if self.movies:
+		# 	for i in range(0, len(self.out_fields)):
+		# 		self.animate(index=i)
 		#Writing solution
 		mdot_check=self._mdot_check()
 		be_check=self._bernoulli_check()
@@ -560,7 +562,10 @@ class Grid:
 		check.write('s: s1={0:8.7e} s2={1:8.7e} flux={2:8.7e} \int src={3:8.7e} percent diff={4:8.7e}'.format(s_check[0], s_check[1], s_check[2], s_check[3], s_check[4]))
 		np.savez('save', a=self.saved, b=self.time_stamps)
 		np.savez('cons', a=self.fdiff)
-		plt.clf()
+
+		bash_command('mkdir -p '+self.outdir)
+		bash_command('mv save.npz cons.npz check params log '+self.outdir)
+		#plt.clf()
 
 	#Lower level evolution method
 	def _evolve(self, max_steps=np.inf):
