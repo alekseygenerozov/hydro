@@ -109,6 +109,10 @@ class Grid:
 		const_visc=False, outdir='./'):
 		assert r2>r1
 		assert n>2*num_ghosts
+		#Attributes to store length of the list as well as start and end indices (useful for ghost zones)
+		self.length=n
+		self.start=0
+		self.end=n-1
 
 		self.const_visc=False
 		self.isot=isot
@@ -150,27 +154,13 @@ class Grid:
 		else:
 			self.q=np.array(map(q, self.radii))
 
-		#M_tot is an array storing the mass enclosed for all radii on the grid. 
-		self.M_bh=M_bh
-		self.M_tot=np.array(map(M_enc, self.radii/pc))+M_bh
+		self.vw=np.empty(self.length)
+		self.vw.fill(c*((vw**2/c**2))**0.5)
+		#Place mass onto the grid.
+		self.veff=veff
+		self.place_mass(M_bh, M_enc)
 
-		self.phi=-G*(self.M_bh)/self.radii
-		self.grad_phi=G*(self.M_bh)/self.radii**2
-		rg=G*(M_bh)/c**2.
-		self.rg=rg
-
-		self.vw=np.empty_like(self.radii)
-		#Include heating from the velocity dispersion
-		if veff:
-			self.vw=c*((self.rg/self.radii)*(self.M_tot/self.M_bh)+(vw**2/c**2))**0.5
-		else:
-			self.vw.fill(c*((vw**2/c**2))**0.5)
-
-
-		#Attributes to store length of the list as well as start and end indices (useful for ghost zones)
-		self.length=n
-		self.start=0
-		self.end=n-1
+		#Will store values of time derivatives at each time step
 		self.time_derivs=np.zeros(n, dtype={'names':['log_rho', 'vel', 's'], 'formats':['float64', 'float64', 'float64']})
 
 		#Initializing the grid using the initial value function f_initial
@@ -497,11 +487,25 @@ class Grid:
 			zone.isot=False
 			zone.entropy()
 
-	#Resetting the wind velocity to a new value; useful to turn off heating by winds. 
-	def reset_vw(self, vw):
-		self.vw=c*((self.rg/self.radii)*(self.M_tot/self.M_bh)+(vw**2/c**2))**0.5
-		for i in range(len(self.grid)):
-			self.grid[i].vw=self.vw[i]
+	#Set all mass dependent quantities
+	def place_mass(self, M_bh, M_enc):
+		self.M_bh=M_bh
+		self.M_enc=M_enc
+		self.M_enc_arr=np.array(map(M_enc, self.radii/pc))
+		self.M_tot=self.M_enc_arr+M_bh
+
+		self.phi=-G*(self.M_tot)/self.radii
+		self.grad_phi=G*(self.M_tot)/self.radii**2
+		self.rg=G*(M_bh)/c**2.
+		if self.veff:
+			self.vw=c*((self.rg/self.radii)*(self.M_tot/self.M_bh))**0.5
+
+
+	# #Resetting the wind velocity to a new value; useful to turn off heating by winds. 
+	# def reset_vw(self, vw):
+	# 	self.vw=c*((self.rg/self.radii)*(self.M_tot/self.M_bh)+(vw**2/c**2))**0.5
+	# 	for i in range(len(self.grid)):
+	# 		self.grid[i].vw=self.vw[i]
 
 	#High-level controller for solution. Several possible stop conditions (max_steps is reached, time is reached, convergence is reached)
 	def solve(self, time, max_steps=np.inf):
@@ -523,6 +527,9 @@ class Grid:
 		self.write_sol()
 
 	def set_param(self, param, value):
+		if param=='M_bh':
+			self.place_mass(value, self.M_enc)
+
 		log=open('log', 'a')
 		old=getattr(self, param)
 		setattr(self,param,value)
