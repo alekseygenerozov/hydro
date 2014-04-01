@@ -571,7 +571,7 @@ class Grid:
 		np.savez('cons', a=self.fdiff)
 
 		bash_command('mkdir -p '+self.outdir)
-		bash_command('mv save.npz cons.npz check params log '+self.outdir)
+		bash_command('cp save.npz cons.npz check params log '+self.outdir)
 		#plt.clf()
 
 	#Lower level evolution method
@@ -618,6 +618,7 @@ class Grid:
 			if not self.isot:
 				self.grid[i].entropy()
 			self.grid[i].update_aux()
+		self.saved=self.saved[:index]
 
 	#Create movie of solution
 	def animate(self,  analytic_func=None, index=1):
