@@ -106,7 +106,7 @@ class Grid:
 
 	def __init__(self, r1, r2, f_initial, M_bh, M_enc, q, n=100, num_ghosts=3, safety=0.6, Re=100., Re_s=100., params=dict(), params_delta=dict(),
 		floor=1.e-30, symbol='rs', logr=True, bdry_fixed=False, gamma=5./3., isot=False, tol=1.E-3,  movies=True, mu=1., vw=0., qpc=True, veff=False,
-		const_visc=False, outdir='./'):
+		const_visc=False, outdir='./', scale_heating=1.):
 		assert r2>r1
 		assert n>2*num_ghosts
 		#Attributes to store length of the list as well as start and end indices (useful for ghost zones)
@@ -158,6 +158,7 @@ class Grid:
 		self.vw.fill(c*((vw**2/c**2))**0.5)
 		#Place mass onto the grid.
 		self.veff=veff
+		self.scale_heating=scale_heating
 		self.place_mass(M_bh, M_enc)
 
 		#Will store values of time derivatives at each time step
@@ -498,7 +499,7 @@ class Grid:
 		self.grad_phi=G*(self.M_tot)/self.radii**2
 		self.rg=G*(M_bh)/c**2.
 		if self.veff:
-			self.vw=c*((self.rg/self.radii)*(self.M_tot/self.M_bh))**0.5
+			self.vw=self.scale_heating*c*((self.rg/self.radii)*(self.M_tot/self.M_bh))**0.5
 
 
 	# #Resetting the wind velocity to a new value; useful to turn off heating by winds. 
@@ -527,12 +528,14 @@ class Grid:
 		self.write_sol()
 
 	def set_param(self, param, value):
+		setattr(self,param,value)
 		if param=='M_bh':
 			self.place_mass(value, self.M_enc)
+		elif param==scale_heating and self.veff:
+			self.vw=self.scale_heating*c*((self.rg/self.radii)*(self.M_tot/self.M_bh))**0.5
 
 		log=open('log', 'a')
 		old=getattr(self, param)
-		setattr(self,param,value)
 		log.write(param+' old:'+str(old)+' new:'+str(value)+' time:'+str(self.total_time)+'\n')
 		log.close()
 
