@@ -619,6 +619,7 @@ class Grid:
 				self.grid[i].entropy()
 			self.grid[i].update_aux()
 		self.saved=self.saved[:index]
+		self.time_stamps=self.saved[:index]
 
 	#Create movie of solution
 	def animate(self,  analytic_func=None, index=1):
