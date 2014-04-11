@@ -1,6 +1,7 @@
 import numpy as np
 import copy
 import warnings
+import pickle
 from scipy import integrate
 
 import matplotlib as mpl
@@ -528,11 +529,19 @@ class Grid:
 		self.write_sol()
 
 	def set_param(self, param, value):
-		setattr(self,param,value)
+		tmp=getattr(self,param)
 		if param=='M_bh':
 			self.place_mass(value, self.M_enc)
-		elif param==scale_heating and self.veff:
-			self.vw=self.scale_heating*c*((self.rg/self.radii)*(self.M_tot/self.M_bh))**0.5
+		elif param=='scale_heating' and self.veff:
+			self.vw[:]=self.scale_heating*c*((self.rg/self.radii)*(self.M_tot/self.M_bh))**0.5
+			for i in range(self.length):
+				self.grid[i].vw=self.vw[i:i+1]
+		elif param=='vw':
+			self.vw[:]=value
+			for i in range(self.length):
+				self.grid[i].vw=self.vw[i:i+1]
+		else:
+			setattr(self,param,value)
 
 		log=open('log', 'a')
 		old=getattr(self, param)
@@ -576,6 +585,9 @@ class Grid:
 		bash_command('mkdir -p '+self.outdir)
 		bash_command('cp save.npz cons.npz check params log '+self.outdir)
 		#plt.clf()
+
+	def backup(self):
+		pickle.dump(self, open( self.outdir+'/grid.p', 'wb' ) )
 
 	#Lower level evolution method
 	def _evolve(self, max_steps=np.inf):
@@ -622,7 +634,7 @@ class Grid:
 				self.grid[i].entropy()
 			self.grid[i].update_aux()
 		self.saved=self.saved[:index]
-		self.time_stamps=self.saved[:index]
+		self.time_stamps=self.time_stamps[:index]
 
 	#Create movie of solution
 	def animate(self,  analytic_func=None, index=1):
