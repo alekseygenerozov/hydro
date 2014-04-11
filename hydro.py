@@ -516,20 +516,11 @@ class Grid:
 		#For purposes of easy backup
 		self.save_pt=len(self.saved)-1
 		self._evolve(max_steps=max_steps)
-		# self.time_cur=0
-		# #Turning off the isothermal flag and restarting the evolution
-		# if not self.isot:
-		# 	print 'start non-isot'
-		# 	self.saved=np.empty([0, self.length, len(self.out_fields)])
-		# 	self._isot_off()
-		# 	self.fields=['log_rho', 'vel', 's']
-		# 	self.time_derivs=np.zeros(self.length, dtype={'names':self.fields, 'formats':['float64', 'float64', 'float64']})
-		# 	self._evolve(max_steps=max_steps)
-		#Write solution movies and numerical parameters that were used to file.
+
 		self.write_sol()
 
 	def set_param(self, param, value):
-		tmp=getattr(self,param)
+		old=getattr(self,param)
 		if param=='M_bh':
 			self.place_mass(value, self.M_enc)
 		elif param=='scale_heating' and self.veff:
@@ -544,7 +535,7 @@ class Grid:
 			setattr(self,param,value)
 
 		log=open('log', 'a')
-		old=getattr(self, param)
+		new=getattr(self, param)
 		log.write(param+' old:'+str(old)+' new:'+str(value)+' time:'+str(self.total_time)+'\n')
 		log.close()
 
@@ -579,6 +570,8 @@ class Grid:
 		check.write('mdot: frho1={0:8.7e} frho2={1:8.7e} flux={2:8.7e} mdot={3:8.7e} percent diff={4:8.7e}\n\n'.format(mdot_check[0], mdot_check[1], mdot_check[2], mdot_check[3], mdot_check[4]))
 		check.write('be: be1={0:8.7e} be2={1:8.7e} flux={2:8.7e} \int src={3:8.7e} percent diff={4:8.7e}\n\n'.format(be_check[0], be_check[1], be_check[2], be_check[3], be_check[4]))
 		check.write('s: s1={0:8.7e} s2={1:8.7e} flux={2:8.7e} \int src={3:8.7e} percent diff={4:8.7e}'.format(s_check[0], s_check[1], s_check[2], s_check[3], s_check[4]))
+		check.close()
+
 		np.savez('save', a=self.saved, b=self.time_stamps)
 		np.savez('cons', a=self.fdiff)
 
@@ -587,19 +580,23 @@ class Grid:
 		#plt.clf()
 
 	def backup(self):
+		bash_command('mkdir -p '+self.outdir)
 		pickle.dump(self, open( self.outdir+'/grid.p', 'wb' ) )
 
 	#Lower level evolution method
 	def _evolve(self, max_steps=np.inf):
+		#Initialize the number of steps and the progress
 		num_steps=0
 		pbar=progress.ProgressBar(maxval=self.time_target, fd=sys.stdout).start()
-		# self.epsilon=0
+
 		#While we have not yet reached the target time
 		while self.time_cur<self.time_target:
 			if num_steps%5==0:
 				pbar.update(self.time_cur)
 				self.save()
 				self._cons_update()
+				#self._plot_sol()
+
 				if len(self.saved)>2:
 					max_change=np.max(np.abs((self.saved[-1]-self.saved[-2])/self.saved[-2]))
 					self.max_change.append(max_change)
@@ -610,8 +607,7 @@ class Grid:
 
 			#Take step and increment current time
 			self._step()
-			# if self.epsilon<1:
-			# 	self.epsilon+=0.01
+			#Increment the time and steps variables.
 			self.time_cur+=self.delta_t
 			self.total_time+=self.delta_t
 			num_steps+=1
@@ -686,6 +682,7 @@ class Grid:
 		self.saved=np.empty([self.length, 4])
 		self.time_stamps=[]
 		self.save_pt=0
+		self.total_time=0
 
 	#Take a single step in time
 	def _step(self):
