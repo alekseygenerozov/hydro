@@ -209,7 +209,8 @@ class Grid:
 	#Calculate hearting in cell
 	def get_sp_heating(self, i):
 		return (0.5*self.grid[i].vel**2+0.5*self.vw[i]**2-(self.gamma)/(self.gamma-1)*(self.grid[i].pres/self.grid[i].rho))
-		
+	
+	#Update array storing info on conserved quantities.
 	def _cons_update(self):
 		#differences in fluxes and source terms
 		fdiff=np.empty([7, self.length-1])
@@ -223,74 +224,25 @@ class Grid:
 			
 		self.fdiff=np.append(self.fdiff,[np.transpose(fdiff)],0)
 
-	# def _cons_check():
-	# 	for i in range(3):
-			
+	#Check how well conservation holds on grid as a whole.
+	def _cons_check(self):
+		check=file('check', 'w')
+		for i in range(3):
+			flux=4.*np.pi*self.get_field(self.cons_fields[i])[1]
+			fdiff=flux[self.end]-flux[self.start]
+			src=4.*np.pi*self.get_field(self.src_fields[i])[1]*self.delta
+			integral=np.sum(src[self.start:self.end+1])
+			with warnings.catch_warnings():
+				pdiff=(fdiff-integral)*100./integral
 
-    #Check on entropy
-	def _s_check(self):
-		s1=self.grid[self.start].s
-		s2=self.grid[self.end].s
-		flux=s2-s1
-		#Integating the momentum source term
-		integral=0.
-		#Go through the grid integrating the source terms 
-		for i in range(self.start, self.end):
-			vel=self.grid[i].vel
-			rho=self.grid[i].rho
-			temp=self.grid[i].temp
-			cs=self.grid[i].cs
-			# q=self.q(self.radii[i], **self.params_delta)
-			heating=self.q[i]*self.grid[i].sp_heating
-			integral+=heating*self.delta[i]/(rho*vel*temp)
-		with warnings.catch_warnings():
-			warnings.simplefilter("ignore")
-			pdiff=(flux-integral)*100./integral
-
-		return [s1, s2, flux, integral, pdiff]
-
-	#Check on bernoulli parameter
-	def _bernoulli_check(self):
-		be1=self.grid[self.start].bernoulli()
-		be2=self.grid[self.end].bernoulli()
-		flux=be2-be1
-		#Integating the momentum source term
-		integral=0.
-		#Go through the grid integrating the source terms 
-		for i in range(self.start, self.end):
-			vel=self.grid[i].vel
-			rho=self.grid[i].rho
-			temp=self.grid[i].temp
-			cs=self.grid[i].cs
-
-			heating=self.q[i]*self.grid[i].sp_heating
-			integral+=-self.q[i]*vel*self.delta[i]/rho
-			integral+=heating*self.delta[i]/(rho*vel)
-		with warnings.catch_warnings():
-			warnings.simplefilter("ignore")
-			pdiff=(flux-integral)*100./integral
-
-		return [be1, be2, flux, integral, pdiff]
-		# return [self.grid[self.start].bernoulli(),self.grid[self.end].bernoulli(), self._bernoulli_diff(),integral]
-
-	#Check difference in Mdot across the grid against the mass source term
-	def _mdot_check(self):
-		frho1=self.grid[self.start].frho
-		frho2=self.grid[self.end].frho
-		flux=4*np.pi*(frho2-frho1)
-		#Integarting the mass source term
-		# f=lambda r:4*np.pi*r**2*self.q(r, **self.params_delta)
-		# integral=integrate.quad(f, self.radii[self.start], self.radii[self.end])[0]
-		integral=0.
-		for i in range(self.start, self.end):
-			r=self.radii[i]
-			integral+=4*np.pi*r**2*self.q[i]*self.delta[i]
-		
-		with warnings.catch_warnings():
-			warnings.simplefilter("ignore")
-			pdiff=(flux-integral)*100./integral
-
-		return [frho1, frho2, flux, integral, pdiff]
+			check.write(self.cons_fields[i]+'\n')
+			pre=['flux1=','flux2=','diff=','src=','pdiff=']
+			vals=[flux[self.start],flux[self.end],fdiff,integral,pdiff]
+			for j in range(len(vals)):
+				check.write(pre[j])
+				s='{0:4.3e}'.format(vals[j])
+				check.write(s+'\n')
+			check.write('____________________________________\n\n')
 
 
 	#Adding ghost zones onto the edges of the grid (moving the start of the grid)
@@ -568,19 +520,7 @@ class Grid:
 			
 	#Method to write solution info to file
 	def write_sol(self):
-		#For all of the field we would like to output, output movie.
-		# if self.movies:
-		# 	for i in range(0, len(self.out_fields)):
-		# 		self.animate(index=i)
-		#Writing solution
-		mdot_check=self._mdot_check()
-		be_check=self._bernoulli_check()
-		s_check=self._s_check()
-		check=file('check', 'w')
-		check.write('mdot: frho1={0:8.7e} frho2={1:8.7e} flux={2:8.7e} mdot={3:8.7e} percent diff={4:8.7e}\n\n'.format(mdot_check[0], mdot_check[1], mdot_check[2], mdot_check[3], mdot_check[4]))
-		check.write('be: be1={0:8.7e} be2={1:8.7e} flux={2:8.7e} \int src={3:8.7e} percent diff={4:8.7e}\n\n'.format(be_check[0], be_check[1], be_check[2], be_check[3], be_check[4]))
-		check.write('s: s1={0:8.7e} s2={1:8.7e} flux={2:8.7e} \int src={3:8.7e} percent diff={4:8.7e}'.format(s_check[0], s_check[1], s_check[2], s_check[3], s_check[4]))
-		check.close()
+		self._cons_check()
 
 		np.savez('save', a=self.saved, b=self.time_stamps)
 		np.savez('cons', a=self.fdiff)
