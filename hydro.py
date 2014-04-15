@@ -107,7 +107,7 @@ class Grid:
 
 	def __init__(self, r1, r2, f_initial, M_bh, M_enc, q, n=100, num_ghosts=3, safety=0.6, Re=100., Re_s=100., params=dict(), params_delta=dict(),
 		floor=1.e-30, symbol='rs', logr=True, bdry_fixed=False, gamma=5./3., isot=False, tol=1.E-3,  movies=True, mu=1., vw=0., qpc=True, veff=False,
-		const_visc=False, outdir='./', scale_heating=1.):
+		const_visc=False, outdir='./', scale_heating=1., s_interval=100, eps=0.):
 		assert r2>r1
 		assert n>2*num_ghosts
 		#Attributes to store length of the list as well as start and end indices (useful for ghost zones)
@@ -127,6 +127,7 @@ class Grid:
 		self.out_fields=['rad', 'rho', 'vel', 'temp', 'frho', 'be', 's', 'cs']
 		self.cons_fields=['frho', 'be', 's']
 		self.src_fields=['src_rho', 'src_v', 'src_s']
+		self.s_interval=s_interval
 
 		self.mu=mu
 		self.params=params
@@ -160,6 +161,8 @@ class Grid:
 		#Place mass onto the grid.
 		self.veff=veff
 		self.scale_heating=scale_heating
+
+		self.eps=eps
 		self.place_mass(M_bh, M_enc)
 
 		#Will store values of time derivatives at each time step
@@ -496,8 +499,10 @@ class Grid:
 		self.M_enc_arr=np.array(map(M_enc, self.radii/pc))
 		self.M_tot=self.M_enc_arr+M_bh
 
-		self.phi=-G*(self.M_tot)/self.radii
-		self.grad_phi=G*(self.M_tot)/self.radii**2
+		self.phi=-G*(self.M_bh+self.eps*self.M_enc_arr)/self.radii
+		self.grad_phi=G*(self.M_bh+self.eps*self.M_enc_arr)/self.radii**2
+
+
 		self.rg=G*(M_bh)/c**2.
 		if self.veff:
 			self.vw=self.scale_heating*c*((self.rg/self.radii)*(self.M_tot/self.M_bh))**0.5
@@ -523,6 +528,9 @@ class Grid:
 		old=getattr(self,param)
 		if param=='M_bh':
 			self.place_mass(value, self.M_enc)
+		elif param=='eps':
+			self.eps=value
+			self.place_mass(self.M_bh, self.M_enc)
 		elif param=='scale_heating' and self.veff:
 			self.vw[:]=self.scale_heating*c*((self.rg/self.radii)*(self.M_tot/self.M_bh))**0.5
 			for i in range(self.length):
@@ -591,7 +599,7 @@ class Grid:
 
 		#While we have not yet reached the target time
 		while self.time_cur<self.time_target:
-			if num_steps%5==0:
+			if num_steps%self.s_interval==0:
 				pbar.update(self.time_cur)
 				self.save()
 				self._cons_update()
@@ -680,6 +688,7 @@ class Grid:
 	#Clear all of the info in the saved list
 	def clear_saved(self):
 		self.saved=np.empty([self.length, 4])
+		self.fdiff=np.empty([0, self.length-1, 7])
 		self.time_stamps=[]
 		self.save_pt=0
 		self.total_time=0
