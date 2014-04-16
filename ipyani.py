@@ -72,26 +72,35 @@ def animate(fname,  index=1, symbol='r', logx=True, logy=False, max_index=-1, ym
     return sol_ani
 
 
-def movie_save(loc, interval=50):
+def movie_save(loc, interval=10, ymin=[None, None, None, None, -1, None], ymax=[None, None, None, None, 2, None], logy=[True, True, True, True, False, True], times=None):
     #times=grid.time_stamps/parker.tcross(rmin*pc, rmax*pc, temp)
-    times=None
-    anic1=animate(loc+'/cons.npz', index=[1,4],
-                  symbol=['b', 'r'],  ymin=10.**17, ymax=2*10.**21, logy=True, times=times, interval=interval)
-    anic1.save(loc+'/mass_cons.mp4')
-    anic2=animate(loc+'/cons.npz', index=[2,5],
-                  symbol=['b', 'r'],  ymin=10.**13, ymax=10.**15, logy=True, times=times, interval=interval)
-    anic2.save(loc+'/be_cons.mp4')
-    anic3=animate(loc+'/cons.npz', index=[3,6],
-                  symbol=['b', 'r'],  ymin=1.e3, ymax=1.e9, logy=True, times=times, interval=interval)
-    anic3.save(loc+'/s_cons.mp4')
+    # times=None
+    files=['/mass_cons.mp4', '/be_cons.mp4', '/s_cons.mp4','/rho.mp4', '/vel.mp4', '/temp.mp4']
+    for i in range(3):
+        ani=animate(loc+'/cons.npz', index=[i+1, i+4], ymin=ymin[i], ymax=ymax[i], times=times, symbol=['b', 'r'], interval=interval, logy=logy[i])
+        ani.save(loc+files[i])
+    for i in range(3, 6):
+        ani=animate(loc+'/save.npz', index=i-2, ymin=ymin[i], ymax=ymax[i], times=times, symbol='b', interval=interval, logy=logy[i])
+        ani.save(loc+files[i])
+
+
+    # # anic1=animate(loc+'/cons.npz', index=[1,4],
+    # #               symbol=['b', 'r'],  ymin=ymin[0], ymax=ymax[0], logy=True, times=times, interval=interval)
+    # # anic1.save(loc+'/mass_cons.mp4')
+    # # anic2=animate(loc+'/cons.npz', index=[2,5],
+    # #               symbol=['b', 'r'],  ymin=, ymax=10.**15, logy=True, times=times, interval=interval)
+    # # anic2.save(loc+'/be_cons.mp4')
+    # # anic3=animate(loc+'/cons.npz', index=[3,6],
+    # #               symbol=['b', 'r'],  ymin=1.e3, ymax=1.e9, logy=True, times=times, interval=interval)
+    # # anic3.save(loc+'/s_cons.mp4')
     
-    ani1=animate(loc+'/save.npz', index=1,symbol='b', logy=True, times=times, 
-                 ymin=10.**-25, ymax=4*10.**-21, interval=interval)
-    ani1.save(loc+'/rho.mp4')
-    ani2=animate(loc+'/save.npz', index=2,symbol='b', logy=False, times=times, 
-                 ymin=-2, ymax=1, interval=interval)
-    ani2.save(loc+'/vel.mp4')
-    ani3=animate(loc+'/save.npz', index=3,symbol='b',  times=times, logy=True, 
-                 ymin=7*10.**6, ymax=10.**8, interval=interval)
-    ani3.save(grid.outdir+'/temp.mp4')
+    # ani1=animate(loc+'/save.npz', index=1,symbol='b', logy=True, times=times, 
+    #              ymin=10.**-25, ymax=4*10.**-21, interval=interval)
+    # ani1.save(loc+'/rho.mp4')
+    # ani2=animate(loc+'/save.npz', index=2,symbol='b', logy=False, times=times, 
+    #              ymin=-2, ymax=1, interval=interval)
+    # ani2.save(loc+'/vel.mp4')
+    # ani3=animate(loc+'/save.npz', index=3,symbol='b',  times=times, logy=True, 
+    #              ymin=7*10.**6, ymax=10.**8, interval=interval)
+    # ani3.save(grid.outdir+'/temp.mp4')
 
