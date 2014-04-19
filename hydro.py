@@ -87,11 +87,15 @@ class Zone:
 		self.be=self.bernoulli()
 		self.sp_heating=self.get_sp_heating()
 		self.src_rho=self.q[0]*self.rad**2
-		self.src_v=-(self.q[0]*self.vel/self.rho)+(self.q[0]*self.sp_heating/(self.rho*self.vel))
+		with warnings.catch_warnings():
+			warnings.simplefilter("ignore")
+			self.src_v=-(self.q[0]*self.vel/self.rho)+(self.q[0]*self.sp_heating/(self.rho*self.vel))
 		if self.isot:
 			self.src_s=0.
 		else:
-			self.src_s=self.q[0]*self.sp_heating/(self.rho*self.vel*self.temp)
+			with warnings.catch_warnings():
+				warnings.simplefilter("ignore")
+				self.src_s=self.q[0]*self.sp_heating/(self.rho*self.vel*self.temp)
 
 
 	#Finding the maximum transport speed across the zone
@@ -197,11 +201,16 @@ class Grid:
 		self.tol=tol
 		self.time_stamps=[]
 		self.symbol=symbol
-		f=open('params', 'w')
-		f.write(str(vars(self)))
-		log=open('log', 'w')
-		log.close()
 
+		bash_command('mkdir -p '+self.outdir)
+		f=open(self.outdir+'/params', 'w')
+		f.write(str(vars(self)))
+		log=open(self.outdir+'/log', 'w')
+		log.close()
+		save=open(self.outdir+'/save', 'w')
+		save.close()
+		times=open(self.outdir+'/times', 'w')
+		times.close()
 
 	#Calculate hearting in cell
 	def get_sp_heating(self, i):
@@ -493,16 +502,19 @@ class Grid:
 			zone.entropy()
 
 	#Set all mass dependent quantities
-	def place_mass(self, M_bh, M_enc):
+	def place_mass(self, M_bh, M_enc=None):
 		self.M_bh=M_bh
-		self.M_enc=M_enc
-		self.M_enc_arr=np.array(map(M_enc, self.radii/pc))
+		#self.M_enc=copy.deepcopy(M_enc)
+		if M_enc!=None:
+			self.M_enc_arr=np.array(map(M_enc, self.radii/pc))
+		else:
+			self.M_enc_arr=np.zeros(grid.length)
 		self.M_tot=self.M_enc_arr+M_bh
-
+		#Potential and potential gradient
 		self.phi=-G*(self.M_bh+self.eps*self.M_enc_arr)/self.radii
 		self.grad_phi=G*(self.M_bh+self.eps*self.M_enc_arr)/self.radii**2
 
-
+		#Gravitational radius
 		self.rg=G*(M_bh)/c**2.
 		if self.veff:
 			self.vw=self.scale_heating*c*((self.rg/self.radii)*(self.M_tot/self.M_bh))**0.5
@@ -518,8 +530,13 @@ class Grid:
 	def solve(self, time, max_steps=np.inf):
 		self.time_cur=0
 		self.time_target=time
+
 		#For purposes of easy backup
-		self.save_pt=len(self.saved)-1
+		if len(self.saved)==0:
+			self.save_pt=0
+		else:
+			self.save_pt=len(self.saved)-1
+
 		self._evolve(max_steps=max_steps)
 
 		self.write_sol()
@@ -527,7 +544,7 @@ class Grid:
 	def set_param(self, param, value):
 		old=getattr(self,param)
 		if param=='M_bh':
-			self.place_mass(value, self.M_enc)
+			self.place_mass(value)
 		elif param=='eps':
 			self.eps=value
 			self.place_mass(self.M_bh, self.M_enc)
@@ -549,7 +566,10 @@ class Grid:
 
 	#Gradually perturb a given parameter to go to the desired value. 
 	def solve_adjust(self, time, param, target, n=10, max_steps=np.inf):
-		self.save_pt=len(self.saved)-1
+		if len(self.saved==0):
+			self.save_pt=0
+		else:
+			self.save_pt=len(self.saved)-1
 		self.time_cur=0
 		param_cur=getattr(self, param)
 	
@@ -574,17 +594,18 @@ class Grid:
 		mdot_check=self._mdot_check()
 		be_check=self._bernoulli_check()
 		s_check=self._s_check()
-		check=file('check', 'w')
+		check=file(self.outdir+'/check', 'w')
 		check.write('mdot: frho1={0:8.7e} frho2={1:8.7e} flux={2:8.7e} mdot={3:8.7e} percent diff={4:8.7e}\n\n'.format(mdot_check[0], mdot_check[1], mdot_check[2], mdot_check[3], mdot_check[4]))
 		check.write('be: be1={0:8.7e} be2={1:8.7e} flux={2:8.7e} \int src={3:8.7e} percent diff={4:8.7e}\n\n'.format(be_check[0], be_check[1], be_check[2], be_check[3], be_check[4]))
 		check.write('s: s1={0:8.7e} s2={1:8.7e} flux={2:8.7e} \int src={3:8.7e} percent diff={4:8.7e}'.format(s_check[0], s_check[1], s_check[2], s_check[3], s_check[4]))
 		check.close()
 
-		np.savez('save', a=self.saved, b=self.time_stamps)
-		np.savez('cons', a=self.fdiff)
 
-		bash_command('mkdir -p '+self.outdir)
-		bash_command('cp save.npz cons.npz check params log '+self.outdir)
+		np.savez(self.outdir+'/save', a=self.saved, b=self.time_stamps)
+		np.savez(self.outdir+'/cons', a=self.fdiff)
+
+		# bash_command('mkdir -p '+self.outdir)
+		# bash_command('cp save.npz cons.npz check params log '+self.outdir)
 		#plt.clf()
 
 	def backup(self):
@@ -601,17 +622,16 @@ class Grid:
 		while self.time_cur<self.time_target:
 			if num_steps%self.s_interval==0:
 				pbar.update(self.time_cur)
-				self.save()
 				self._cons_update()
-				#self._plot_sol()
+				self.save()
 
-				if len(self.saved)>2:
-					max_change=np.max(np.abs((self.saved[-1]-self.saved[-2])/self.saved[-2]))
-					self.max_change.append(max_change)
-					# if max_change<self.tol:
-					# 	break
-				#np.savetxt(fout, self.saved[-1])
-				#print self.total_time/self.time_target
+				# if len(self.saved)>2:
+				# 	max_change=np.max(np.abs((self.saved[-1]-self.saved[-2])/self.saved[-2]))
+				# 	self.max_change.append(max_change)
+				# 	# if max_change<self.tol:
+				# 	# 	break
+				# #np.savetxt(fout, self.saved[-1])
+				# #print self.total_time/self.time_target
 
 			#Take step and increment current time
 			self._step()
@@ -628,7 +648,7 @@ class Grid:
 
 	#Reverts grid to earlier state. Previous solution
 	def revert(self, index=None):
-		if not index:
+		if index==None:
 			index=self.save_pt
 		for i in range(len(self.grid)):
 			self.grid[i].log_rho=np.log(self.saved[index,i,1])
@@ -639,6 +659,11 @@ class Grid:
 			self.grid[i].update_aux()
 		self.saved=self.saved[:index]
 		self.time_stamps=self.time_stamps[:index]
+		self.fdiff=self.fdiff[:index]
+		#Overwriting previous saved files
+		np.savetxt(self.outdir+'/save', self.saved.reshape((-1, len(self.out_fields))))
+		np.savetxt(self.outdir+'/cons', self.fdiff.reshape((-1, 7)))
+		np.savetxt(self.outdir+'/times',self.time_stamps)
 
 	#Create movie of solution
 	def animate(self,  analytic_func=None, index=1):
@@ -670,7 +695,6 @@ class Grid:
 		sol_ani.save('sol_'+self.out_fields[index]+'.mp4', dpi=100)
 		plt.clf()
 
-
 	#Save the state of the grid
 	def save(self):
 		#fields=['rho', 'vel', 'temp', 'frho']
@@ -684,10 +708,17 @@ class Grid:
 		#self.saved.append((self.total_time, np.transpose(grid_prims)))
 		self.saved=np.append(self.saved,[np.transpose(grid_prims)],0)
 		self.time_stamps.append(self.total_time)
+		#Dump to file
+		save_handle=file(self.outdir+'/save','a')
+		np.savetxt(save_handle, self.saved[-1])
+		cons_handle=file(self.outdir+'/cons','a')
+		np.savetxt(cons_handle, self.fdiff[-1])
+		t_handle=file(self.outdir+'/times', 'a')
+		np.savetxt(t_handle, [self.time_stamps[-1]])
 
 	#Clear all of the info in the saved list
 	def clear_saved(self):
-		self.saved=np.empty([self.length, 4])
+		self.saved=np.empty([0, self.length, len(self.out_fields)])
 		self.fdiff=np.empty([0, self.length-1, 7])
 		self.time_stamps=[]
 		self.save_pt=0
