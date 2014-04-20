@@ -109,11 +109,29 @@ class Zone:
 class Grid:
 	"""Class stores (static) grid for solving Euler equations numerically"""
 
-	def __init__(self, r1, r2, f_initial, M_bh, M_enc, q, n=100, num_ghosts=3, safety=0.6, Re=100., Re_s=100., params=dict(), params_delta=dict(),
-		floor=1.e-30, symbol='rs', logr=True, bdry_fixed=False, gamma=5./3., isot=False, tol=1.E-3,  movies=True, mu=1., vw=0., qpc=True, veff=False,
-		const_visc=False, outdir='./', scale_heating=1., s_interval=100, eps=0.):
-		assert r2>r1
+	def __init__(self, M_bh, M_enc, q, (r1, r2, f_initial)=(None, None, None), init_array=None,  n=100, num_ghosts=3, safety=0.6, Re=100., Re_s=100., params=dict(), params_delta=dict(),
+		floor=1.e-30, symbol='rs', logr=True, bdry_fixed=False, gamma=5./3., isot=False, tol=1.E-3,  movies=True, mu=1., vw=0., qpc=True, veff=False, const_visc=False, outdir='./', scale_heating=1.,
+		s_interval=100):
 		assert n>2*num_ghosts
+
+		#Initializing the radial grid
+		if r1:
+			assert r2>r1	
+			#Setting up the grid (either logarithmic or linear in r)
+			self.logr=logr
+			if logr:
+				self.radii=np.logspace(np.log(r1), np.log(r2), n, base=e)
+			else:
+				self.radii=np.linspace(r1, r2, n)
+			prims=np.zeros([100,3])
+			for i in range(len(self.radii)):
+				prims[i]=f_initial(self.radii[i], **params)
+		elif type(init_array)==np.ndarray:
+			self.radii=init_array[:,0]
+			prims=init_array[:,1:]
+		else:
+			raise Exception("Not enough initialization info entered!")
+
 		#Attributes to store length of the list as well as start and end indices (useful for ghost zones)
 		self.length=n
 		self.start=0
@@ -547,7 +565,7 @@ class Grid:
 			self.place_mass(value)
 		elif param=='eps':
 			self.eps=value
-			self.place_mass(self.M_bh, self.M_enc)
+			self.place_mass(self.M_bh)
 		elif param=='scale_heating' and self.veff:
 			self.vw[:]=self.scale_heating*c*((self.rg/self.radii)*(self.M_tot/self.M_bh))**0.5
 			for i in range(self.length):
