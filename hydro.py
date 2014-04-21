@@ -111,7 +111,7 @@ class Grid:
 
 	def __init__(self, M_bh, M_enc, q, (r1, r2, f_initial)=(None, None, None), init_array=None,  n=100, num_ghosts=3, safety=0.6, Re=100., Re_s=100., params=dict(), params_delta=dict(),
 		floor=1.e-30, symbol='rs', logr=True, bdry_fixed=False, gamma=5./3., isot=False, tol=1.E-3,  movies=True, mu=1., vw=0., qpc=True, veff=False, const_visc=False, outdir='./', scale_heating=1.,
-		s_interval=100):
+		s_interval=100, eps=0.):
 		assert n>2*num_ghosts
 
 		#Initializing the radial grid
@@ -159,7 +159,7 @@ class Grid:
 		self.gamma=gamma
 		#Grid will be stored as list of zones
 		self.grid=[]
-		delta=float(r2-r1)/n
+		#delta=float(r2-r1)/n
 		self.safety=safety
 		self.Re=Re
 		self.Re_s=Re_s
@@ -168,10 +168,6 @@ class Grid:
 
 		#Setting up the grid (either logarithmic or linear in r)
 		self.logr=logr
-		if logr:
-			self.radii=np.logspace(np.log(r1), np.log(r2), n, base=e)
-		else:
-			self.radii=np.linspace(r1, r2, n)
 		#Setting up source terms and potential throughout the grid.  
 		if qpc:
 			self.q=np.array(map(q, self.radii/pc))/pc**3
@@ -179,7 +175,8 @@ class Grid:
 			self.q=np.array(map(q, self.radii))
 
 		self.vw=np.empty(self.length)
-		self.vw.fill(c*((vw**2/c**2))**0.5)
+		self.vw[:]=vw
+		#self.vw.fill(c*((vw**2/c**2))**0.5)
 		#Place mass onto the grid.
 		self.veff=veff
 		self.scale_heating=scale_heating
@@ -192,8 +189,7 @@ class Grid:
 
 		#Initializing the grid using the initial value function f_initial
 		for i in range(len(self.radii)):
-			prims=f_initial(self.radii[i], **params)
-			self.grid.append(Zone(vw=self.vw[i:i+1], q=self.q[i:i+1],  phi=self.phi[i:i+1], rad=self.radii[i], prims=prims, isot=self.isot, gamma=gamma, mu=mu))
+			self.grid.append(Zone(vw=self.vw[i:i+1], q=self.q[i:i+1],  phi=self.phi[i:i+1], rad=self.radii[i], prims=prims[i], isot=self.isot, gamma=gamma, mu=mu))
 
 		self._add_ghosts(num_ghosts=num_ghosts)
 		self.bdry_fixed=bdry_fixed
@@ -526,7 +522,7 @@ class Grid:
 		if M_enc!=None:
 			self.M_enc_arr=np.array(map(M_enc, self.radii/pc))
 		else:
-			self.M_enc_arr=np.zeros(grid.length)
+			self.M_enc_arr=np.zeros(self.length)
 		self.M_tot=self.M_enc_arr+M_bh
 		#Potential and potential gradient
 		self.phi=-G*(self.M_bh+self.eps*self.M_enc_arr)/self.radii
@@ -561,11 +557,17 @@ class Grid:
 
 	def set_param(self, param, value):
 		old=getattr(self,param)
-		if param=='M_bh':
-			self.place_mass(value)
+		if param=='M_bh' or param=='M_enc_arr':
+			print 'Operation curretly not supported\n'
+			return
+			# self.M_bh=value
+			# self.M_tot
+			# self.phi=-G*(self.M_bh+self.eps*self.M_enc_arr)/self.radii
+			# self.grad_phi=G*(self.M_bh+self.eps*self.M_enc_arr)/self.radii**2
 		elif param=='eps':
 			self.eps=value
-			self.place_mass(self.M_bh)
+			self.phi=-G*(self.M_bh+self.eps*self.M_enc_arr)/self.radii
+			self.grad_phi=G*(self.M_bh+self.eps*self.M_enc_arr)/self.radii**2
 		elif param=='scale_heating' and self.veff:
 			self.vw[:]=self.scale_heating*c*((self.rg/self.radii)*(self.M_tot/self.M_bh))**0.5
 			for i in range(self.length):
