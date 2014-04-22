@@ -109,14 +109,18 @@ class Zone:
 class Grid:
 	"""Class stores (static) grid for solving Euler equations numerically"""
 
-	def __init__(self, M_bh, M_enc, q, (r1, r2, f_initial)=(None, None, None), init_array=None,  n=100, num_ghosts=3, safety=0.6, Re=100., Re_s=100., params=dict(), params_delta=dict(),
+	def __init__(self, M_bh, M_enc, q, init=None, init_array=None,  n=100, num_ghosts=3, safety=0.6, Re=100., Re_s=100., params=dict(), params_delta=dict(),
 		floor=1.e-30, symbol='rs', logr=True, bdry_fixed=False, gamma=5./3., isot=False, tol=1.E-3,  movies=True, mu=1., vw=0., qpc=True, veff=False, const_visc=False, outdir='./', scale_heating=1.,
 		s_interval=100, eps=0.):
 		assert n>2*num_ghosts
 
 		#Initializing the radial grid
-		if r1:
-			assert r2>r1	
+		if init!=None:
+			assert len(init)==3
+			r1,r2,f_initial=init[0],init[1],init[2]
+			assert r2>r1
+			assert hasattr(f_initial, '__call__')
+
 			#Setting up the grid (either logarithmic or linear in r)
 			self.logr=logr
 			if logr:
