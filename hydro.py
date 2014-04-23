@@ -130,16 +130,17 @@ class Grid:
 			prims=np.zeros([100,3])
 			for i in range(len(self.radii)):
 				prims[i]=f_initial(self.radii[i], **params)
+			self.length=n
 		elif type(init_array)==np.ndarray:
 			self.radii=init_array[:,0]
 			prims=init_array[:,1:]
+			self.length=len(self.radii)
 		else:
 			raise Exception("Not enough initialization info entered!")
 
 		#Attributes to store length of the list as well as start and end indices (useful for ghost zones)
-		self.length=n
 		self.start=0
-		self.end=n-1
+		self.end=self.length-1
 
 		self.const_visc=False
 		self.isot=isot
