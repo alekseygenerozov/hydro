@@ -584,7 +584,7 @@ class Grid:
 		else:
 			setattr(self,param,value)
 
-		log=open('log', 'a')
+		log=open(self.outdir+'/log', 'a')
 		new=getattr(self, param)
 		log.write(param+' old:'+str(old)+' new:'+str(value)+' time:'+str(self.total_time)+'\n')
 		log.close()
