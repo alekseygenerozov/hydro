@@ -390,6 +390,20 @@ class Grid:
 
 		return self.grid[i-left:i+right+1]
 
+	#Evaluate terms of the form div(kappa*df/dr)-->Diffusion like terms (useful for something like the conductivity)
+	def get_diffusion(self, i, coeff, field):
+		dkappa_dr=self.get_spatial_deriv(i, coeff)
+		dfield_dr=self.get_spatial_deriv(i, field)
+		d2field_dr2=self.get_spatial_deriv(i, field, second=True)
+
+		if hasattr(coeff, '__call__'):
+			kappa=coeff(self.grid[i])
+		else:	
+			kappa=getattr(self.grid[i], coeff)
+
+		return kappa*d2field_dr2+dkappa_dr*dfield_dr+(2./self.radii[i])*(kappa*dfield_dr)
+
+
 	#Getting derivatives for a given field (density, velocity, etc.). If second is set to be true then the discretized 2nd
 	#deriv is evaluated instead of the first
 	def get_spatial_deriv(self, i, field, second=False):
@@ -401,7 +415,10 @@ class Grid:
 		stencil=self._get_stencil(i, left=left, right=right)
 		field_list=np.zeros(num_zones)
 		for j in range(num_zones):
-			field_list[j]=getattr(stencil[j], field)
+			if hasattr(field, '__call__'):
+				field_list[j]=field(stencil[j])
+			else:	
+				field_list[j]=getattr(stencil[j], field)
 
 		#Coefficients we will use.
 		coeffs=np.array([-1., 9., -45., 0., 45., -9., 1.])/60.
