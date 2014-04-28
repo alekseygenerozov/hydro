@@ -111,7 +111,7 @@ class Grid:
 
 	def __init__(self, M_bh, M_enc, q, init=None, init_array=None,  n=100, num_ghosts=3, safety=0.6, Re=100., Re_s=100., params=dict(), params_delta=dict(),
 		floor=1.e-30, symbol='rs', logr=True, bdry_fixed=False, gamma=5./3., isot=False, tol=1.E-3,  movies=True, mu=1., vw=0., qpc=True, veff=False, const_visc=False, outdir='./', scale_heating=1.,
-		s_interval=100, eps=0.):
+		s_interval=100, eps=0., visc2=False):
 		assert n>2*num_ghosts
 
 		#Initializing the radial grid
@@ -166,6 +166,7 @@ class Grid:
 		self.grid=[]
 		#delta=float(r2-r1)/n
 		self.safety=safety
+		self.visc2=visc2
 		self.Re=Re
 		self.Re_s=Re_s
 
@@ -500,16 +501,22 @@ class Grid:
 		dlog_rho_dr=self.get_spatial_deriv(i, 'log_rho')
 		dtemp_dr=self.get_spatial_deriv(i, 'temp')
 		dv_dr=self.get_spatial_deriv(i, 'vel')
-		lap_vel=self.get_laplacian(i, 'vel')
-		#lap_vel=self.get_spatial_deriv(i, 'vel', 'second')
-		art_visc=min(self.grid[i].cs,  np.abs(self.grid[i].vel))*(self.radii[self.end]-self.radii[self.start])/self.Re
-		#Have cell size dependent correction to the artificial viscosity.
-		if not self.const_visc:
-			art_visc*=(self.delta[i]/np.mean(self.delta))
+		d2v_dr2=self.get_spatial_deriv(i, 'vel', second=True)
+		drho_dr=dlog_rho_dr*(rho)
+
+		if self.visc2:
+			art_visc=0.1*self.delta[i]**2*(drho_dr*(dv_dr)**3+3.*rho*(dv_dr)**2*(d2v_dr2))
+		else:
+			lap_vel=self.get_laplacian(i, 'vel')
+			#lap_vel=self.get_spatial_deriv(i, 'vel', 'second')
+			art_visc=min(self.grid[i].cs,  np.abs(self.grid[i].vel))*(self.radii[self.end]-self.radii[self.start])/self.Re
+			#Have cell size dependent correction to the artificial viscosity.
+			if not self.const_visc:
+				art_visc*=(self.delta[i]/np.mean(self.delta))
 		#art_visc=min(self.grid[i].cs,  np.abs(self.grid[i].vel))*(self.radii[self.end]-self.radii[0])*(self.delta[i]/np.mean(self.delta))/self.Re
 		#art_visc=min(self.grid[i].cs,  np.abs(self.grid[i].vel))*(self.radii[self.end]-self.radii[0])/self.Re
 		#Need to be able to handle for general potential in the future
-		return -vel*dv_dr-dlog_rho_dr*kb*temp/(self.mu*mp)-(kb/(self.mu*mp))*dtemp_dr-self.grad_phi[i]+art_visc*lap_vel-(self.q[i]*vel/rho)
+		return -vel*dv_dr-dlog_rho_dr*kb*temp/(self.mu*mp)-(kb/(self.mu*mp))*dtemp_dr-self.grad_phi[i]+art_visc-(self.q[i]*vel/rho)
 
 	#Evaluating the partial derivative of temperature with respect to time.
 	# def dtemp_dt(self, i):
