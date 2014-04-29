@@ -111,7 +111,7 @@ class Grid:
 
 	def __init__(self, M_bh, M_enc, q, init=None, init_array=None,  n=100, num_ghosts=3, safety=0.6, Re=100., Re_s=100., params=dict(), params_delta=dict(),
 		floor=1.e-30, symbol='rs', logr=True, bdry_fixed=False, gamma=5./3., isot=False, tol=1.E-3,  movies=True, mu=1., vw=0., qpc=True, veff=False, const_visc=False, outdir='./', scale_heating=1.,
-		s_interval=100, eps=0., visc2=False):
+		s_interval=100, eps=0., visc2=False, tinterval=-1):
 		assert n>2*num_ghosts
 
 		#Initializing the radial grid
@@ -141,6 +141,7 @@ class Grid:
 		#Attributes to store length of the list as well as start and end indices (useful for ghost zones)
 		self.start=0
 		self.end=self.length-1
+		self.tinterval=tinterval
 
 		self.const_visc=False
 		self.isot=isot
@@ -509,7 +510,7 @@ class Grid:
 		else:
 			lap_vel=self.get_laplacian(i, 'vel')
 			#lap_vel=self.get_spatial_deriv(i, 'vel', 'second')
-			art_visc=min(self.grid[i].cs,  np.abs(self.grid[i].vel))*(self.radii[self.end]-self.radii[self.start])/self.Re
+			art_visc=min(self.grid[i].cs,  np.abs(self.grid[i].vel))*(self.radii[self.end]-self.radii[self.start])*lap_vel/self.Re
 			#Have cell size dependent correction to the artificial viscosity.
 			if not self.const_visc:
 				art_visc*=(self.delta[i]/np.mean(self.delta))
@@ -666,13 +667,15 @@ class Grid:
 		#Initialize the number of steps and the progress
 		num_steps=0
 		pbar=progress.ProgressBar(maxval=self.time_target, fd=sys.stdout).start()
+		ninterval=0
 
 		#While we have not yet reached the target time
 		while self.time_cur<self.time_target:
-			if num_steps%self.s_interval==0:
+			if (self.tinterval>0 and (self.time_cur/self.tinterval)>=ninterval) or (self.tinterval<=0 and num_steps%self.s_interval==0):
 				pbar.update(self.time_cur)
 				self._cons_update()
 				self.save()
+				ninterval=ninterval+1
 
 				# if len(self.saved)>2:
 				# 	max_change=np.max(np.abs((self.saved[-1]-self.saved[-2])/self.saved[-2]))
