@@ -14,6 +14,7 @@ tcross=parker.tcross(rmin, rmax, 1.E7)
 grid2=pickle.load( open( "grid_backup.p", "rb" ) )
 vw=2.5E7
 
-grid2.set_param('Re_s', 1000.)
-grid2.solve_adjust(2.*tcross, 'vw', c*((grid2.rg/grid2.radii)*(grid2.M_tot/grid2.M_bh)+(vw/c)**2)**0.5)
-grid2.solve(4.*tcross)
+# grid2.set_param('Re_s', 500.)
+# grid2.solve_adjust(6.*tcross, 'vw', c*((grid2.rg/grid2.radii)*(grid2.M_tot/grid2.M_bh)+(vw/c)**2)**0.5)
+# grid2.backup()
+# grid2.solve_adjust(6.*tcross, 'eps', 1.)

@@ -30,6 +30,15 @@ def bash_command(cmd):
     process=subprocess.Popen(['/bin/bash', '-c',cmd],  stdin=subprocess.PIPE, stdout=subprocess.PIPE)
     return process.communicate()[0]
 
+##Preparing array with initialization file (idea is to go back from save file)
+def prepare_start(dat):
+	end_state=dat[-70:]
+	end_state[:,2]=end_state[:,2]*end_state[:,-1]
+	end_state[:,1]=np.log(end_state[:,1])
+	start=end_state[:,:4]
+
+	return start
+
 
 class Zone:
 	"""Class to store zones of (static) grid, to be used to solve
@@ -332,9 +341,16 @@ class Grid:
 
 	#Applying boundary conditions
 	def _update_ghosts(self):
-		self._s_adjust()
-		self._dens_extrapolate()
-		self._mdot_adjust()
+		self._extrapolate('rho')
+		self._extrapolate('vel')
+		self._extrapolate('s')
+		for i in range(0, self.start):
+			self.grid[i].update_aux()
+		for i in range(self.end+1, self.length):
+			self.grid[i].update_aux()
+		# self._s_adjust()
+		# self._dens_extrapolate()
+		# self._mdot_adjust()
 
 	#Constant entropy across the ghost zones
 	def _s_adjust(self):
@@ -346,29 +362,63 @@ class Grid:
 			self.grid[i].s=s_end
 
 	#Extrapolate densities to the ghost zones
-	def _dens_extrapolate(self):
-		r_start=self.grid[self.start].rad
-		log_rho_start=self.grid[self.start].log_rho
+	def _extrapolate(self, field):
+		r1=self.grid[self.start].rad
+		r2=self.grid[self.start+3].rad
+		field1=getattr(self.grid[self.start], field)
+		field2=getattr(self.grid[self.start+3], field)
+		slope=np.log(field2/field1)/np.log(r2/r1)
 
-		#If the inner bdry is fixed...(appropriate for Parker wind)
-		if self.bdry_fixed:
-			for i in range(1, self.start):
-				self.grid[i].log_rho=self._interp_zones(self.grid[i].rad, 0, self.start, 'log_rho')
-				self.grid[i].rho=np.exp(self.grid[i].log_rho)
-		#Updating the starting ghost zones, extrapolating using rho prop r^-3/2
-		else:
-			for i in range(0, self.start):
-				log_rho=-1.5*np.log(self.grid[i].rad/r_start)+log_rho_start
-				self.grid[i].log_rho=log_rho
-				self.grid[i].rho=np.exp(log_rho)
+		for i in range(0, self.start):
+			val=field1*np.exp(slope*np.log(self.grid[i].rad/r1))
+			setattr(self.grid[i], field, val)
+			if field=='rho':
+				self.grid[i].log_rho=np.log(val)
+			
 		#Updating the end ghost zones
-		r_end=self.grid[self.end].rad
-		log_rho_end=self.grid[self.end].log_rho
+		r1=self.grid[self.end].rad
+		r2=self.grid[self.end-3].rad
+		field1=getattr(self.grid[self.end], field)
+		field2=getattr(self.grid[self.end-3], field)
+		slope=np.log(field2/field1)/np.log(r2/r1)
+		
 		#Updating the end ghost zones, extrapolating using a power law density
 		for i in range(self.end+1, self.length):
-			log_rho=-2.*np.log(self.grid[i].rad/r_end)+log_rho_end
-			self.grid[i].log_rho=log_rho
-			self.grid[i].rho=np.exp(log_rho)
+			val=field1*np.exp(slope*np.log(self.grid[i].rad/r1))
+			setattr(self.grid[i], field, val)
+			if field=='rho':
+				self.grid[i].log_rho=np.log(val)
+
+		#Extrapolate densities to the ghost zones
+	# def _dens_extrapolate(self):
+	# 	r_start=self.grid[self.start].rad
+	# 	r_start2=self.grid[self.start+3].rad
+	# 	log_rho_start=self.grid[self.start].log_rho
+	# 	log_rho_start2=self.grid[self.start+3].log_rho
+
+	# 	#If the inner bdry is fixed...(appropriate for Parker wind)
+	# 	if self.bdry_fixed:
+	# 		for i in range(1, self.start):
+	# 			self.grid[i].log_rho=self._interp_zones(self.grid[i].rad, 0, self.start, 'log_rho')
+	# 			self.grid[i].rho=np.exp(self.grid[i].log_rho)
+	# 	#Updating the starting ghost zones, extrapolating using rho prop r^-3/2
+	# 	else:
+	# 		for i in range(0, self.start):
+	# 			slope=(log_rho_start2-log_rho_start)/np.log(r_start2/r_start)
+	# 			log_rho=slope*np.log(self.grid[i].rad/r_start)+log_rho_start
+	# 			self.grid[i].log_rho=log_rho
+	# 			self.grid[i].rho=np.exp(log_rho)
+	# 	#Updating the end ghost zones
+	# 	r_end=self.grid[self.end].rad
+	# 	log_rho_end=self.grid[self.end].log_rho
+	# 	r_end2=self.grid[self.end-3].rad
+	# 	log_rho_end2=self.grid[self.end-3].log_rho
+	# 	#Updating the end ghost zones, extrapolating using a power law density
+	# 	for i in range(self.end+1, self.length):
+	# 		slope=(log_rho_end-log_rho_end2)/np.log(r_end/r_end2)
+	# 		log_rho=slope*np.log(self.grid[i].rad/r_end)+log_rho_end
+	# 		self.grid[i].log_rho=log_rho
+	# 		self.grid[i].rho=np.exp(log_rho)
 
 	#Enforce constant mdot across the boundaries (bondary condition for velocity)
 	def _mdot_adjust(self):
@@ -614,7 +664,7 @@ class Grid:
 		log.write(param+' old:'+str(old)+' new:'+str(value)+' time:'+str(self.total_time)+'\n')
 		log.close()
 
-	#Gradually perturb a given parameter to go to the desired value. 
+	#Gradually perturb a given parameter (param) to go to the desired value (target). 
 	def solve_adjust(self, time, param, target, n=10, max_steps=np.inf):
 		if len(self.saved==0):
 			self.save_pt=0
