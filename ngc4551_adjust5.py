@@ -67,7 +67,7 @@ vw=np.array([  1.15125402e+08,   1.10303121e+08,   1.05706427e+08,
 outdir='/home/aleksey/Second_Year_Project/hydro/ngc4551_2/vw_crit/smooth_bdry3'
 params=dict(n=70, safety=0.6, Re=180.,  params=d,  floor=0.,
     logr=True, symbol='r', isot=False,  movies=False, qpc=True, params_delta=(), Re_s=500., vw=vw,
-    veff=False, scale_heating=1.,outdir=, eps=1., visc2=False, tinterval=0.05*tcross, outdir=oudir)
+    veff=False, scale_heating=1.,outdir=outdir, eps=1., visc2=False, tinterval=0.05*tcross)
 
 grid2=hydro.Grid(g1_2.params['M'], M_enc_simp, g1_2.q, init_array=start, **params)
 grid2.solve_adjust(2.*tcross, 'Re', 360.)
