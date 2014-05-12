@@ -119,8 +119,8 @@ class Grid:
 	"""Class stores (static) grid for solving Euler equations numerically"""
 
 	def __init__(self, M_bh, M_enc, q, init=None, init_array=None,  n=100, num_ghosts=3, safety=0.6, Re=100., Re_s=100., params=dict(), params_delta=dict(),
-		floor=1.e-30, symbol='rs', logr=True, bdry_fixed=False, gamma=5./3., isot=False, tol=1.E-3,  movies=True, mu=1., vw=0., qpc=True, veff=False, const_visc=False, outdir='./', scale_heating=1.,
-		s_interval=100, eps=0., visc2=False, tinterval=-1):
+		floor=1.e-30, symbol='rs', logr=True, bdry_fixed=False, gamma=5./3., isot=False, tol=1.E-3,  movies=True, mu=1., vw=0., qpc=True, veff=False, outdir='./', scale_heating=1.,
+		s_interval=100, eps=0.,  tinterval=-1, visc_scheme='default'):
 		assert n>2*num_ghosts
 
 		#Initializing the radial grid
@@ -152,7 +152,7 @@ class Grid:
 		self.end=self.length-1
 		self.tinterval=tinterval
 
-		self.const_visc=False
+		#self.const_visc=False
 		self.isot=isot
 		#self.fields=['log_rho', 'vel']
 		if self.isot:
@@ -176,7 +176,8 @@ class Grid:
 		self.grid=[]
 		#delta=float(r2-r1)/n
 		self.safety=safety
-		self.visc2=visc2
+
+		self.visc_scheme=visc_scheme
 		self.Re=Re
 		self.Re_s=Re_s
 
@@ -352,14 +353,14 @@ class Grid:
 		# self._dens_extrapolate()
 		# self._mdot_adjust()
 
-	#Constant entropy across the ghost zones
-	def _s_adjust(self):
-		s_start=self.grid[self.start].s
-		for i in range(0, self.start):
-			self.grid[i].s=s_start
-		s_end=self.grid[self.end].s
-		for i in range(self.end+1, self.length):
-			self.grid[i].s=s_end
+	# #Constant entropy across the ghost zones
+	# def _s_adjust(self):
+	# 	s_start=self.grid[self.start].s
+	# 	for i in range(0, self.start):
+	# 		self.grid[i].s=s_start
+	# 	s_end=self.grid[self.end].s
+	# 	for i in range(self.end+1, self.length):
+	# 		self.grid[i].s=s_end
 
 	#Extrapolate densities to the ghost zones
 	def _extrapolate(self, field):
@@ -555,18 +556,19 @@ class Grid:
 		d2v_dr2=self.get_spatial_deriv(i, 'vel', second=True)
 		drho_dr=dlog_rho_dr*(rho)
 
-		if self.visc2:
-			art_visc=0.1*self.delta[i]**2*(drho_dr*(dv_dr)**3+3.*rho*(dv_dr)**2*(d2v_dr2))
+		lap_vel=self.get_laplacian(i, 'vel')
+		art_visc=min(self.grid[i].cs,  np.abs(self.grid[i].vel))*(self.radii[self.end]-self.radii[self.start])*lap_vel/self.Re
+		if self.visc_scheme=='const_visc':
+			pass
+		elif self.visc_scheme=='cap_visc':
+			art_visc=art_visc*min(1., (self.delta[i]/np.mean(self.delta)))
 		else:
-			lap_vel=self.get_laplacian(i, 'vel')
-			#lap_vel=self.get_spatial_deriv(i, 'vel', 'second')
-			art_visc=min(self.grid[i].cs,  np.abs(self.grid[i].vel))*(self.radii[self.end]-self.radii[self.start])*lap_vel/self.Re
-			#Have cell size dependent correction to the artificial viscosity.
-			if not self.const_visc:
-				art_visc*=(self.delta[i]/np.mean(self.delta))
-		#art_visc=min(self.grid[i].cs,  np.abs(self.grid[i].vel))*(self.radii[self.end]-self.radii[0])*(self.delta[i]/np.mean(self.delta))/self.Re
-		#art_visc=min(self.grid[i].cs,  np.abs(self.grid[i].vel))*(self.radii[self.end]-self.radii[0])/self.Re
-		#Need to be able to handle for general potential in the future
+			art_visc=art_visc*(self.delta[i]/np.mean(self.delta))
+
+		# if self.visc2:
+		# 	art_visc=0.1*self.delta[i]**2*(drho_dr*(dv_dr)**3+3.*rho*(dv_dr)**2*(d2v_dr2))
+
+
 		return -vel*dv_dr-dlog_rho_dr*kb*temp/(self.mu*mp)-(kb/(self.mu*mp))*dtemp_dr-self.grad_phi[i]+art_visc-(self.q[i]*vel/rho)
 
 	#Evaluating the partial derivative of temperature with respect to time.
