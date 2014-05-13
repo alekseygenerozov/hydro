@@ -34,7 +34,7 @@ def M_enc_simp(r):
     return 4.76E39*(r/1.04)**(2-g1_2.params['gamma'])
 
 
-saved=np.load('/home/aleksey/Second_Year_Project/hydro/ngc4551_2/vw_crit/smooth_bdry5/save.npz')['a']
+saved=np.load('/home/aleksey/Second_Year_Project/hydro/ngc4551_2/vw_crit/smooth_bdry/save.npz')['a']
 # grid2=pickle.load( open( "grid_backup.p", "rb" ) )
 start=hydro.prepare_start(saved[-1])
 
@@ -64,13 +64,13 @@ vw=np.array([  1.15125402e+08,   1.10303121e+08,   1.05706427e+08,
          2.88583831e+07])
 
 
-outdir='/home/aleksey/Second_Year_Project/hydro/ngc4551_2/vw_crit/smooth_bdry6'
-params=dict(n=70, safety=0.6, Re=180.,  params=d,  floor=0.,
+outdir='/home/aleksey/Second_Year_Project/hydro/ngc4551_2/vw_crit/smooth_bdry8'
+params=dict(n=70, safety=0.6, Re=90.,  params=d,  floor=0.,
     logr=True, symbol='r', isot=False,  movies=False, qpc=True, params_delta=(), Re_s=500., vw=vw,
-    veff=False, scale_heating=1.,outdir=outdir, eps=1., tinterval=0.05*tcross, visc_scheme='cap_visc')
+    veff=False, scale_heating=1.,outdir=outdir, eps=1., tinterval=0.05*tcross)
 
 grid2=hydro.Grid(g1_2.params['M'], M_enc_simp, g1_2.q, init_array=start, **params)
-grid2.solve_adjust(6.*tcross, 'Re', 270.)
+grid2.solve(6.*tcross)
 grid2.backup()
 
 ipyani.movie_save(outdir, interval=1, ymin=[10.**18,-10.**13,10.**4, 10.**-24, -1., 10.**6], ymax=[10**22,10.**13,2*10.**7, 10.**-20, 2., 10.**8], logy=[True, False, True, True, False, True])
