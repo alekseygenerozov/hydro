@@ -68,7 +68,7 @@ def animate(fname,  index=1, symbol='r', logx=True, logy=False, max_index=-1, ym
         else:
             label.set_text(str(n))
     #Exporting animation
-    sol_ani=animation.FuncAnimation(fig,update_img,len(saved[:max_index,:,index])/interval,interval=interval, blit=True)
+    sol_ani=animation.FuncAnimation(fig,update_img,len(saved[:max_index,:,index])/interval,interval=50, blit=True)
     return sol_ani
 
 
