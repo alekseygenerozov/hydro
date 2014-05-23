@@ -366,7 +366,8 @@ class Grid:
 		#Updating the starting ghost zones, extrapolating using rho prop r^-3/2
 		else:
 			for i in range(0, self.start):
-				slope=(log_rho_start2-log_rho_start)/np.log(r_start2/r_start)
+				slope=-3./2.
+				#slope=(log_rho_start2-log_rho_start)/np.log(r_start2/r_start)
 				log_rho=slope*np.log(self.grid[i].rad/r_start)+log_rho_start
 				self.grid[i].log_rho=log_rho
 				self.grid[i].rho=np.exp(log_rho)
@@ -377,7 +378,8 @@ class Grid:
 		log_rho_end2=self.grid[self.end-3].log_rho
 		#Updating the end ghost zones, extrapolating using a power law density
 		for i in range(self.end+1, self.length):
-			slope=(log_rho_end-log_rho_end2)/np.log(r_end/r_end2)
+			slope=-2.
+			#slope=(log_rho_end-log_rho_end2)/np.log(r_end/r_end2)
 			log_rho=slope*np.log(self.grid[i].rad/r_end)+log_rho_end
 			self.grid[i].log_rho=log_rho
 			self.grid[i].rho=np.exp(log_rho)
