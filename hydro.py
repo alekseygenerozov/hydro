@@ -121,8 +121,8 @@ class Grid:
 	"""Class stores (static) grid for solving Euler equations numerically"""
 
 	def __init__(self, M_bh, M_enc, q, init=None, init_array=None,  n=100, num_ghosts=3, safety=0.6, Re=100., Re_s=100., params=dict(), params_delta=dict(),
-		floor=1.e-30, symbol='rs', logr=True, bdry_fixed=False, gamma=5./3., isot=False, tol=1.E-3,  movies=True, mu=1., vw=0., qpc=True, veff=False, outdir='./', scale_heating=1.,
-		s_interval=100, eps=0.,  tinterval=-1, visc_scheme='default'):
+		floor=1.e-30, symbol='rs', logr=True, gamma=5./3., isot=False, tol=1.E-3,  movies=True, mu=1., vw=0., qpc=True, veff=False, outdir='./', scale_heating=1.,
+		s_interval=100, eps=0.,  tinterval=-1, visc_scheme='default', bdry='default', bdry_fixed=False):
 		assert n>2*num_ghosts
 
 		#Initializing the radial grid
@@ -211,6 +211,8 @@ class Grid:
 			self.grid.append(Zone(vw=self.vw[i:i+1], q=self.q[i:i+1],  phi=self.phi[i:i+1], rad=self.radii[i], prims=prims[i], isot=self.isot, gamma=gamma, mu=mu))
 
 		self._add_ghosts(num_ghosts=num_ghosts)
+
+		self.bdry=bdry
 		self.bdry_fixed=bdry_fixed
 
 		#Computing differences between all of the grid elements 
@@ -299,25 +301,27 @@ class Grid:
 
 	#Applying boundary conditions
 	def _update_ghosts(self):
-		self._extrapolate('rho')
-		self._extrapolate('vel')
-		self._extrapolate('s')
+		if self.bdry=='bp':
+			self._s_adjust()
+			self._dens_extrapolate()
+			self._mdot_adjust()
+		else:
+			self._extrapolate('rho')
+			self._extrapolate('vel')
+			self._extrapolate('s')
 		for i in range(0, self.start):
 			self.grid[i].update_aux()
 		for i in range(self.end+1, self.length):
 			self.grid[i].update_aux()
-		# self._s_adjust()
-		# self._dens_extrapolate()
-		# self._mdot_adjust()
 
-	# #Constant entropy across the ghost zones
-	# def _s_adjust(self):
-	# 	s_start=self.grid[self.start].s
-	# 	for i in range(0, self.start):
-	# 		self.grid[i].s=s_start
-	# 	s_end=self.grid[self.end].s
-	# 	for i in range(self.end+1, self.length):
-	# 		self.grid[i].s=s_end
+	#Constant entropy across the ghost zones
+	def _s_adjust(self):
+		s_start=self.grid[self.start].s
+		for i in range(0, self.start):
+			self.grid[i].s=s_start
+		s_end=self.grid[self.end].s
+		for i in range(self.end+1, self.length):
+			self.grid[i].s=s_end
 
 	#Extrapolate densities to the ghost zones
 	def _extrapolate(self, field):
@@ -347,36 +351,36 @@ class Grid:
 			if field=='rho':
 				self.grid[i].log_rho=np.log(val)
 
-		#Extrapolate densities to the ghost zones
-	# def _dens_extrapolate(self):
-	# 	r_start=self.grid[self.start].rad
-	# 	r_start2=self.grid[self.start+3].rad
-	# 	log_rho_start=self.grid[self.start].log_rho
-	# 	log_rho_start2=self.grid[self.start+3].log_rho
+	#Extrapolate densities to the ghost zones
+	def _dens_extrapolate(self):
+		r_start=self.grid[self.start].rad
+		r_start2=self.grid[self.start+3].rad
+		log_rho_start=self.grid[self.start].log_rho
+		log_rho_start2=self.grid[self.start+3].log_rho
 
-	# 	#If the inner bdry is fixed...(appropriate for Parker wind)
-	# 	if self.bdry_fixed:
-	# 		for i in range(1, self.start):
-	# 			self.grid[i].log_rho=self._interp_zones(self.grid[i].rad, 0, self.start, 'log_rho')
-	# 			self.grid[i].rho=np.exp(self.grid[i].log_rho)
-	# 	#Updating the starting ghost zones, extrapolating using rho prop r^-3/2
-	# 	else:
-	# 		for i in range(0, self.start):
-	# 			slope=(log_rho_start2-log_rho_start)/np.log(r_start2/r_start)
-	# 			log_rho=slope*np.log(self.grid[i].rad/r_start)+log_rho_start
-	# 			self.grid[i].log_rho=log_rho
-	# 			self.grid[i].rho=np.exp(log_rho)
-	# 	#Updating the end ghost zones
-	# 	r_end=self.grid[self.end].rad
-	# 	log_rho_end=self.grid[self.end].log_rho
-	# 	r_end2=self.grid[self.end-3].rad
-	# 	log_rho_end2=self.grid[self.end-3].log_rho
-	# 	#Updating the end ghost zones, extrapolating using a power law density
-	# 	for i in range(self.end+1, self.length):
-	# 		slope=(log_rho_end-log_rho_end2)/np.log(r_end/r_end2)
-	# 		log_rho=slope*np.log(self.grid[i].rad/r_end)+log_rho_end
-	# 		self.grid[i].log_rho=log_rho
-	# 		self.grid[i].rho=np.exp(log_rho)
+		#If the inner bdry is fixed...(appropriate for Parker wind)
+		if self.bdry_fixed:
+			for i in range(1, self.start):
+				self.grid[i].log_rho=self._interp_zones(self.grid[i].rad, 0, self.start, 'log_rho')
+				self.grid[i].rho=np.exp(self.grid[i].log_rho)
+		#Updating the starting ghost zones, extrapolating using rho prop r^-3/2
+		else:
+			for i in range(0, self.start):
+				slope=(log_rho_start2-log_rho_start)/np.log(r_start2/r_start)
+				log_rho=slope*np.log(self.grid[i].rad/r_start)+log_rho_start
+				self.grid[i].log_rho=log_rho
+				self.grid[i].rho=np.exp(log_rho)
+		#Updating the end ghost zones
+		r_end=self.grid[self.end].rad
+		log_rho_end=self.grid[self.end].log_rho
+		r_end2=self.grid[self.end-3].rad
+		log_rho_end2=self.grid[self.end-3].log_rho
+		#Updating the end ghost zones, extrapolating using a power law density
+		for i in range(self.end+1, self.length):
+			slope=(log_rho_end-log_rho_end2)/np.log(r_end/r_end2)
+			log_rho=slope*np.log(self.grid[i].rad/r_end)+log_rho_end
+			self.grid[i].log_rho=log_rho
+			self.grid[i].rho=np.exp(log_rho)
 
 	#Enforce constant mdot across the boundaries (bondary condition for velocity)
 	def _mdot_adjust(self):
