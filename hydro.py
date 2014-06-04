@@ -120,7 +120,7 @@ class Zone:
 class Grid:
 	"""Class stores (static) grid for solving Euler equations numerically"""
 
-	def __init__(self, M_bh, M_enc, q, init=None, init_array=None,  n=100, num_ghosts=3, safety=0.6, Re=100., Re_s=100., params=dict(), params_delta=dict(),
+	def __init__(self, galaxy, init=None, init_array=None,  n=100, num_ghosts=3, safety=0.6, Re=100., Re_s=100., params=dict(), params_delta=dict(),
 		floor=1.e-30, symbol='rs', logr=True, gamma=5./3., isot=False, tol=1.E-3,  movies=True, mu=1., vw=0., qpc=True, veff=False, outdir='./', scale_heating=1.,
 		s_interval=100, eps=0.,  tinterval=-1, visc_scheme='default', bdry='default', bdry_fixed=False):
 		assert n>2*num_ghosts
@@ -189,9 +189,9 @@ class Grid:
 		self.logr=logr
 		#Setting up source terms and potential throughout the grid.  
 		if qpc:
-			self.q=np.array(map(q, self.radii/pc))/pc**3
+			self.q=np.array(map(galaxy.q, self.radii/pc))/pc**3
 		else:
-			self.q=np.array(map(q, self.radii))
+			self.q=np.array(map(galaxy.q, self.radii))
 
 		self.vw=np.empty(self.length)
 		self.vw[:]=vw
@@ -201,7 +201,7 @@ class Grid:
 		self.scale_heating=scale_heating
 
 		self.eps=eps
-		self.place_mass(M_bh, M_enc)
+		self.place_mass(galaxy)
 
 		#Will store values of time derivatives at each time step
 		self.time_derivs=np.zeros(n, dtype={'names':['log_rho', 'vel', 's'], 'formats':['float64', 'float64', 'float64']})
@@ -568,20 +568,19 @@ class Grid:
 			zone.entropy()
 
 	#Set all mass dependent quantities
-	def place_mass(self, M_bh, M_enc=None):
-		self.M_bh=M_bh
+	def place_mass(self, galaxy):
+		self.M_bh=galaxy.params['M']
 		#self.M_enc=copy.deepcopy(M_enc)
-		if M_enc!=None:
-			self.M_enc_arr=np.array(map(M_enc, self.radii/pc))
-		else:
-			self.M_enc_arr=np.zeros(self.length)
-		self.M_tot=self.M_enc_arr+M_bh
-		#Potential and potential gradient
-		self.phi=-G*(self.M_bh+self.eps*self.M_enc_arr)/self.radii
-		self.grad_phi=G*(self.M_bh+self.eps*self.M_enc_arr)/self.radii**2
+		self.M_enc_arr=np.array(map(galaxy.M_enc, self.radii/pc))
+
+		self.M_tot=self.M_enc_arr+self.M_bh
+		#Potential and potential gradient (Note that we have to be careful of the units here.)
+		self.phi=np.array(map(galaxy.phi, self.radii/pc))/pc
+		#self.phi=-G*(self.M_bh+self.eps*self.M_enc_arr)/self.radii
+		self.grad_phi=G*(self.M_bh+self.M_enc_arr)/self.radii**2
 
 		#Gravitational radius
-		self.rg=G*(M_bh)/c**2.
+		self.rg=G*(self.M_bh)/c**2.
 		if self.veff:
 			self.vw=self.scale_heating*c*((self.rg/self.radii)*(self.M_tot/self.M_bh))**0.5
 
@@ -616,10 +615,10 @@ class Grid:
 			# self.M_tot
 			# self.phi=-G*(self.M_bh+self.eps*self.M_enc_arr)/self.radii
 			# self.grad_phi=G*(self.M_bh+self.eps*self.M_enc_arr)/self.radii**2
-		elif param=='eps':
-			self.eps=value
-			self.phi=-G*(self.M_bh+self.eps*self.M_enc_arr)/self.radii
-			self.grad_phi=G*(self.M_bh+self.eps*self.M_enc_arr)/self.radii**2
+		# elif param=='eps':
+		# 	self.eps=value
+		# 	self.phi=-G*(self.M_bh+self.eps*self.M_enc_arr)/self.radii
+		# 	self.grad_phi=G*(self.M_bh+self.eps*self.M_enc_arr)/self.radii**2
 		elif param=='scale_heating' and self.veff:
 			self.vw[:]=self.scale_heating*c*((self.rg/self.radii)*(self.M_tot/self.M_bh))**0.5
 			for i in range(self.length):
