@@ -58,26 +58,29 @@ def nuker_params():
 
 class Galaxy:
     """Class to store info about Nuker galaxies"""
-    def __init__(self, gname, gdata, eta=0.1, cgs=True):
+    def __init__(self, gname, gdata, eta=0.1, cgs=False, menc='default'):
         self.params=gdata[gname]
         self.eta=eta
-        self.cgs=cgs
+        # self.grams=grams
 
         self.rho=self.get_rho()
-        self.M_enc_circ=self.get_M_enc_circ()
-        self.M_enc=self.get_M_enc()
+
+        if menc=='circ':
+            self.M_enc=self.get_M_enc_circ()
+        elif menc=='full':
+            self.M_enc=self.get_M_enc()
+        else:
+            self.M_enc=self.get_M_enc_simp()
         self.q=self.get_q()
-        self.rinf=self.get_rinf()
+        self.phi=self.get_phi()
+        # self.rinf=self.get_rinf()
 
 
     ##Construct stellar density profile based on surface brightness profile
     def get_rho(self):
         def rho(r):
             rho1=M_sun*self.params['Uv']*inverse_abel(nuker_prime, r, **self.params)
-            # if self.cgs:
-            #     rho1=M_sun*rho1/pc**3
             return rho1
-
         return rho
 
     ##Construct the mass enclosed profile based on 
@@ -85,6 +88,13 @@ class Galaxy:
         def M_enc(r):
             f=lambda r1: 4.*np.pi*r1**2.*self.rho(r1)
             return integrate.quad(f, 0, r)[0]
+        return M_enc
+
+    ##Get simplified expression for the mass encloed in a particular radius 
+    def get_M_enc_simp(self):
+        M_enc0=(self.get_M_enc())(1.)
+        def M_enc(r):
+            return M_enc0*r**(2-self.params['gamma'])
         return M_enc
 
     def get_M_enc_circ(self):
@@ -102,47 +112,30 @@ class Galaxy:
     ##Getting the radius of influence: where the enclosed mass begins to equal the mass of the central BH. 
     def get_rinf(self):
         def mdiff(r):
-            return self.params['M']-self.M_enc_circ(r)
+            return self.params['M']-self.M_enc(r)
 
         return fsolve(mdiff, 1)[0]
 
-# ##Getting the potential from the Nuker params
-# def get_M_enc(params=dict(Ib=17.16, alpha=1.26, beta=1.75, rb=343.3, gamma=0, Uv=7., M=1.e6)):
-#     rho=get_rho(params)
-#     def M_enc(r):
-#         f=lambda r1: 4.*np.pi*r1**2.*rho(r1)
-#         return integrate.quad(f, 0, r)[0]
-
-#     return M_enc
-
-# ##Getting the potential from the Nuker params
-# def get_grad_phi(params=dict(Ib=17.16, alpha=1.26, beta=1.75, rb=343.3, gamma=0, Uv=7., M=1.e6)):
-#     rho=get_rho(params)
-#     def grad_phi(r):
-#         grad_phi_bh=-G*params['M']/r**2
-#         f=lambda r1: 4.*np.pi*r1**2.*rho(r1)
-#         menc=integrate.quad(f, 0, r)[0]
-#         grad_phi_s=-G*menc/r**2
-
-#         return grad_phi_s+grad_phi_bh
-
-#     return grad_phi
-
-# ##Getting mass source term from the Nuker params
-# def get_q(eta, params=dict(Ib=17.16, alpha=1.26, beta=1.75, rb=343.3, gamma=0, Uv=7., M=1.e6)):
-#     def q(r):
-#         rho=get_rho(params)
-#         return eta*rho/th
+    ##Get potential
+    def get_phi(self):
+        def phi(r):
+            phi_bh=-G*self.params['M']/r
+            phi_1=-G*self.M_enc(r)/r
+            f=lambda r: self.rho(r)*r
+            phi_2=-4.*np.pi*G*integrate.quad(f, r, 10.*self.params['rb'])[0]
+            return phi_bh+phi_1+phi_2
+        return phi
 
 
 def main():    
     galaxies=nuker_params()
 
     rad=np.logspace(0,3,100)   
-    g1=Galaxy('NGC4551', galaxies, cgs=False)
-    g2=Galaxy('NGC4168', galaxies, cgs=False)
-    rho=map(g1.rho,rad)
-    rho2=map(g2.rho, rad)
+    g1=Galaxy('NGC4551', galaxies, grams=False)
+    g2=Galaxy('NGC4168', galaxies, grams=False)
+    rho=np.array(map(g1.rho,rad))/M_sun
+    rho2=np.array(map(g2.rho, rad))/M_sun
+
     rho_nick=np.genfromtxt('NGC4551_nick')
     rho2_nick=np.genfromtxt('NGC4168_nick')
 

@@ -99,13 +99,13 @@ def be_check(loc, menc=True, index=-1, vw=1.E8, beta=1.8, sigma=False):
     plt.loglog()
     ax.plot(saved2[index,:,0], saved2[index,:,-3])
     ax.plot(saved2[index,:,0], bes)
-    fig.savefig(loc+'/be_cons.png')
+    fig.savefig(loc+'/be_cons_'+loc+'.png')
     fig.clf()
 
     fig,ax=plt.subplots()
     plt.loglog()
     ax.plot(saved2[index,:,0], abs((saved2[index,:,-3]-bes)/bes))
-    fig.savefig(loc+'/be_cons2.png')
+    fig.savefig(loc+'/be_cons2_'+loc+'.png')
 
 
 
