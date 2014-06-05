@@ -16,6 +16,7 @@ kb=const.k_B.cgs.value
 mp=const.m_p.cgs.value
 h=const.h.cgs.value
 pc=const.pc.cgs.value
+c=const.c.cgs.value
 #Hubble time
 th=4.35*10**17
 #params=dict(Ib=17.16, alpha=1.26, beta=1.75, rb=343.3, gamma=0, Uv=7.)
@@ -73,6 +74,7 @@ class Galaxy:
             self.M_enc=self.get_M_enc_simp()
         self.q=self.get_q()
         self.phi=self.get_phi()
+        self.sigma=self.get_sigma()
         # self.rinf=self.get_rinf()
 
 
@@ -116,7 +118,7 @@ class Galaxy:
 
         return fsolve(mdiff, 1)[0]
 
-    ##Get potential
+    ##Get potential. Needs more thorough checking. Integral truncated at 10 times the break radius instead of at infinity.
     def get_phi(self):
         def phi(r):
             phi_bh=-G*self.params['M']/r
@@ -125,6 +127,13 @@ class Galaxy:
             phi_2=-4.*np.pi*G*integrate.quad(f, r, 10.*self.params['rb'])[0]
             return phi_bh+phi_1+phi_2
         return phi
+
+    ##Get the velocity dispersion as a function of r
+    def get_sigma(self):
+        def sigma(r):
+            rg=G*self.params['M']/c**2/pc
+            return (c**2*rg/r*(self.M_enc(r)+self.params['M'])/self.params['M'])**0.5
+        return sigma
 
 
 def main():    

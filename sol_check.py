@@ -58,16 +58,20 @@ def sol_check(loc, index=2, size=70):
     plt.show()
     
 #Check solution as code is running
-def cons_check(loc, index=2, logy=False):
+def cons_check(loc, index=2, logy=False, ylim=None):
     saved=np.genfromtxt(loc+'/cons')
     fig,ax=plt.subplots()
     ax.set_xscale('log')
     if logy:
         ax.set_yscale('log')
+    if ylim:
+        ax.set_ylim(ylim)
     
     plt.plot(saved[-69:,0], saved[-69:,index])
     plt.plot(saved[-69:,0], saved[-69:,index+3])
-    plt.show()    
+
+    return fig
+    #plt.show()    
 
 #Analytic expression for Bernoulli parameter.
 def be(r, M_bh=10.**7.11*M_sun, M_enc0=7.95E6*M_sun, r_s=5.E17, vw=1.E8, beta=1.8, sigma=False):
