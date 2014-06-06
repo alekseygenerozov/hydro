@@ -25,6 +25,8 @@ h=const.h.cgs.value
 c=const.c.cgs.value
 pc=const.pc.cgs.value
 
+
+
 ##Run a command from the bash shell
 def bash_command(cmd):
     process=subprocess.Popen(['/bin/bash', '-c',cmd],  stdin=subprocess.PIPE, stdout=subprocess.PIPE)
@@ -36,12 +38,8 @@ def prepare_start(end_state, rescale=1):
 	end_state[:,2]=end_state[:,2]*end_state[:,-1]
 	end_state[:,1]=np.log(end_state[:,1])
 	start=end_state[:,:4]
-	#rescale radii. 1.36x10^17 is fiduciall inner radius for ngc4551 w/ 10^7.11 M_sun BH.
-	rescale1=(start[0,0])/(1.36E17)
-	start[:,0]=start[:,0]*rescale1
 	#rescaling radial grid. This will be useful for going from one mass black hole to another. 
-	start[:,0]*rescale
-
+	start[:,0]=start[:,0]*rescale
 
 	return start
 

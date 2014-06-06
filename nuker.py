@@ -73,8 +73,8 @@ class Galaxy:
 
         if menc=='circ':
             self.M_enc=self.get_M_enc_circ()
-        elif menc=='full':
-            self.M_enc=self.get_M_enc()
+        # elif menc=='full':
+        #     self.M_enc=self.get_M_enc()
         else:
             self.M_enc=self.get_M_enc_simp()
         self.q=self.get_q()
@@ -101,7 +101,12 @@ class Galaxy:
     def get_M_enc_simp(self):
         M_enc0=(self.get_M_enc())(1.)
         def M_enc(r):
-            return M_enc0*r**(2-self.params['gamma'])
+            if r<0.01*self.params['rb']:
+                return M_enc0*r**(2-self.params['gamma'])
+            else:
+                f=lambda r1: 4.*np.pi*r1**2.*self.rho(r1)
+                return integrate.quad(f, 0, r)[0]
+
         return M_enc
 
     def get_M_enc_circ(self):
