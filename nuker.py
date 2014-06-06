@@ -60,7 +60,12 @@ def nuker_params():
 class Galaxy:
     """Class to store info about Nuker galaxies"""
     def __init__(self, gname, gdata, eta=0.1, cgs=False, menc='default'):
-        self.params=gdata[gname]
+        try:
+            self.params=gdata[gname]
+        except KeyError:
+            print 'Error! '+gname+' is not in catalog!'
+            raise
+        self.name=gname
         self.eta=eta
         # self.grams=grams
 

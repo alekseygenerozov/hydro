@@ -31,11 +31,17 @@ def bash_command(cmd):
     return process.communicate()[0]
 
 ##Preparing array with initialization file (idea is to go back from save file)
-def prepare_start(dat):
-	end_state=dat[-70:]
+def prepare_start(end_state, rescale=1):
+	# end_state=dat[-70:]
 	end_state[:,2]=end_state[:,2]*end_state[:,-1]
 	end_state[:,1]=np.log(end_state[:,1])
 	start=end_state[:,:4]
+	#rescale radii. 1.36x10^17 is fiduciall inner radius for ngc4551 w/ 10^7.11 M_sun BH.
+	rescale1=(start[0,0])/(1.36E17)
+	start[:,0]=start[:,0]*rescale1
+	#rescaling radial grid. This will be useful for going from one mass black hole to another. 
+	start[:,0]*rescale
+
 
 	return start
 
