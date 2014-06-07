@@ -126,7 +126,7 @@ class Grid:
 
 	def __init__(self, galaxy, init=None, init_array=None,  n=100, num_ghosts=3, safety=0.6, Re=100., Re_s=100., params=dict(), params_delta=dict(),
 		floor=1.e-30, symbol='rs', logr=True, gamma=5./3., isot=False, tol=1.E-3,  movies=True, mu=1., vw=0., qpc=True, veff=False, outdir='./', scale_heating=1.,
-		s_interval=100, eps=0.,  tinterval=-1, visc_scheme='default', bdry='default', bdry_fixed=False):
+		s_interval=100, eps=1.,  tinterval=-1, visc_scheme='default', bdry='default', bdry_fixed=False):
 		assert n>2*num_ghosts
 
 		#Initializing the radial grid
@@ -574,14 +574,16 @@ class Grid:
 	#Set all mass dependent quantities
 	def place_mass(self, galaxy):
 		self.M_bh=galaxy.params['M']
-		#self.M_enc=copy.deepcopy(M_enc)
 		self.M_enc_arr=np.array(map(galaxy.M_enc, self.radii/pc))
+		print self.M_enc_arr
 
 		self.M_tot=self.M_enc_arr+self.M_bh
 		#Potential and potential gradient (Note that we have to be careful of the units here.)
-		self.phi=np.array(map(galaxy.phi, self.radii/pc))/pc
-		#self.phi=-G*(self.M_bh+self.eps*self.M_enc_arr)/self.radii
-		self.grad_phi=G*(self.M_bh+self.M_enc_arr)/self.radii**2
+		self.phi_s=np.array(map(galaxy.phi_s, self.radii/pc))/pc
+		self.phi_bh=np.array(map(galaxy.phi_bh, self.radii/pc))/pc
+		self.phi=self.eps*self.phi_s+self.phi_bh
+		#self.phi=self.eps*(np.array(map(galaxy.phi, self.radii/pc))/pc+(G*self.M_bh/self.radii))-G*self.M_bh/self.radii
+		self.grad_phi=G*(self.M_bh+self.eps*self.M_enc_arr)/self.radii**2
 
 		#Gravitational radius
 		self.rg=G*(self.M_bh)/c**2.
@@ -615,14 +617,10 @@ class Grid:
 		if param=='M_bh' or param=='M_enc_arr':
 			print 'Operation curretly not supported\n'
 			return
-			# self.M_bh=value
-			# self.M_tot
-			# self.phi=-G*(self.M_bh+self.eps*self.M_enc_arr)/self.radii
-			# self.grad_phi=G*(self.M_bh+self.eps*self.M_enc_arr)/self.radii**2
-		# elif param=='eps':
-		# 	self.eps=value
-		# 	self.phi=-G*(self.M_bh+self.eps*self.M_enc_arr)/self.radii
-		# 	self.grad_phi=G*(self.M_bh+self.eps*self.M_enc_arr)/self.radii**2
+		elif param=='eps':
+			self.eps=value
+			self.phi=self.eps*self.phi_s+self.phi_bh
+			self.grad_phi=G*(self.M_bh+self.eps*self.M_enc_arr)/self.radii**2
 		elif param=='scale_heating' and self.veff:
 			self.vw[:]=self.scale_heating*c*((self.rg/self.radii)*(self.M_tot/self.M_bh))**0.5
 			for i in range(self.length):

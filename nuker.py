@@ -78,7 +78,8 @@ class Galaxy:
         else:
             self.M_enc=self.get_M_enc_simp()
         self.q=self.get_q()
-        self.phi=self.get_phi()
+        self.phi,self.phi_bh,self.phi_s=self.get_phi()
+
         self.sigma=self.get_sigma()
         # self.rinf=self.get_rinf()
 
@@ -130,13 +131,17 @@ class Galaxy:
 
     ##Get potential. Needs more thorough checking. Integral truncated at 10 times the break radius instead of at infinity.
     def get_phi(self):
-        def phi(r):
-            phi_bh=-G*self.params['M']/r
+        def phi_s(r):
+            #phi_bh=-G*self.params['M']/r
             phi_1=-G*self.M_enc(r)/r
             f=lambda r: self.rho(r)*r
             phi_2=-4.*np.pi*G*integrate.quad(f, r, 10.*self.params['rb'])[0]
-            return phi_bh+phi_1+phi_2
-        return phi
+            return phi_1+phi_2
+        def phi_bh(r):
+            return -G*self.params['M']/r
+        def phi(r):
+            return phi_s(r)+phi_bh(r)
+        return [phi, phi_bh, phi_s]
 
     ##Get the velocity dispersion as a function of r
     def get_sigma(self):
