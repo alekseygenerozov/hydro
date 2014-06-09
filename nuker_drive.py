@@ -3,6 +3,8 @@
 import hydro
 import nuker
 import parker
+import sol_check as sc
+
 import astropy.constants as const
 import numpy as np
 
@@ -44,7 +46,15 @@ def run_hydro(galaxy, vw=5.E7, save='', rescale=1.):
 	tcross=parker.tcross(start[0,0],start[-1,0], 1.E7)
 	params['tinterval']=0.05*tcross
 	grid2=hydro.Grid(galaxy, init_array=start, **params)
-	grid2.solve(8.*tcross)
+	grid2.solve(5.*tcross)
+
+	for i in range(3):
+		fig=sc.cons_check(params['outdir'], logy=True, index=i)
+		fig.savefig(params['outdir']+'/cons'+str(i)+'_vw'+str(vw/1.E5)+'_'+galaxy.name+'.png')
+
+	grid2.backup()
+	ipyani.movie_save(params['outdir'], interval=1, ymin=[None, None, None, 10.**-25, -1., 10.**6], ymax=[None, None, None, 10.**-20, 2., 10.**8], logy=[True, True, True, True, False, True])
+
 
 #Compute density profile from scratch
 def run_hydro_scratch(galaxy, vw=5.E7, rmin=1.36E17, rmax=7.E19):

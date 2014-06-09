@@ -13,9 +13,6 @@ from scipy.optimize import fsolve
 
 
 
-saved=np.load('/home/aleksey/Second_Year_Project/hydro/ngc4551_2/vw_crit/smooth_bdry5/save.npz')['a']
-# grid2=pickle.load( open( "grid_backup.p", "rb" ) )
-start=hydro.prepare_start(saved[-1])
 
 #Constants
 G=const.G.cgs.value
@@ -26,18 +23,9 @@ h=const.h.cgs.value
 pc=const.pc.cgs.value
 c=const.c.cgs.value
 
-x=10.**7.11/(3.6*10.**6)
-
 galaxies=nuker.nuker_params()
 
-rmin=3.8E16*x/pc
-rmax=7.E19/pc
-temp=1.e7
-rho_0=1.E-23
-d=dict(rho_0=rho_0, temp=temp, log=True)
-tcross=parker.tcross(rmin*pc, rmax*pc, temp)
-
-g1_2=nuker.Galaxy('NGC4551', galaxies, cgs=False, eta=1.) 
+# g1_2=nuker.Galaxy('NGC4551', galaxies, cgs=False, eta=1.) 
 def M_enc_simp(r):
     return 4.76E39*(r/1.04)**(2-g1_2.params['gamma'])
 
