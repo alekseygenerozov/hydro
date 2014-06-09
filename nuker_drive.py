@@ -48,12 +48,18 @@ def run_hydro(galaxy, vw=5.E7, save='', rescale=1.):
 	grid2=hydro.Grid(galaxy, init_array=start, **params)
 	grid2.solve(5.*tcross)
 
-	for i in range(3):
-		fig=sc.cons_check(params['outdir'], logy=True, index=i)
-		fig.savefig(params['outdir']+'/cons'+str(i)+'_vw'+str(vw/1.E5)+'_'+galaxy.name+'.png')
+	try:
+		for i in range(3):
+			fig=sc.cons_check(params['outdir'], logy=True, index=i)
+			fig.savefig(params['outdir']+'/cons'+str(i)+'_vw'+str(vw/1.E5)+'_'+galaxy.name+'.png')
+	except:
+		pass
 
 	grid2.backup()
-	ipyani.movie_save(params['outdir'], interval=1, ymin=[None, None, None, 10.**-25, -1., 10.**6], ymax=[None, None, None, 10.**-20, 2., 10.**8], logy=[True, True, True, True, False, True])
+	try:
+		ipyani.movie_save(params['outdir'], interval=1, ymin=[None, None, None, 10.**-25, -1., 10.**6], ymax=[None, None, None, 10.**-20, 2., 10.**8], logy=[True, True, True, True, False, True])
+	except:
+		pass
 
 
 #Compute density profile from scratch
