@@ -46,7 +46,7 @@ def sol_check(loc, index=2, size=70):
     plt.show()
     
 #Check solution as code is running
-def cons_check(loc, index=2, logy=False, ylim=None):
+def cons_check(loc, index=2, logy=False, ylim=None,size=70):
     saved=np.genfromtxt(loc+'/cons')
     fig,ax=plt.subplots()
     ax.set_xscale('log')
@@ -55,8 +55,8 @@ def cons_check(loc, index=2, logy=False, ylim=None):
     if ylim:
         ax.set_ylim(ylim)
     
-    plt.plot(saved[-69:,0], saved[-69:,index])
-    plt.plot(saved[-69:,0], saved[-69:,index+3])
+    plt.plot(saved[-(size-1):,0], saved[-(size-1):,index])
+    plt.plot(saved[-(size-1):,0], saved[-(size-1):,index+3])
 
     return fig
     #plt.show()    
