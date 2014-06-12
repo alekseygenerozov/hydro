@@ -150,6 +150,25 @@ class Galaxy:
             return (c**2*rg/r*(self.M_enc(r)+self.params['M'])/self.params['M'])**0.5
         return sigma
 
+    #Get accretion rate  for galaxy by integrating source from stagnation radius
+    def get_mdot(self, vw=1.E8):
+        #Get the stagnation radius in parsecs
+        rs=G*self.params['M']/((vw**2/2.))/pc
+        #Get mdot by integrating the source function (assuming that the break radius is well outside of our region of interest)
+        mdot=4.*np.pi*(self.q(rs)*rs**3)/(2.-self.params['gamma'])
+
+        return mdot
+
+    def get_eddr(self, vw=1.E8):
+        l_edd=4.*np.pi*G*self.params['M']*c/(0.4)
+        mdot_edd=l_edd/(0.1*c**2)
+
+        mdot=self.get_mdot()
+        return mdot/mdot_edd
+
+
+
+
 
 def main():    
     galaxies=nuker_params()
