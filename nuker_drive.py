@@ -53,7 +53,7 @@ def run_hydro(galaxy, vw=5.E7, save='', rescale=1., index=-1, time=5., outdir=''
 	grid2.solve(time*tcross)
 
 	try:
-		for i in range(3):
+		for i in range(1,4):
 			fig=sc.cons_check(params['outdir'], logy=True, index=i)
 			fig.savefig(params['outdir']+'/cons'+str(i)+'_vw'+str(vw/1.E5)+'_'+galaxy.name+'.png')
 	except:
