@@ -35,9 +35,13 @@ params=dict(n=70, safety=0.6, Re=90.,  params=d,  floor=0.,
     veff=False, scale_heating=1.,outdir='.', bdry='default', visc_scheme='default', eps=1.)
 
 #Run hydro solver for a particular galaxy instance. 
-def run_hydro(galaxy, vw=5.E7, save='', rescale=1., index=-1):
+def run_hydro(galaxy, vw=5.E7, save='', rescale=1., index=-1, time=5., outdir=''):
 	#Output directory to write to 
-	params['outdir']=galaxy.name+'/vw_'+str(vw/1.E5)
+	if outdir:
+		params['outdir']=outdir
+		print outdir
+	else:
+		params['outdir']=galaxy.name+'/vw_'+str(vw/1.E5)
 	#Prepare initial data
 	saved=np.load(save+'/save.npz')['a']
 	start=hydro.prepare_start(saved[index], rescale=rescale)
@@ -46,7 +50,7 @@ def run_hydro(galaxy, vw=5.E7, save='', rescale=1., index=-1):
 	tcross=parker.tcross(start[0,0],start[-1,0], 1.E7)
 	params['tinterval']=0.05*tcross
 	grid2=hydro.Grid(galaxy, init_array=start, **params)
-	grid2.solve(5.*tcross)
+	grid2.solve(time*tcross)
 
 	try:
 		for i in range(3):
@@ -111,6 +115,9 @@ def main():
 	rmin=init['rmin']
 	rmax=init['rmax']
 	index=init['index']
+	tcross=init['time']
+	outdir=init['outdir']
+
 
 
 	#Generate dictionary of nuker parameters for all galaxies
@@ -123,7 +130,7 @@ def main():
 			continue
 
 		if saves[i]:
-			run_hydro(galaxy, vw=vws[i], save=saves[i], rescale=rescale[i], index=int(index[i]))
+			run_hydro(galaxy, vw=vws[i], save=saves[i], rescale=rescale[i], index=int(index[i]), time=time, outdir=outdir)
 		else:
 			run_hydro_scratch(galaxy, vw=vws[i], rmin=rmin[i], rmax=rmax[i])
 
