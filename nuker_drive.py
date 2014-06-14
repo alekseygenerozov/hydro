@@ -121,7 +121,7 @@ def main():
 	time=init['time']
 	outdir=init['outdir']
 	ss=init['ss']
-	print ss==True
+
 
 
 

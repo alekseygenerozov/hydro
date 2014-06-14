@@ -239,7 +239,7 @@ class Grid:
 		self.place_mass(galaxy)
 
 		#Will store values of time derivatives at each time step
-		self.time_derivs=np.zeros(n, dtype={'names':['log_rho', 'vel', 's'], 'formats':['float64', 'float64', 'float64']})
+		self.time_derivs=np.zeros(self.length, dtype={'names':['log_rho', 'vel', 's'], 'formats':['float64', 'float64', 'float64']})
 
 		#Initializing the grid using the initial value function f_initial
 		for i in range(len(self.radii)):
