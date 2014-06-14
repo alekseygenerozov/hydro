@@ -32,6 +32,37 @@ def bash_command(cmd):
     process=subprocess.Popen(['/bin/bash', '-c',cmd],  stdin=subprocess.PIPE, stdout=subprocess.PIPE)
     return process.communicate()[0]
 
+#Compute logarithmic slope given values and radii
+def get_slope(r1, r2, f1, f2):
+    return np.log(f2/f1)/np.log(r2/r1)
+
+#Extend inner grid boundary to be supersonic
+def extend_to_ss(dat):
+    #Getting the slopes of all profile
+    slope=np.empty(5)
+    field=np.copy(dat[0])
+    for i in range(len(field)):
+        slope[i]=get_slope(dat[0,0], dat[3,0], dat[0,i], dat[3,i])
+    #Getting target radius
+    r_end=dat[0,0]*np.exp((1./slope[2])*np.log(-2./dat[0,2]))
+
+    #Computing the grid spacing
+    delta_log=np.log(dat[1,0]/dat[0,0])
+    r=dat[0,0]
+    logr=np.log(dat[0,0])
+    dat_extend=np.copy(dat)
+    while r>r_end:
+        logr=logr-delta_log
+        r=np.exp(logr)
+        for i in range(len(field)):
+            field[i]=field[i]*(r/dat_extend[0,0])**slope[i]
+        #Stacking to the end of the grid
+        dat_extend=np.vstack([field, dat_extend])
+    return dat_extend
+        
+        
+
+
 ##Preparing array with initialization file (idea is to go back from save file)
 def prepare_start(end_state, rescale=1):
 	# end_state=dat[-70:]

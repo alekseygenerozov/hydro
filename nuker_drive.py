@@ -35,7 +35,7 @@ params=dict(n=70, safety=0.6, Re=90.,  params=d,  floor=0.,
     veff=False, scale_heating=1.,outdir='.', bdry='default', visc_scheme='default', eps=1.)
 
 #Run hydro solver for a particular galaxy instance. 
-def run_hydro(galaxy, vw=5.E7, save='', rescale=1., index=-1, time=5., outdir=''):
+def run_hydro(galaxy, vw=5.E7, save='', rescale=1., index=-1, time=5., outdir='', ss=False):
 	#Output directory to write to 
 	if outdir:
 		params['outdir']=outdir
@@ -44,7 +44,10 @@ def run_hydro(galaxy, vw=5.E7, save='', rescale=1., index=-1, time=5., outdir=''
 		params['outdir']=galaxy.name+'/vw_'+str(vw/1.E5)
 	#Prepare initial data
 	saved=np.load(save+'/save.npz')['a']
-	start=hydro.prepare_start(saved[index], rescale=rescale)
+	saved=saved[index][:,[0,1,2,3,-1]]
+	if ss: 
+		saved=hydro.extend_to_ss(saved)
+	start=hydro.prepare_start(saved, rescale=rescale)
 	#Set up the wind velocity parameter
 	params['vw']=np.array(map(lambda r:np.sqrt(galaxy.sigma(r/pc)**2+(vw)**2), start[:,0]))
 	tcross=parker.tcross(start[0,0],start[-1,0], 1.E7)
@@ -117,6 +120,8 @@ def main():
 	index=init['index']
 	time=init['time']
 	outdir=init['outdir']
+	ss=init['ss']
+	print ss==True
 
 
 
@@ -130,7 +135,7 @@ def main():
 			continue
 
 		if saves[i]:
-			run_hydro(galaxy, vw=vws[i], save=saves[i], rescale=rescale[i], index=int(index[i]), time=time[i], outdir=outdir[i])
+			run_hydro(galaxy, vw=vws[i], save=saves[i], rescale=rescale[i], index=int(index[i]), time=time[i], outdir=outdir[i], ss=ss[i])
 		else:
 			run_hydro_scratch(galaxy, vw=vws[i], rmin=rmin[i], rmax=rmax[i])
 

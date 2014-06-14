@@ -82,7 +82,7 @@ class Galaxy:
         self.q=self.get_q()
         self.phi,self.phi_bh,self.phi_s=self.get_phi()
 
-        # self.sigma=self.get_sigma()
+        self.sigma=self.get_sigma()
         # self.rinf=self.get_rinf()
 
 
