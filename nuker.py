@@ -9,6 +9,8 @@ from scipy.optimize import fsolve
 from astropy.io import ascii
 import astropy.constants as const
 
+import warnings
+
 #Constants
 G=const.G.cgs.value
 M_sun=const.M_sun.cgs.value
@@ -80,7 +82,7 @@ class Galaxy:
         self.q=self.get_q()
         self.phi,self.phi_bh,self.phi_s=self.get_phi()
 
-        self.sigma=self.get_sigma()
+        # self.sigma=self.get_sigma()
         # self.rinf=self.get_rinf()
 
 
@@ -151,20 +153,40 @@ class Galaxy:
         return sigma
 
     #Get accretion rate  for galaxy by integrating source from stagnation radius
-    def get_mdot(self, vw=1.E8):
+    def get_mdot(self, vw=1.E8, b=False):
+        bf=0.01
         #Get the stagnation radius in parsecs
-        rs=G*self.params['M']/((vw**2/2.))/pc
-        #Get mdot by integrating the source function (assuming that the break radius is well outside of our region of interest)
-        mdot=4.*np.pi*(self.q(rs)*rs**3)/(2.-self.params['gamma'])
+        if b:
+            rs=self.get_rinf()
+        else:
+            rs=2.*G*self.params['M']/((vw**2/2.))/pc
+        #Get mdot by integrating the source function
+        if rs<bf*self.params['rb']:
+            mdot=4.*np.pi*(self.q(rs)*rs**3)/(2.-self.params['gamma'])
+        else:
+            print self.name
+            with warnings.catch_warnings(record=True) as w:
+                print w
+                mdot=4.*np.pi*integrate.quad(lambda r: r**2*self.q(r), bf*self.params['rb'], rs)[0]
+                mdot=mdot+4.*np.pi*(self.q(bf*self.params['rb'])*(bf*self.params['rb'])**3)/(2.-self.params['gamma'])
 
         return mdot
 
-    def get_eddr(self, vw=1.E8):
+    def get_eddr(self, vw=1.E8, b=False):
         l_edd=4.*np.pi*G*self.params['M']*c/(0.4)
         mdot_edd=l_edd/(0.1*c**2)
 
-        mdot=self.get_mdot()
+        mdot=self.get_mdot(vw=vw, b=b)
         return mdot/mdot_edd
+
+    def rs_gen(self, eta=3.):
+        f=lambda x: (1+x**(2.-self.params['gamma']))/x-eta
+        fprime=lambda x: -(1. + x**(2. - self.params['gamma']))/x**2. + x**(-self.params['gamma'])*(2.-self.params['gamma'])
+        if f(opt.fmin(f, 1.)[0])>0:
+            print 'root not found!'
+            return
+        return opt.fsolve(f, 0.5, fprime=fprime)
+
 
 
 

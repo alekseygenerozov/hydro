@@ -115,7 +115,7 @@ def main():
 	rmin=init['rmin']
 	rmax=init['rmax']
 	index=init['index']
-	tcross=init['time']
+	time=init['time']
 	outdir=init['outdir']
 
 
@@ -130,7 +130,7 @@ def main():
 			continue
 
 		if saves[i]:
-			run_hydro(galaxy, vw=vws[i], save=saves[i], rescale=rescale[i], index=int(index[i]), time=time, outdir=outdir)
+			run_hydro(galaxy, vw=vws[i], save=saves[i], rescale=rescale[i], index=int(index[i]), time=time[i], outdir=outdir[i])
 		else:
 			run_hydro_scratch(galaxy, vw=vws[i], rmin=rmin[i], rmax=rmax[i])
 
