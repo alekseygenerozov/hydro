@@ -102,6 +102,9 @@ class Galaxy:
 
     ##Get simplified expression for the mass encloed in a particular radius 
     def get_M_enc_simp(self):
+         # M_enc0=4.*np.pi*M_sun*(1./(2.-self.params['gamma']))*(2**((self.params['beta']-self.params['gamma'])/self.params['alpha'])*self.params['Ib'])\
+         #        *r**2*(r/self.params['rb'])**(-self.params['gamma'])*self.params['Uv']*gamma((1+self.params['gamma'])/2.)/(np.sqrt(np.pi)*gamma(self.params['gamma']/2.))
+        #This implicitly assumes the break radius is well outside of 1 pc 
         M_enc0=(self.get_M_enc())(1.)
         def M_enc(r):
             if r<0.01*self.params['rb']:
@@ -196,21 +199,28 @@ def main():
     galaxies=nuker_params()
 
     rad=np.logspace(0,3,100)   
-    g1=Galaxy('NGC4551', galaxies, grams=False)
-    g2=Galaxy('NGC4168', galaxies, grams=False)
+    g1=Galaxy('NGC4551', galaxies, cgs=False)
+    g2=Galaxy('NGC4168', galaxies, cgs=False)
     rho=np.array(map(g1.rho,rad))/M_sun
     rho2=np.array(map(g2.rho, rad))/M_sun
 
     rho_nick=np.genfromtxt('NGC4551_nick')
     rho2_nick=np.genfromtxt('NGC4168_nick')
-
     plt.loglog()
     plt.plot(rad,rho)
     plt.plot(rho_nick[:,0], rho_nick[:,1])
-
     plt.plot(rad, rho2)
     plt.plot(rho2_nick[:,0], rho2_nick[:,1])
     plt.savefig('inv_abel_test.png')
+
+
+    m_nick=np.genfromtxt('MCore')
+    m2_nick=np.genfromtxt('MCore')
+    plt.figure()
+    plt.loglog()
+    plt.plot(m2_nick[:,0], m2_nick[:,1])
+    plt.plot(np.logspace(-1,3,100), np.array(map(g2.M_enc, np.logspace(-1,3,100)))/M_sun)
+    plt.savefig('menc.png')
 
 if __name__ == '__main__':
     main()
