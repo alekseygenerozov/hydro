@@ -10,6 +10,9 @@ from astropy.io import ascii
 import astropy.constants as const
 
 import warnings
+from scipy.special import gamma
+import scipy.optimize as opt
+from scipy.interpolate import interp1d
 
 #Constants
 G=const.G.cgs.value
@@ -61,71 +64,90 @@ def nuker_params():
 
 class Galaxy:
     """Class to store info about Nuker galaxies"""
-    def __init__(self, gname, gdata, eta=0.1, cgs=False, menc='default'):
+    def __init__(self, gname, gdata, eta=0.1, cgs=False, menc='default', rmin=1.E-3, rmax=1.E5, points=100):
         try:
             self.params=gdata[gname]
         except KeyError:
             print 'Error! '+gname+' is not in catalog!'
             raise
         self.name=gname
+        print self.name
         self.eta=eta
-        # self.grams=grams
+        self.menc=menc
 
-        self.rho=self.get_rho()
+        self.rmin=rmin
+        self.rmax=rmax
 
-        if menc=='circ':
-            self.M_enc=self.get_M_enc_circ()
-        # elif menc=='full':
-        #     self.M_enc=self.get_M_enc()
-        else:
-            self.M_enc=self.get_M_enc_simp()
-        self.q=self.get_q()
-        self.phi,self.phi_bh,self.phi_s=self.get_phi()
+        self.points=points
+        self.r=np.logspace(np.log10(rmin), np.log10(rmax), self.points)
+        self.rho_grid=self.get_rho_grid()
+        self.M_enc_grid=self.get_M_enc_grid()
 
-        self.sigma=self.get_sigma()
+        self.phi_grid,self.phi_s_grid=self.get_phi_grid()
+
+        # # self.sigma=self.get_sigma()
         self.rinf=self.get_rinf()
 
+    def rho(self,r):
+        return M_sun*self.params['Uv']*inverse_abel(nuker_prime, r, **self.params)
 
-    ##Construct stellar density profile based on surface brightness profile
-    def get_rho(self):
-        def rho(r):
-            rho1=M_sun*self.params['Uv']*inverse_abel(nuker_prime, r, **self.params)
-            return rho1
-        return rho
+    def M_enc(self,r):
+        if r<self.rmin:
+            return 0.
+        # elif self.menc=='circ':
+        #     return integrate.quad(lambda r1:2.*np.pi*r1*M_sun*self.params['Uv']*nuker(r1, **self.params),self.rmin)
+        else:
+            return integrate.quad(lambda r1:4.*np.pi*r1**2*self.rho(r1), self.rmin, r, epsabs=1.E-3, epsrel=1.E-3)[0]
 
-    ##Construct the mass enclosed profile based on 
-    def get_M_enc(self):
-        def M_enc(r):
-            f=lambda r1: 4.*np.pi*r1**2.*self.rho(r1)
-            return integrate.quad(f, 0, r)[0]
-        return M_enc
+    def M_enc2(self,r):
+        if r<self.rmin:
+            return 0.
+        # elif self.menc=='circ':
+        #     return integrate.quad(lambda r1:2.*np.pi*r1*M_sun*self.params['Uv']*nuker(r1, **self.params),self.rmin)
+        else:
+            return integrate.quad(lambda r1:4.*np.pi*r1**2*self.rho_grid(r1), self.rmin, r, epsabs=1.E-3, epsrel=1.E-3)[0]
 
-    ##Get simplified expression for the mass encloed in a particular radius 
-    def get_M_enc_simp(self):
-         # M_enc0=4.*np.pi*M_sun*(1./(2.-self.params['gamma']))*(2**((self.params['beta']-self.params['gamma'])/self.params['alpha'])*self.params['Ib'])\
-         #        *r**2*(r/self.params['rb'])**(-self.params['gamma'])*self.params['Uv']*gamma((1+self.params['gamma'])/2.)/(np.sqrt(np.pi)*gamma(self.params['gamma']/2.))
-        #This implicitly assumes the break radius is well outside of 1 pc 
-        M_enc0=(self.get_M_enc())(1.)
-        def M_enc(r):
-            if r<0.01*self.params['rb']:
-                return M_enc0*r**(2-self.params['gamma'])
-            else:
-                f=lambda r1: 4.*np.pi*r1**2.*self.rho(r1)
-                return integrate.quad(f, 0, r)[0]
+    def sigma(self, r):
+        return (c**2*rg/r*(self.M_enc(r)+self.params['M'])/self.params['M'])**0.5
 
-        return M_enc
+    def phi_s(self,r):
+        return (-G*self.M_enc(r)/r)-4.*np.pi*G*integrate.quad(lambda r1:self.rho(r1)*r1, r, self.rmax, epsabs=1.E-3, epsrel=1.E-3)[0]
 
-    def get_M_enc_circ(self):
-        def M_enc(r):
-            f=lambda r1:2.*np.pi*r1*M_sun*self.params['Uv']*nuker(r1, **self.params)
-            return integrate.quad(f, 0, r)[0]
-        return M_enc
+    def phi_s2(self, r):
+        return (-G*self.M_enc_grid(r)/r)-4.*np.pi*G*integrate.quad(lambda r1:self.rho_grid(r1)*r1, r, self.rmax, epsabs=1.E-3, epsrel=1.E-3)[0]
 
-    ##Construct the mass source term assuming some efficiency
-    def get_q(self):
-        def q(r):
-            return self.eta*self.rho(r)/th
-        return q
+    def phi_bh(self,r):
+        return -G*self.params['M']/r
+
+    def phi(self,r):
+        return self.phi_bh(r)+self.phi_s(r)
+
+    def q(self, r):
+        return self.eta*self.rho(r)/th
+
+    def get_rho_grid(self):
+        rho_dat=map(self.rho, self.r)
+        interp=interp1d(np.log10(self.r), np.log10(rho_dat))
+        def rho_grid(r):
+            return 10.**interp(np.log10(r))
+        return rho_grid
+
+    def get_M_enc_grid(self):
+        m_dat=map(self.M_enc2, self.r)
+        interp=interp1d(np.log10(self.r), np.log10(m_dat))
+        def M_enc_grid(r):
+            return 10.**interp(np.log10(r))
+        return M_enc_grid
+
+    def get_phi_grid(self):
+        phi_s_dat=np.array(map(self.phi_s2, self.r))
+        interp=interp1d(np.log10(self.r), np.log10(-phi_s_dat))
+        def phi_s_grid(r):
+            return -10.**interp(np.log10(r))
+        def phi_grid(r):
+            return phi_s_grid(r)+self.phi_bh(r)
+        return [phi_grid, phi_s_grid]
+
 
     ##Getting the radius of influence: where the enclosed mass begins to equal the mass of the central BH. 
     def get_rinf(self):
@@ -134,53 +156,20 @@ class Galaxy:
 
         return fsolve(mdiff, 1)[0]
 
-    ##Get potential. Needs more thorough checking. Integral truncated at 10 times the break radius instead of at infinity.
-    def get_phi(self):
-        def phi_s(r):
-            #phi_bh=-G*self.params['M']/r
-            phi_1=-G*self.M_enc(r)/r
-            f=lambda r: self.rho(r)*r
-            phi_2=-4.*np.pi*G*integrate.quad(f, r, 10.*self.params['rb'])[0]
-            return phi_1+phi_2
-        def phi_bh(r):
-            return -G*self.params['M']/r
-        def phi(r):
-            return phi_s(r)+phi_bh(r)
-        return [phi, phi_bh, phi_s]
-
-    ##Get the velocity dispersion as a function of r
-    def get_sigma(self):
-        def sigma(r):
-            rg=G*self.params['M']/c**2/pc
-            return (c**2*rg/r*(self.M_enc(r)+self.params['M'])/self.params['M'])**0.5
-        return sigma
-
     #Get accretion rate  for galaxy by integrating source from stagnation radius
-    def get_mdot(self, vw=1.E8, b=False):
+    def get_mdot(self, vw=1.E8):
         bf=0.01
         #Get the stagnation radius in parsecs
-        if b:
-            rs=self.get_rinf()
-        else:
-            rs=2.*G*self.params['M']/((vw**2/2.))/pc
-        #Get mdot by integrating the source function
+        rs=G*self.params['M']/((vw**2/2.))/pc
+        #Get mdot by integrating the source function (assuming that the break radius is well outside of our region of interest)
         if rs<bf*self.params['rb']:
             mdot=4.*np.pi*(self.q(rs)*rs**3)/(2.-self.params['gamma'])
         else:
-            print self.name
             with warnings.catch_warnings(record=True) as w:
-                print w
                 mdot=4.*np.pi*integrate.quad(lambda r: r**2*self.q(r), bf*self.params['rb'], rs)[0]
                 mdot=mdot+4.*np.pi*(self.q(bf*self.params['rb'])*(bf*self.params['rb'])**3)/(2.-self.params['gamma'])
 
         return mdot
-
-    def get_eddr(self, vw=1.E8, b=False):
-        l_edd=4.*np.pi*G*self.params['M']*c/(0.4)
-        mdot_edd=l_edd/(0.1*c**2)
-
-        mdot=self.get_mdot(vw=vw, b=b)
-        return mdot/mdot_edd
 
     def rs_gen(self, eta=3.):
         f=lambda x: (1+x**(2.-self.params['gamma']))/x-eta
@@ -190,6 +179,13 @@ class Galaxy:
             return
         return opt.fsolve(f, 0.5, fprime=fprime)
 
+
+    def get_eddr(self, vw=1.E8):
+        l_edd=4.*np.pi*G*self.params['M']*c/(0.4)
+        mdot_edd=l_edd/(0.1*c**2)
+
+        mdot=self.get_mdot()
+        return mdot/mdot_edd
 
 
 
@@ -206,21 +202,14 @@ def main():
 
     rho_nick=np.genfromtxt('NGC4551_nick')
     rho2_nick=np.genfromtxt('NGC4168_nick')
+
     plt.loglog()
     plt.plot(rad,rho)
     plt.plot(rho_nick[:,0], rho_nick[:,1])
+
     plt.plot(rad, rho2)
     plt.plot(rho2_nick[:,0], rho2_nick[:,1])
     plt.savefig('inv_abel_test.png')
-
-
-    m_nick=np.genfromtxt('MCore')
-    m2_nick=np.genfromtxt('MCore')
-    plt.figure()
-    plt.loglog()
-    plt.plot(m2_nick[:,0], m2_nick[:,1])
-    plt.plot(np.logspace(-1,3,100), np.array(map(g2.M_enc, np.logspace(-1,3,100)))/M_sun)
-    plt.savefig('menc.png')
 
 if __name__ == '__main__':
     main()
