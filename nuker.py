@@ -43,12 +43,15 @@ def mub_to_Ib(mub):
     Msun=4.83
     return 10**(-(mub-Msun-21.572)/2.5)
 
-##Reads Wang & Merritt parameter table into python dictionary
-def nuker_params():
+##Reads Wang & Merritt parameter table into python dictionary; skip skips over galaxies discarded by WM
+def nuker_params(skip=False):
     table=ascii.read('wm')
     galaxies=dict()
     for i in range(len(table)):
         d=dict()
+        if table['$\\log_{10}\\dot{N}$\\tablenotemark{f}'][i]=='-' and skip:
+            continue
+
         d['Uv']=table[i]['$\\Upsilon_V $']
         d['alpha']=table[i]['$\\alpha$']
         d['beta']=table[i]['$\\beta$']
