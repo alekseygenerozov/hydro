@@ -108,6 +108,7 @@ class Galaxy:
             return integrate.quad(lambda r1:4.*np.pi*r1**2*self.rho_grid(r1), self.rmin, r, epsabs=1.E-3, epsrel=1.E-3)[0]
 
     def sigma(self, r):
+        rg=G*(self.params['M'])/c**2./pc
         return (c**2*rg/r*(self.M_enc(r)+self.params['M'])/self.params['M'])**0.5
 
     def phi_s(self,r):

@@ -117,26 +117,27 @@ def main():
 	init=ascii.read(args.init)
 	#Filling up gaps in the parameter file
 	for i in range(len(params)):
-    	if np.in1d(params[i], init.colnames):
-        	continue
-    	else:
-        	cole=[default[i]]*len(init)
-        	col=Column(name=params[i], data=cole)
-        	init.add_column(col) 
+		if np.in1d(params[i], init.colnames):
+			continue
+		else:
+			cole=[default[i]]*len(init)
+			col=Column(name=params[i], data=cole)
+			init.add_column(col) 
 
 	#Generate dictionary of nuker parameters for all galaxies
 	gdict=nuker.nuker_params()
     #Iterate over all of the galaxies of interest
-	for i in range(len(gals)):
+	for i in range(len(init)):
 		try: 
-			galaxy=nuker.Galaxy(gals[i], gdict, eta=1.) 
+			galaxy=nuker.Galaxy(init['gal'][i], gdict, eta=1.) 
 		except:
 			continue
 
-		if saves[i]:
-			run_hydro(galaxy, vw=vws[i], save=saves[i], rescale=rescale[i], index=int(index[i]), time=time[i], outdir=outdir[i], ss=ss[i])
+		if init['save'][i]:
+			run_hydro(galaxy, vw=init['vw'][i], save=init['save'][i], rescale=init['rescale'][i], index=int(init['index'][i]), time=init['time'][i],\
+				outdir=init['outdir'][i], ss=init['ss'][i])
 		else:
-			run_hydro_scratch(galaxy, vw=vws[i], rmin=rmin[i], rmax=rmax[i])
+			run_hydro_scratch(galaxy, vw=init['vws'][i], rmin=init['rmin'][i], rmax=init['rmax'][i])
 
 
 
