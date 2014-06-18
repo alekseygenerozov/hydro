@@ -9,10 +9,12 @@ import astropy.constants as const
 import numpy as np
 
 import argparse
-from astropy.io import ascii
 
 import ipyani
 from math import e
+
+from astropy.io import ascii
+from astropy.table import Column
 
 #Constants
 G=const.G.cgs.value
@@ -55,18 +57,18 @@ def run_hydro(galaxy, vw=5.E7, save='', rescale=1., index=-1, time=5., outdir=''
 	grid2=hydro.Grid(galaxy, init_array=start, **params)
 	grid2.solve(time*tcross)
 
-	try:
-		for i in range(1,4):
-			fig=sc.cons_check(params['outdir'], logy=True, index=i)
-			fig.savefig(params['outdir']+'/cons'+str(i)+'_vw'+str(vw/1.E5)+'_'+galaxy.name+'.png')
-	except:
-		pass
+	# try:
+	# 	for i in range(1,4):
+	# 		fig=sc.cons_check(params['outdir'], logy=True, index=i)
+	# 		fig.savefig(params['outdir']+'/cons'+str(i)+'_vw'+str(vw/1.E5)+'_'+galaxy.name+'.png')
+	# except:
+	# 	pass
 
 	grid2.backup()
-	try:
-		ipyani.movie_save(params['outdir'], interval=1, ymin=[None, None, None, 10.**-25, -1., 10.**6], ymax=[None, None, None, 10.**-20, 2., 10.**8], logy=[True, True, True, True, False, True])
-	except:
-		pass
+	# try:
+	# 	ipyani.movie_save(params['outdir'], interval=1, ymin=[None, None, None, 10.**-25, -1., 10.**6], ymax=[None, None, None, 10.**-20, 2., 10.**8], logy=[True, True, True, True, False, True])
+	# except:
+	# 	pass
 
 
 #Compute density profile from scratch
@@ -109,21 +111,18 @@ def main():
 	parser.add_argument('-i', '--init',
 		help='Name of file containing galaxy names, vws.')
 	#Read input file
+	params=['gal','vw','save','rescale','rmin','rmax','index','time','outdir','ss']
+	default=['NGC4551',1.E8,None,1.,None,None,-1,5.,'',False]
 	args=parser.parse_args()
 	init=ascii.read(args.init)
-	gals=init['gal']
-	vws=init['vw']
-	saves=init['save']
-	rescale=init['rescale']
-	rmin=init['rmin']
-	rmax=init['rmax']
-	index=init['index']
-	time=init['time']
-	outdir=init['outdir']
-	ss=init['ss']
-
-
-
+	#Filling up gaps in the parameter file
+	for i in range(len(params)):
+    	if np.in1d(params[i], init.colnames):
+        	continue
+    	else:
+        	cole=[default[i]]*len(init)
+        	col=Column(name=params[i], data=cole)
+        	init.add_column(col) 
 
 	#Generate dictionary of nuker parameters for all galaxies
 	gdict=nuker.nuker_params()

@@ -83,7 +83,7 @@ class Galaxy:
         self.phi,self.phi_bh,self.phi_s=self.get_phi()
 
         self.sigma=self.get_sigma()
-        # self.rinf=self.get_rinf()
+        self.rinf=self.get_rinf()
 
 
     ##Construct stellar density profile based on surface brightness profile
