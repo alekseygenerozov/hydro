@@ -51,7 +51,6 @@ def nuker_params(skip=False):
         d=dict()
         if table['$\\log_{10}\\dot{N}$\\tablenotemark{f}'][i]=='-' and skip:
             continue
-
         d['Uv']=table[i]['$\\Upsilon_V $']
         d['alpha']=table[i]['$\\alpha$']
         d['beta']=table[i]['$\\beta$']
@@ -100,7 +99,7 @@ class Galaxy:
         # elif self.menc=='circ':
         #     return integrate.quad(lambda r1:2.*np.pi*r1*M_sun*self.params['Uv']*nuker(r1, **self.params),self.rmin)
         else:
-            return integrate.quad(lambda r1:4.*np.pi*r1**2*self.rho(r1), self.rmin, r, epsabs=1.E-3, epsrel=1.E-3)[0]
+            return integrate.quad(lambda r1:4.*np.pi*r1**2*self.rho(r1), self.rmin, r)[0]
 
     def M_enc2(self,r):
         if r<self.rmin:
@@ -108,17 +107,17 @@ class Galaxy:
         # elif self.menc=='circ':
         #     return integrate.quad(lambda r1:2.*np.pi*r1*M_sun*self.params['Uv']*nuker(r1, **self.params),self.rmin)
         else:
-            return integrate.quad(lambda r1:4.*np.pi*r1**2*self.rho_grid(r1), self.rmin, r, epsabs=1.E-3, epsrel=1.E-3)[0]
+            return integrate.quad(lambda r1:4.*np.pi*r1**2*self.rho_grid(r1), self.rmin, r)[0]
 
     def sigma(self, r):
         rg=G*(self.params['M'])/c**2./pc
         return (c**2*rg/r*(self.M_enc(r)+self.params['M'])/self.params['M'])**0.5
 
     def phi_s(self,r):
-        return (-G*self.M_enc(r)/r)-4.*np.pi*G*integrate.quad(lambda r1:self.rho(r1)*r1, r, self.rmax, epsabs=1.E-3, epsrel=1.E-3)[0]
+        return (-G*self.M_enc(r)/r)-4.*np.pi*G*integrate.quad(lambda r1:self.rho(r1)*r1, r, self.rmax)[0]
 
     def phi_s2(self, r):
-        return (-G*self.M_enc_grid(r)/r)-4.*np.pi*G*integrate.quad(lambda r1:self.rho_grid(r1)*r1, r, self.rmax, epsabs=1.E-3, epsrel=1.E-3)[0]
+        return (-G*self.M_enc_grid(r)/r)-4.*np.pi*G*integrate.quad(lambda r1:self.rho_grid(r1)*r1, r, self.rmax)[0]
 
     def phi_bh(self,r):
         return -G*self.params['M']/r
