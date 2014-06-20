@@ -60,13 +60,18 @@ def nuker_params(skip=False):
         d['mub']=table[i]['$\mu_b$']
         d['d']=table[i]['Distance']
         d['M']=M_sun*10.**table[i]['$\\log_{10}(M_{\\bullet}/M_{\\odot})$\\tablenotemark{e}']
+        d['type']=table[i][r'Profile\tablenotemark{b}']
+        if d['type']=='$\\cap$':
+            d['type']='core'
+        else:
+            d['type']='cusp'
         galaxies[table[i]['Name']]=d
 
     return galaxies
 
 class Galaxy:
     """Class to store info about Nuker galaxies"""
-    def __init__(self, gname, gdata, eta=0.1, cgs=False, menc='default', rmin=1.E-3, rmax=1.E5, points=100):
+    def __init__(self, gname, gdata, eta=0.1, cgs=False, menc='default', rmin=1.E-3, rmax=1.E5, points=100, grid=False):
         try:
             self.params=gdata[gname]
         except KeyError:
@@ -80,12 +85,13 @@ class Galaxy:
         self.rmin=rmin
         self.rmax=rmax
 
-        self.points=points
-        self.r=np.logspace(np.log10(rmin), np.log10(rmax), self.points)
-        self.rho_grid=self.get_rho_grid()
-        self.M_enc_grid=self.get_M_enc_grid()
+        if grid:
+            self.points=points
+            self.r=np.logspace(np.log10(rmin), np.log10(rmax), self.points)
+            self.rho_grid=self.get_rho_grid()
+            self.M_enc_grid=self.get_M_enc_grid()
 
-        self.phi_grid,self.phi_s_grid=self.get_phi_grid()
+            self.phi_grid,self.phi_s_grid=self.get_phi_grid()
 
         # # self.sigma=self.get_sigma()
         self.rinf=self.get_rinf()
@@ -114,7 +120,7 @@ class Galaxy:
         return (c**2*rg/r*(self.M_enc(r)+self.params['M'])/self.params['M'])**0.5
 
     def phi_s(self,r):
-        return (-G*self.M_enc(r)/r)-4.*np.pi*G*integrate.quad(lambda r1:self.rho(r1)*r1, r, self.rmax)[0]
+        return (-G*self.M_enc(r)/r)-4.*np.pi*G*integrate.quad(lambda r1:self.rho(r1)*r1, r, 10.*self.params['rb'])[0]
 
     def phi_s2(self, r):
         return (-G*self.M_enc_grid(r)/r)-4.*np.pi*G*integrate.quad(lambda r1:self.rho_grid(r1)*r1, r, self.rmax)[0]
