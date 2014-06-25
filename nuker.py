@@ -14,6 +14,8 @@ from scipy.special import gamma
 import scipy.optimize as opt
 from scipy.interpolate import interp1d
 
+import tde_jet
+
 #Constants
 G=const.G.cgs.value
 M_sun=const.M_sun.cgs.value
@@ -71,7 +73,7 @@ def nuker_params(skip=False):
 
 class Galaxy:
     """Class to store info about Nuker galaxies"""
-    def __init__(self, gname, gdata, eta=0.1, cgs=False, menc='default', rmin=1.E-3, rmax=1.E5, points=100, grid=False):
+    def __init__(self, gname, gdata, eta=0.1, cgs=False, menc='default', rmin=1.E-3, rmax=1.E5, points=100, grid=False, rinf=True):
         try:
             self.params=gdata[gname]
         except KeyError:
@@ -94,7 +96,8 @@ class Galaxy:
             self.phi_grid,self.phi_s_grid=self.get_phi_grid()
 
         # # self.sigma=self.get_sigma()
-        self.rinf=self.get_rinf()
+        if rinf:
+            self.rinf=self.get_rinf()
 
     def rho(self,r):
         return M_sun*self.params['Uv']*inverse_abel(nuker_prime, r, **self.params)
@@ -188,7 +191,6 @@ class Galaxy:
             return
         return opt.fsolve(f, 0.5, fprime=fprime)
 
-
     def get_eddr(self, vw=1.E8):
         l_edd=4.*np.pi*G*self.params['M']*c/(0.4)
         mdot_edd=l_edd/(0.1*c**2)
@@ -196,6 +198,33 @@ class Galaxy:
         mdot=self.get_mdot()
         return mdot/mdot_edd
 
+    def set_gas_dens(self, r, rho_g):
+        self.rho_g=interp1d(r, rho_g)
+
+    def vj(r,jet):
+        f=jet.rho(r*pc)/self.rho_g(r)
+        beta_sh=(1.-(1./jet.gamma_j)**2.-(2./gamma_j)*(f**-0.5))**0.5
+        return jet.beta_j/beta_sh
+
+    def get_rc(self, ms=1., eta=0.1, theta=0.1, gamma_j=10.):
+        m6=self.params['M']/(1.E6*M_sun)
+        jet=tde_jet.Jet(ms=ms, m6=m6, eta=eta, theta=theta, gamma_j=gamma_j)
+
+        r=integrate.ode(vj, )
+        r.set_integrator('vode')
+        r.set_initial_value(0., t=jet.delta/pc)
+        try:
+            while r.y<r.t:
+                r.integrate(r.t+0.01)
+            rc=r.y[0]
+        except Exception as inst:
+            print inst
+            rc=np.nan
+
+        f=jet.rho(rc*pc)/self.rho_g(rc)
+        gamma=gamma_j*(1.+2.*gamma_j*f**(-0.5))**(-0.5)   
+        # return np.array([self.name, rc, self.rho_g(rc)/mp, gamma],dtype=[('Name',str), ('b',float), ('c', float),('d',float)])
+        return (rc, self.rho_g(rc)/mp, gamma)
 
 
 
