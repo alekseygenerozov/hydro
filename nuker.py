@@ -8,6 +8,7 @@ from scipy import integrate
 from scipy.optimize import fsolve
 from astropy.io import ascii
 import astropy.constants as const
+from astropy.table import Table
 
 import warnings
 from scipy.special import gamma
@@ -224,7 +225,10 @@ class Galaxy:
         f=jet.rho(rc*pc)/self.rho_g(rc)
         gamma=gamma_j*(1.+2.*gamma_j*f**(-0.5))**(-0.5)   
         # return np.array([self.name, rc, self.rho_g(rc)/mp, gamma],dtype=[('Name',str), ('b',float), ('c', float),('d',float)])
-        return (rc, self.rho_g(rc)/mp, gamma)
+        return [rc, self.rho_g(rc)/mp, gamma]
+
+    def summary(self, vw=1.E8):
+        return Table(data=[self.params])
 
 
 
