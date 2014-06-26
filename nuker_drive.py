@@ -108,7 +108,7 @@ def run_hydro_scratch(galaxy, vw=5.E7, rmin=1.36E17, rmax=7.E19):
 def main():
 	parser=argparse.ArgumentParser(
         description='Code for generating nuker galaxies')
-	parser.add_argument('-i', '--init',
+	parser.add_argument('init', nargs=1,
 		help='Name of file containing galaxy names, vws.')
 	#Read input file
 	params=['gal','vw','save','rescale','rmin','rmax','index','time','outdir','ss']
