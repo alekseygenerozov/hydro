@@ -155,17 +155,15 @@ class Zone:
 class Grid:
 	"""Class stores (static) grid for solving Euler equations numerically"""
 
-	def __init__(self, galaxy, init=None, init_array=None,  n=100, num_ghosts=3, safety=0.6, Re=100., Re_s=100., params=dict(), params_delta=dict(),
-		floor=1.e-30, symbol='rs', logr=True, gamma=5./3., isot=False, tol=1.E-3,  movies=True, mu=1., vw=0., qpc=True, veff=False, outdir='./', scale_heating=1.,
-		s_interval=100, eps=1.,  tinterval=-1, visc_scheme='default', bdry='default', bdry_fixed=False):
-		assert n>2*num_ghosts
-
+	def __init__(self, galaxy, init=None, init_array=None):
+		self.logr=True
 		#Initializing the radial grid
 		if init!=None:
 			assert len(init)==3
 			r1,r2,f_initial=init[0],init[1],init[2]
 			assert r2>r1
 			assert hasattr(f_initial, '__call__')
+			self.length=70
 
 			#Setting up the grid (either logarithmic or linear in r)
 			self.logr=logr
@@ -173,10 +171,10 @@ class Grid:
 				self.radii=np.logspace(np.log(r1), np.log(r2), n, base=e)
 			else:
 				self.radii=np.linspace(r1, r2, n)
-			prims=np.zeros([100,3])
-			for i in range(len(self.radii)):
-				prims[i]=f_initial(self.radii[i], **params)
-			self.length=n
+			prims=[f_initial(r, **params) for r in self.radii]
+			# for i in range(len(self.radii)):
+			# 	prims[i]=f_initial(self.radii[i], **params)
+
 		elif type(init_array)==np.ndarray:
 			self.radii=init_array[:,0]
 			prims=init_array[:,1:]
@@ -187,77 +185,56 @@ class Grid:
 		#Attributes to store length of the list as well as start and end indices (useful for ghost zones)
 		self.start=0
 		self.end=self.length-1
-		self.tinterval=tinterval
+		self._num_ghosts=3
+		self.tinterval=None
+		self.sinterval=100
 
-		#self.const_visc=False
-		self.isot=isot
-		#self.fields=['log_rho', 'vel']
+		self.isot=False
 		if self.isot:
 			self.fields=['log_rho', 'vel']
+			self.gamma=1.
 		else:
 			self.fields=['log_rho', 'vel', 's']
-		self.movies=movies
-		self.outdir=outdir
+			self.gamma=5./3.
+		self.mu=1.
+
+		self.visc_scheme='default'
+		self.Re=90.
+		self.Re_s=1.E20
+		self.floor=0.
+		self.safety=0.6
+		self.bdry='default'
+		
+		self.q_grid=np.array(map(self.q, self.radii/pc))/pc**3
+		self.vw_extra=0.
+		self.vw=np.array([(galaxy.sigma(r/pc)**2+(vw_extra)**2)**0.5 for r in self.radii])
+
+		self.eps=1.
+		self.place_mass(galaxy)
+
+
 		self.out_fields=['rad', 'rho', 'vel', 'temp', 'frho', 'be', 's', 'cs']
 		self.cons_fields=['frho', 'be', 's', 'fen']
 		self.src_fields=['src_rho', 'src_v', 'src_s', 'src_en']
-		self.s_interval=s_interval
-
-		self.mu=mu
-		self.params=params
-		self.params_delta=params_delta	
+		self.movies=False
+		self.outdir='.'
 
 
-		self.gamma=gamma
 		#Grid will be stored as list of zones
 		self.grid=[]
-		#delta=float(r2-r1)/n
-		self.safety=safety
-
-		self.visc_scheme=visc_scheme
-		self.Re=Re
-		self.Re_s=Re_s
-
-		self.floor=floor
-
-		#Setting up the grid (either logarithmic or linear in r)
-		self.logr=logr
-		#Setting up source terms and potential throughout the grid.  
-		if qpc:
-			self.q=np.array(map(galaxy.q, self.radii/pc))/pc**3
-		else:
-			self.q=np.array(map(galaxy.q, self.radii))
-
-		self.vw=np.empty(self.length)
-		self.vw[:]=vw
-		#self.vw.fill(c*((vw**2/c**2))**0.5)
-		#Place mass onto the grid.
-		self.veff=veff
-		self.scale_heating=scale_heating
-
-		self.eps=eps
-		self.place_mass(galaxy)
-
 		#Will store values of time derivatives at each time step
 		self.time_derivs=np.zeros(self.length, dtype={'names':['log_rho', 'vel', 's'], 'formats':['float64', 'float64', 'float64']})
-
 		#Initializing the grid using the initial value function f_initial
 		for i in range(len(self.radii)):
-			self.grid.append(Zone(vw=self.vw[i:i+1], q=self.q[i:i+1],  phi=self.phi[i:i+1], rad=self.radii[i], prims=prims[i], isot=self.isot, gamma=gamma, mu=mu))
-
+			self.grid.append(Zone(vw=self.vw[i:i+1], q=self.q[i:i+1],  phi=self.phi_grid[i:i+1], rad=self.radii[i], prims=prims[i], isot=self.isot, gamma=gamma, mu=mu))
 		self._add_ghosts(num_ghosts=num_ghosts)
-
-		self.bdry=bdry
-		self.bdry_fixed=bdry_fixed
 
 		#Computing differences between all of the grid elements 
 		delta=np.diff(self.radii)
-		#print delta
 		self.delta=np.insert(delta, 0, delta[0])
-		#print self.delta
-
 		delta_log=np.diff(np.log(self.radii))
 		self.delta_log=np.insert(delta_log, 0, delta_log[0])
+		#Coefficients to compute derivatives
 		self.first_deriv_coeffs=np.array([-1., 9., -45., 0., 45., -9., 1.])/60.
 		self.second_deriv_coeffs=np.array([2., -27., 270., -490., 270., -27., 2.])/(180.)
 
@@ -269,12 +246,12 @@ class Grid:
 
 		self.saved=np.empty([0, self.length, len(self.out_fields)])
 		self.fdiff=np.empty([0, self.length-1, 2*len(self.cons_fields)+1])
-
-		self.max_change=[]
-		self.tol=tol
+		self.output_prep()
 		self.time_stamps=[]
-		self.symbol=symbol
 
+
+
+	def output_prep(self):
 		bash_command('mkdir -p '+self.outdir)
 		f=open(self.outdir+'/params', 'w')
 		f.write(str(vars(self)))
@@ -284,6 +261,7 @@ class Grid:
 		save.close()
 		times=open(self.outdir+'/times', 'w')
 		times.close()
+
 
 	#Calculate hearting in cell
 	def get_sp_heating(self, i):
@@ -324,9 +302,9 @@ class Grid:
 			check.write('____________________________________\n\n')
 
 	#Adding ghost zones onto the edges of the grid (moving the start of the grid)
-	def _add_ghosts(self, num_ghosts=3):
+	def _add_ghosts(self):
 		self.start=num_ghosts
-		self.end=self.end-num_ghosts
+		self.end=self.end-self._num_ghosts
 	
 	#Interpolating field (using zones wiht indices i1 and i2) to radius rad 
 	def _interp_zones(self, rad, i1, i2, field):
@@ -479,11 +457,9 @@ class Grid:
 
 		if second:
 			if self.logr:
-				#coeffs2=np.array([2., -27., 270., -490., 270., -27., 2.])/(180.*self.delta_log[i])
 				return (1./self.grid[i].rad**2/self.delta_log[i]**2)*(np.sum(field_list*self.second_deriv_coeffs)
 					-np.sum(field_list*self.first_deriv_coeffs))
 			else:
-				#coeffs2=np.array([2., -27., 270., -490., 270., -27., 2.])/(180.*self.delta[i])
 				return np.sum(field_list*self.second_deriv_coeffs)/self.delta[i]**2
 				
 		else:
@@ -566,15 +542,8 @@ class Grid:
 		else:
 			art_visc=art_visc*(self.delta[i]/np.mean(self.delta))
 
-		# if self.visc2:
-		# 	art_visc=0.1*self.delta[i]**2*(drho_dr*(dv_dr)**3+3.*rho*(dv_dr)**2*(d2v_dr2))
-
-
 		return -vel*dv_dr-dlog_rho_dr*kb*temp/(self.mu*mp)-(kb/(self.mu*mp))*dtemp_dr-self.grad_phi[i]+art_visc-(self.q[i]*vel/rho)
 
-	#Evaluating the partial derivative of temperature with respect to time.
-	# def dtemp_dt(self, i):
-	# 	return 0.
 
 	#Evaluating the partial derivative of entropy with respect to time
 	def ds_dt(self, i):
@@ -600,29 +569,25 @@ class Grid:
 	#Switch off isothermal equation of state for all zones within our grid.
 	def isot_off(self):
 		self.set_param('isot', False)
+		self.gamma=5./3.
 		self.set_param('fields', ['log_rho', 'vel', 's'])
 		for zone in self.grid:
 			zone.isot=False
 			zone.entropy()
 
 	#Set all mass dependent quantities
-	def place_mass(self, galaxy):
-		self.M_bh=galaxy.params['M']
-		self.M_enc_arr=np.array(map(galaxy.M_enc, self.radii/pc))
-		print self.M_enc_arr
+	def place_mass(self):
+		self.M_bh=self.params['M']
+		self.M_enc_grid=np.array(map(self.M_enc, self.radii/pc))
 
-		self.M_tot=self.M_enc_arr+self.M_bh
+		self.M_tot=self.M_enc_grid+self.M_bh
 		#Potential and potential gradient (Note that we have to be careful of the units here.)
-		self.phi_s=np.array(map(galaxy.phi_s, self.radii/pc))/pc
-		self.phi_bh=np.array(map(galaxy.phi_bh, self.radii/pc))/pc
-		self.phi=self.eps*self.phi_s+self.phi_bh
-		#self.phi=self.eps*(np.array(map(galaxy.phi, self.radii/pc))/pc+(G*self.M_bh/self.radii))-G*self.M_bh/self.radii
-		self.grad_phi=G*(self.M_bh+self.eps*self.M_enc_arr)/self.radii**2
+		self.phi_s_grid=np.array(map(self.phi_s, self.radii/pc))/pc
+		self.phi_bh_grid=np.array(map(self.phi_bh, self.radii/pc))/pc
+		self.phi_grid=self.eps*self.phi_s+self.phi_bh
+		self.grad_phi_grid=G*(self.M_bh+self.eps*self.M_enc_grid)/self.radii**2
 
-		#Gravitational radius
-		self.rg=G*(self.M_bh)/c**2.
-		if self.veff:
-			self.vw=self.scale_heating*c*((self.rg/self.radii)*(self.M_tot/self.M_bh))**0.5
+	
 
 
 	# #Resetting the wind velocity to a new value; useful to turn off heating by winds. 
