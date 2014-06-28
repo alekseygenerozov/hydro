@@ -114,7 +114,8 @@ def main():
 	params=['gal','vw','save','rescale','rmin','rmax','index','time','outdir','ss']
 	default=['NGC4551',1.E8,None,1.,None,None,-1,5.,'',False]
 	args=parser.parse_args()
-	init=ascii.read(args.init)
+	init=ascii.read(args.init[0])
+	print init
 	#Filling up gaps in the parameter file
 	for i in range(len(params)):
 		if np.in1d(params[i], init.colnames):

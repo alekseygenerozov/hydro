@@ -258,6 +258,9 @@ class Grid:
 
 		delta_log=np.diff(np.log(self.radii))
 		self.delta_log=np.insert(delta_log, 0, delta_log[0])
+		self.first_deriv_coeffs=np.array([-1., 9., -45., 0., 45., -9., 1.])/60.
+		self.second_deriv_coeffs=np.array([2., -27., 270., -490., 270., -27., 2.])/(180.)
+
 
 		self.delta_t=0
 		self.time_cur=0
@@ -472,22 +475,22 @@ class Grid:
 				field_list[j]=getattr(stencil[j], field)
 
 		#Coefficients we will use.
-		coeffs=np.array([-1., 9., -45., 0., 45., -9., 1.])/60.
+		#coeffs=np.array([-1., 9., -45., 0., 45., -9., 1.])/60.
 
 		if second:
 			if self.logr:
-				coeffs2=np.array([2., -27., 270., -490., 270., -27., 2.])/(180.*self.delta_log[i])
-				return (1./self.grid[i].rad**2/self.delta_log[i])*(np.sum(field_list*coeffs2)
-					-np.sum(field_list*coeffs))
+				#coeffs2=np.array([2., -27., 270., -490., 270., -27., 2.])/(180.*self.delta_log[i])
+				return (1./self.grid[i].rad**2/self.delta_log[i]**2)*(np.sum(field_list*self.second_deriv_coeffs)
+					-np.sum(field_list*self.first_deriv_coeffs))
 			else:
-				coeffs2=np.array([2., -27., 270., -490., 270., -27., 2.])/(180.*self.delta[i])
-				return np.sum(field_list*coeffs2)/self.delta[i]
+				#coeffs2=np.array([2., -27., 270., -490., 270., -27., 2.])/(180.*self.delta[i])
+				return np.sum(field_list*self.second_deriv_coeffs)/self.delta[i]**2
 				
 		else:
 			if self.logr:
-				return np.sum(field_list*coeffs)/(self.delta_log[i]*self.radii[i])
+				return np.sum(field_list*self.first_deriv_coeffs)/(self.delta_log[i]*self.radii[i])
 			else:
-				return np.sum(field_list*coeffs)/self.delta[i]
+				return np.sum(field_list*self.first_deriv_coeffs)/self.delta[i]
 
 	#Calculate laplacian in spherical coords. 
 	def get_laplacian(self, i, field):
