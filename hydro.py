@@ -250,17 +250,20 @@ class Grid:
 		self.bdry=bdry
 		self.bdry_fixed=bdry_fixed
 
-		#Computing differences between all of the grid elements 
 		delta=np.diff(self.radii)
-		#print delta
 		self.delta=np.insert(delta, 0, delta[0])
-		#print self.delta
+		self.delta_log=np.log(self.radii[1])-np.log(self.radii[0])
 
-		delta_log=np.diff(np.log(self.radii))
-		self.delta_log=np.insert(delta_log, 0, delta_log[0])
-		self.first_deriv_coeffs=np.array([-1., 9., -45., 0., 45., -9., 1.])/60.
-		self.second_deriv_coeffs=np.array([2., -27., 270., -490., 270., -27., 2.])/(180.)
-
+		#Coefficients use to calculate the derivatives 
+		first_deriv_weights=np.array([-1., 9., -45., 0., 45., -9., 1.])/60.
+		second_deriv_weights=np.array([2., -27., 270., -490., 270., -27., 2.])/(180.)
+		if not self.logr:
+			self.first_deriv_coeffs=first_deriv_weights/self.delta[0]
+			self.second_deriv_coeffs=second_deriv_weights/self.delta[0]**2
+		else: 
+			self.first_deriv_coeffs=np.array([first_deriv_weights/(r*self.delta_log) for r in self.radii])
+			self.second_deriv_coeffs=np.array([(1./r**2)*(second_deriv_weights/(self.delta_log**2)-(first_deriv_weights)/(self.delta_log))\
+				for r in self.radii])
 
 		self.delta_t=0
 		self.time_cur=0
@@ -461,7 +464,6 @@ class Grid:
 	#Getting derivatives for a given field (density, velocity, etc.). If second is set to be true then the discretized 2nd
 	#deriv is evaluated instead of the first
 	def get_spatial_deriv(self, i, field, second=False):
-	# def get_spatial_deriv(self, i, func=getattr, second=False, args=()):
 		left=3
 		right=3
 		num_zones=left+right+1
@@ -474,23 +476,11 @@ class Grid:
 			else:	
 				field_list[j]=getattr(stencil[j], field)
 
-		#Coefficients we will use.
-		#coeffs=np.array([-1., 9., -45., 0., 45., -9., 1.])/60.
-
 		if second:
-			if self.logr:
-				#coeffs2=np.array([2., -27., 270., -490., 270., -27., 2.])/(180.*self.delta_log[i])
-				return (1./self.grid[i].rad**2/self.delta_log[i]**2)*(np.sum(field_list*self.second_deriv_coeffs)
-					-np.sum(field_list*self.first_deriv_coeffs))
-			else:
-				#coeffs2=np.array([2., -27., 270., -490., 270., -27., 2.])/(180.*self.delta[i])
-				return np.sum(field_list*self.second_deriv_coeffs)/self.delta[i]**2
-				
+			return np.sum(field_list*self.second_deriv_coeffs[i])		
 		else:
-			if self.logr:
-				return np.sum(field_list*self.first_deriv_coeffs)/(self.delta_log[i]*self.radii[i])
-			else:
-				return np.sum(field_list*self.first_deriv_coeffs)/self.delta[i]
+			return np.sum(field_list*self.first_deriv_coeffs[i])
+
 
 	#Calculate laplacian in spherical coords. 
 	def get_laplacian(self, i, field):
