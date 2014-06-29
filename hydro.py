@@ -1,8 +1,10 @@
 import numpy as np
+from scipy import integrate
 import copy
 import warnings
 import pickle
-from scipy import integrate
+import sys
+import subprocess
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -10,11 +12,11 @@ import matplotlib.animation as animation
 
 from math import e
 
-import subprocess
 import astropy.constants as const
+from astropy.io import ascii
+
 import progressbar as progress
 import ipyani
-import sys
 
 #Constants
 G=const.G.cgs.value
@@ -24,47 +26,99 @@ mp=const.m_p.cgs.value
 h=const.h.cgs.value
 c=const.c.cgs.value
 pc=const.pc.cgs.value
+th=4.35*10**17
+#params=dict(Ib=17.16, alpha=1.26, beta=1.75, rb=343.3, gamma=0, Uv=7.)
 
 
-
-##Run a command from the bash shell
 def bash_command(cmd):
-    process=subprocess.Popen(['/bin/bash', '-c',cmd],  stdin=subprocess.PIPE, stdout=subprocess.PIPE)
-    return process.communicate()[0]
+	'''Run command from the bash shell'''
+	process=subprocess.Popen(['/bin/bash', '-c',cmd],  stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+	return process.communicate()[0]
+
+def nuker(r, Ib=17.16, alpha=1.26, beta=1.75, rb=343.3, gamma=0, Uv=7., **kwargs):
+	'''Nuker parameterization'''
+	return Ib*2.**((beta-gamma)/alpha)*(rb/r)**gamma*(1.+(r/rb)**alpha)**((gamma-beta)/alpha)
+
+##Derivative of nuker parameterized surface brightness profile
+def nuker_prime(r, Ib=17.16, alpha=1.26, beta=1.75, rb=343.3, gamma=0, Uv=7., **kwargs):
+	'''First derivative of nuker paramerization'''
+	return -((2**((beta - gamma)/alpha)*Ib*(gamma + beta*(r/rb)**alpha)*(rb/r)**gamma)/ (r*(1 + (r/rb)**alpha)**((alpha + beta - gamma)/alpha)))
+	
+##Return the inverse abel transform of a function 
+def inverse_abel(i_prime, r, **kwargs):
+	'''Inverse abel transform
+
+	'''
+	f=lambda y: i_prime(y, **kwargs)/np.sqrt(y**2-r**2)
+	return -(1/np.pi)*integrate.quad(f, r, np.inf)[0]
+
+##Convert from magnitudes per arcsec^2 to luminosities per parsec^2
+def mub_to_Ib(mub):
+	'''Convert from magnitudes per arcsec^2 to luminosities per pc^2'''
+	Msun=4.83
+	return 10**(-(mub-Msun-21.572)/2.5)
+
+def nuker_params(skip=False):
+	'''Reads Wang & Merritt parameter table into python dictionary
+
+	:param skip: skip over galaxies discarded by Wang and Merritt
+	'''
+	table=ascii.read('wm')
+	galaxies=dict()
+	for i in range(len(table)):
+		d=dict()
+		if table['$\\log_{10}\\dot{N}$\\tablenotemark{f}'][i]=='-' and skip:
+			continue
+		d['Uv']=table[i]['$\\Upsilon_V $']
+		d['alpha']=table[i]['$\\alpha$']
+		d['beta']=table[i]['$\\beta$']
+		d['gamma']=table[i]['$\\Gamma$']
+		d['rb']=10.**table[i]['$\log_{10}(r_{b})$']
+		d['Ib']=mub_to_Ib(table[i]['$\mu_b$'])
+		d['mub']=table[i]['$\mu_b$']
+		d['d']=table[i]['Distance']
+		d['M']=M_sun*10.**table[i]['$\\log_{10}(M_{\\bullet}/M_{\\odot})$\\tablenotemark{e}']
+		d['type']=table[i][r'Profile\tablenotemark{b}']
+		if d['type']=='$\\cap$':
+			d['type']='core'
+		else:
+			d['type']='cusp'
+		galaxies[table[i]['Name']]=d
+
+	return galaxies
+
 
 #Compute logarithmic slope given values and radii
 def get_slope(r1, r2, f1, f2):
-    return np.log(f2/f1)/np.log(r2/r1)
+	return np.log(f2/f1)/np.log(r2/r1)
 
-#Extend inner grid boundary to be supersonic
+
 def extend_to_ss(dat):
-    #Getting the slopes of all profile
-    slope=np.empty(5)
-    field=np.copy(dat[0])
-    for i in range(len(field)):
-        slope[i]=get_slope(dat[0,0], dat[3,0], dat[0,i], dat[3,i])
-    #Getting target radius
-    r_end=dat[0,0]*np.exp((1./slope[2])*np.log(-2./dat[0,2]))
+	'''Extend inner grid boundary to be supersonic'''
+	slope=np.empty(5)
+	field=np.copy(dat[0])
+	for i in range(len(field)):
+		slope[i]=get_slope(dat[0,0], dat[3,0], dat[0,i], dat[3,i])
+	#Getting target radius
+	r_end=dat[0,0]*np.exp((1./slope[2])*np.log(-2./dat[0,2]))
 
-    #Computing the grid spacing
-    delta_log=np.log(dat[1,0]/dat[0,0])
-    r=dat[0,0]
-    logr=np.log(dat[0,0])
-    dat_extend=np.copy(dat)
-    while r>r_end:
-        logr=logr-delta_log
-        r=np.exp(logr)
-        for i in range(len(field)):
-            field[i]=field[i]*(r/dat_extend[0,0])**slope[i]
-        #Stacking to the end of the grid
-        dat_extend=np.vstack([field, dat_extend])
-    return dat_extend
-        
-        
-
-
-##Preparing array with initialization file (idea is to go back from save file)
+	#Computing the grid spacing
+	delta_log=np.log(dat[1,0]/dat[0,0])
+	r=dat[0,0]
+	logr=np.log(dat[0,0])
+	dat_extend=np.copy(dat)
+	while r>r_end:
+		logr=logr-delta_log
+		r=np.exp(logr)
+		for i in range(len(field)):
+			field[i]=field[i]*(r/dat_extend[0,0])**slope[i]
+		#Stacking to the end of the grid
+		dat_extend=np.vstack([field, dat_extend])
+	return dat_extend
+		
+		
 def prepare_start(end_state, rescale=1):
+
 	# end_state=dat[-70:]
 	end_state[:,2]=end_state[:,2]*end_state[:,-1]
 	end_state[:,1]=np.log(end_state[:,1])
@@ -152,11 +206,24 @@ class Zone:
 		u=self.pres/(self.rho*(self.gamma-1.))
 		return 0.5*self.vel**2+(self.pres/self.rho)+u+self.phi[0]
 
-class Grid:
-	"""Class stores (static) grid for solving Euler equations numerically"""
+class Galaxy:
+	'''Class to representing Nuker parameterized galaxy.'''
 
-	def __init__(self, galaxy, init=None, init_array=None):
+	def __init__(self, gname, gdata, init=None, init_array=None):
+		try:
+			self.params=gdata[gname]
+		except KeyError:
+			print 'Error! '+gname+' is not in catalog!'
+			raise
+		self.name=gname
+		print self.name
+		self.eta=1.
+		self.rmin_star=1.E-3
+		self.rmax_star=1.E5
+		self.rg=G*self.params['M']/c**2
+		
 		self.logr=True
+		self.init_params=dict()
 		#Initializing the radial grid
 		if init!=None:
 			assert len(init)==3
@@ -168,10 +235,10 @@ class Grid:
 			#Setting up the grid (either logarithmic or linear in r)
 			self.logr=logr
 			if logr:
-				self.radii=np.logspace(np.log(r1), np.log(r2), n, base=e)
+				self.radii=np.logspace(np.log(r1), np.log(r2), self.length, base=e)
 			else:
-				self.radii=np.linspace(r1, r2, n)
-			prims=[f_initial(r, **params) for r in self.radii]
+				self.radii=np.linspace(r1, r2, self.length)
+			prims=[f_initial(r, **self.init_params) for r in self.radii]
 			# for i in range(len(self.radii)):
 			# 	prims[i]=f_initial(self.radii[i], **params)
 
@@ -204,13 +271,14 @@ class Grid:
 		self.floor=0.
 		self.safety=0.6
 		self.bdry='default'
+		self.bdry_fixed=False
 		
 		self.q_grid=np.array(map(self.q, self.radii/pc))/pc**3
-		self.vw_extra=0.
-		self.vw=np.array([(galaxy.sigma(r/pc)**2+(vw_extra)**2)**0.5 for r in self.radii])
+		self.vw_extra=5.E7
+		self.vw=np.array([(self.sigma(r/pc)**2+(self.vw_extra)**2)**0.5 for r in self.radii])
 
 		self.eps=1.
-		self.place_mass(galaxy)
+		self.place_mass()
 
 
 		self.out_fields=['rad', 'rho', 'vel', 'temp', 'frho', 'be', 's', 'cs']
@@ -219,6 +287,17 @@ class Grid:
 		self.movies=False
 		self.outdir='.'
 
+		#Coefficients use to calculate the derivatives 
+		first_deriv_weights=np.array([-1., 9., -45., 0., 45., -9., 1.])/60.
+		second_deriv_weights=np.array([2., -27., 270., -490., 270., -27., 2.])/(180.)
+		if not self.logr:
+			self.first_deriv_coeffs=first_deriv_weights/self.delta[0]
+			self.second_deriv_coeffs=second_deriv_weights/self.delta[0]**2
+		else: 
+			self.first_deriv_coeffs=np.array([first_deriv_weights/(r*self.delta_log) for r in self.radii])
+			self.second_deriv_coeffs=np.array([(1./r**2)*(second_deriv_weights/(self.delta_log**2)-(first_deriv_weights)/(self.delta_log))\
+				for r in self.radii])
+
 
 		#Grid will be stored as list of zones
 		self.grid=[]
@@ -226,7 +305,7 @@ class Grid:
 		self.time_derivs=np.zeros(self.length, dtype={'names':['log_rho', 'vel', 's'], 'formats':['float64', 'float64', 'float64']})
 		#Initializing the grid using the initial value function f_initial
 		for i in range(len(self.radii)):
-			self.grid.append(Zone(vw=self.vw[i:i+1], q=self.q[i:i+1],  phi=self.phi_grid[i:i+1], rad=self.radii[i], prims=prims[i], isot=self.isot, gamma=gamma, mu=mu))
+			self.grid.append(Zone(vw=self.vw[i:i+1], q=self.q_grid[i:i+1],  phi=self.phi_grid[i:i+1], rad=self.radii[i], prims=prims[i], isot=self.isot, gamma=gamma, mu=mu))
 		self._add_ghosts(num_ghosts=num_ghosts)
 
 		#Computing differences between all of the grid elements 
@@ -250,6 +329,87 @@ class Grid:
 		self.time_stamps=[]
 
 
+	def rho_stars(self,r):
+		'''Stellar density
+
+		Parameters
+		===========
+		r : float
+			radius in parsecs
+		'''
+		if r<self.rmin_star:
+			return 0.
+		else:
+			return M_sun*self.params['Uv']*inverse_abel(nuker_prime, r, **self.params)
+
+	def M_enc(self,r):
+		'''Mass enclosed within radius r
+		Parameters
+		===========
+		r : float
+			radius 
+		'''
+		if r<self.rmin_star:
+			return 0.
+		# elif self.menc=='circ':
+		#     return integrate.quad(lambda r1:2.*np.pi*r1*M_sun*self.params['Uv']*nuker(r1, **self.params),self.rmin)
+		else:
+			return integrate.quad(lambda r1:4.*np.pi*r1**2*self.rho_stars(r1), self.rmin_star, r)[0]
+
+	def sigma(self, r):
+		'''Velocity dispersion of galaxy
+
+		Parameters
+		===========
+		r : float
+			radius 
+		'''
+		rg=G*(self.params['M'])/c**2./pc
+		return (c**2*self.rg/r*(self.M_enc(r)+self.params['M'])/self.params['M'])**0.5
+
+	def phi_s(self,r):
+		'''Potential from the stars
+
+		Parameters
+		===========
+		r : float
+			radius 
+		'''
+		return (-G*self.M_enc(r)/r)-4.*np.pi*G*integrate.quad(lambda r1:self.rho_stars(r1)*r1, r, self.rmax_star)[0]
+
+	def phi_bh(self,r):
+		'''Potential from the black hole
+
+		Parameters
+		===========
+		r : float
+			radius 
+		'''
+		return -G*self.params['M']/r
+
+	def phi(self,r):
+		'''Total potential
+
+		Parameters
+		===========
+		r : float
+			radius 
+		'''
+		return self.phi_bh(r)+self.phi_s(r)
+
+	def q(self, r):
+		'''Source term representing mass loss from stellar winds'''
+		return self.eta*self.rho_stars(r)/th
+
+
+	##Getting the radius of influence: where the enclosed mass begins to equal the mass of the central BH. 
+	def rinf(self):
+		'''Get radius of influence for galaxy'''
+		def mdiff(r):
+			return self.params['M']-self.M_enc(r)
+
+		return fsolve(mdiff, 1)[0]
+	
 
 	def output_prep(self):
 		bash_command('mkdir -p '+self.outdir)
@@ -263,9 +423,9 @@ class Grid:
 		times.close()
 
 
-	#Calculate hearting in cell
-	def get_sp_heating(self, i):
-		return (0.5*self.grid[i].vel**2+0.5*self.vw[i]**2-(self.gamma)/(self.gamma-1)*(self.grid[i].pres/self.grid[i].rho))
+	# #Calculate hearting in cell
+	# def get_sp_heating(self, i):
+	# 	return (0.5*self.grid[i].vel**2+0.5*self.vw[i]**2-(self.gamma)/(self.gamma-1)*(self.grid[i].pres/self.grid[i].rho))
 	
 	#Update array of conseerved quantities	
 	def _cons_update(self):
@@ -283,7 +443,9 @@ class Grid:
 
 	#Check how well conservation holds on grid as a whole.
 	def _cons_check(self):
+		'''Check level of conservation at end of run'''
 		check=file(self.outdir+'/check', 'w')
+		self.check=True
 		for i in range(len(self.cons_fields)):
 			flux=4.*np.pi*self.get_field(self.cons_fields[i])[1]
 			fdiff=flux[self.end]-flux[self.start]
@@ -291,6 +453,8 @@ class Grid:
 			integral=np.sum(src[self.start:self.end+1])
 			with warnings.catch_warnings():
 				pdiff=(fdiff-integral)*100./integral
+			if (pdiff>40.) or np.isnan(pdiff):
+				self.check=False
 
 			check.write(self.cons_fields[i]+'\n')
 			pre=['flux1=','flux2=','diff=','src=','pdiff=']
@@ -339,8 +503,9 @@ class Grid:
 		for i in range(self.end+1, self.length):
 			self.grid[i].s=s_end
 
-	#Extrapolate densities to the ghost zones
+	#Power law extrapolation of quantities into ghost zones 
 	def _extrapolate(self, field):
+		'''Perform power law extrapolation of quantities on grid to boundaries'''
 		r1=self.grid[self.start].rad
 		r2=self.grid[self.start+3].rad
 		field1=getattr(self.grid[self.start], field)
@@ -367,8 +532,9 @@ class Grid:
 			if field=='rho':
 				self.grid[i].log_rho=np.log(val)
 
-	#Extrapolate densities to the ghost zones
+	#Extrapolate densities to the ghost zones; a lot of this method is redundant 
 	def _dens_extrapolate(self):
+		'''Old method used to extrapolate density into ghost zones'''
 		r_start=self.grid[self.start].rad
 		r_start2=self.grid[self.start+3].rad
 		log_rho_start=self.grid[self.start].log_rho
@@ -439,7 +605,6 @@ class Grid:
 	#Getting derivatives for a given field (density, velocity, etc.). If second is set to be true then the discretized 2nd
 	#deriv is evaluated instead of the first
 	def get_spatial_deriv(self, i, field, second=False):
-	# def get_spatial_deriv(self, i, func=getattr, second=False, args=()):
 		left=3
 		right=3
 		num_zones=left+right+1
@@ -452,21 +617,11 @@ class Grid:
 			else:	
 				field_list[j]=getattr(stencil[j], field)
 
-		#Coefficients we will use.
-		#coeffs=np.array([-1., 9., -45., 0., 45., -9., 1.])/60.
-
 		if second:
-			if self.logr:
-				return (1./self.grid[i].rad**2/self.delta_log[i]**2)*(np.sum(field_list*self.second_deriv_coeffs)
-					-np.sum(field_list*self.first_deriv_coeffs))
-			else:
-				return np.sum(field_list*self.second_deriv_coeffs)/self.delta[i]**2
-				
+			return np.sum(field_list*self.second_deriv_coeffs[i])		
 		else:
-			if self.logr:
-				return np.sum(field_list*self.first_deriv_coeffs)/(self.delta_log[i]*self.radii[i])
-			else:
-				return np.sum(field_list*self.first_deriv_coeffs)/self.delta[i]
+			return np.sum(field_list*self.first_deriv_coeffs[i])
+
 
 	#Calculate laplacian in spherical coords. 
 	def get_laplacian(self, i, field):
@@ -506,14 +661,14 @@ class Grid:
 		vel=self.grid[i].vel
 
 		#return -cs*drho_dr+art_visc*drho_dr_second
-		return -vel*self.get_spatial_deriv(i, 'log_rho')-(1/rad**2)*self.get_spatial_deriv(i, 'r2vel')+self.q[i]/rho
+		return -vel*self.get_spatial_deriv(i, 'log_rho')-(1/rad**2)*self.get_spatial_deriv(i, 'r2vel')+self.q_grid[i]/rho
 
 	#Partial derivative of density with respect to time
 	def drho_dt(self, i):
 		rad=self.grid[i].rad
 
 		#return -cs*drho_dr+art_visc*drho_dr_second
-		return -(1./rad)**2*self.get_spatial_deriv(i, 'frho')+self.q[i]
+		return -(1./rad)**2*self.get_spatial_deriv(i, 'frho')+self.q_grid[i]
 
 	#Evaluating the partial derivative of velocity with respect to time
 	def dvel_dt(self, i):
@@ -524,7 +679,7 @@ class Grid:
 
 		#If the density zero of goes negative return zero to avoid numerical issues
 		if rho<=self.floor:
-		 	return 0
+			return 0
 
 		# dpres_dr=self.get_spatial_deriv(i, 'pres')
 		dlog_rho_dr=self.get_spatial_deriv(i, 'log_rho')
@@ -542,7 +697,7 @@ class Grid:
 		else:
 			art_visc=art_visc*(self.delta[i]/np.mean(self.delta))
 
-		return -vel*dv_dr-dlog_rho_dr*kb*temp/(self.mu*mp)-(kb/(self.mu*mp))*dtemp_dr-self.grad_phi[i]+art_visc-(self.q[i]*vel/rho)
+		return -vel*dv_dr-dlog_rho_dr*kb*temp/(self.mu*mp)-(kb/(self.mu*mp))*dtemp_dr-self.grad_phi[i]+art_visc-(self.q_grid[i]*vel/rho)
 
 
 	#Evaluating the partial derivative of entropy with respect to time
@@ -564,7 +719,7 @@ class Grid:
 
 
 		#return self.q(rad, **self.params_delta)*(0.5*self.vw**2+0.5*vel**2-self.gamma*cs**2/(self.gamma-1))/(rho*temp)-vel*ds_dr#+art_visc*lap_s
-		return self.q[i]*self.grid[i].sp_heating/(rho*temp)-vel*ds_dr+art_visc
+		return self.q_grid[i]*self.grid[i].sp_heating/(rho*temp)-vel*ds_dr+art_visc
 
 	#Switch off isothermal equation of state for all zones within our grid.
 	def isot_off(self):
@@ -584,17 +739,9 @@ class Grid:
 		#Potential and potential gradient (Note that we have to be careful of the units here.)
 		self.phi_s_grid=np.array(map(self.phi_s, self.radii/pc))/pc
 		self.phi_bh_grid=np.array(map(self.phi_bh, self.radii/pc))/pc
-		self.phi_grid=self.eps*self.phi_s+self.phi_bh
+		self.phi_grid=self.eps*self.phi_s_grid+self.phi_bh_grid
 		self.grad_phi_grid=G*(self.M_bh+self.eps*self.M_enc_grid)/self.radii**2
 
-	
-
-
-	# #Resetting the wind velocity to a new value; useful to turn off heating by winds. 
-	# def reset_vw(self, vw):
-	# 	self.vw=c*((self.rg/self.radii)*(self.M_tot/self.M_bh)+(vw**2/c**2))**0.5
-	# 	for i in range(len(self.grid)):
-	# 		self.grid[i].vw=self.vw[i]
 
 	#High-level controller for solution. Several possible stop conditions (max_steps is reached, time is reached, convergence is reached)
 	def solve(self, time, max_steps=np.inf):
@@ -613,17 +760,10 @@ class Grid:
 
 	def set_param(self, param, value):
 		old=getattr(self,param)
-		if param=='M_bh' or param=='M_enc_arr':
-			print 'Operation curretly not supported\n'
-			return
-		elif param=='eps':
+		if param=='eps':
 			self.eps=value
 			self.phi=self.eps*self.phi_s+self.phi_bh
 			self.grad_phi=G*(self.M_bh+self.eps*self.M_enc_arr)/self.radii**2
-		elif param=='scale_heating' and self.veff:
-			self.vw[:]=self.scale_heating*c*((self.rg/self.radii)*(self.M_tot/self.M_bh))**0.5
-			for i in range(self.length):
-				self.grid[i].vw=self.vw[i:i+1]
 		elif param=='vw':
 			self.vw[:]=value
 			for i in range(self.length):
@@ -658,27 +798,10 @@ class Grid:
 			
 	#Method to write solution info to file
 	def write_sol(self):
-		#For all of the field we would like to output, output movie.
-		# if self.movies:
-		# 	for i in range(0, len(self.out_fields)):
-		# 		self.animate(index=i)
-		#Writing solution
-		# mdot_check=self._mdot_check()
-		# be_check=self._bernoulli_check()
-		# s_check=self._s_check()
-		# check=file(self.outdir+'/check', 'w')
-		# check.write('mdot: frho1={0:8.7e} frho2={1:8.7e} flux={2:8.7e} mdot={3:8.7e} percent diff={4:8.7e}\n\n'.format(mdot_check[0], mdot_check[1], mdot_check[2], mdot_check[3], mdot_check[4]))
-		# check.write('be: be1={0:8.7e} be2={1:8.7e} flux={2:8.7e} \int src={3:8.7e} percent diff={4:8.7e}\n\n'.format(be_check[0], be_check[1], be_check[2], be_check[3], be_check[4]))
-		# check.write('s: s1={0:8.7e} s2={1:8.7e} flux={2:8.7e} \int src={3:8.7e} percent diff={4:8.7e}'.format(s_check[0], s_check[1], s_check[2], s_check[3], s_check[4]))
-		# check.close()
 		self._cons_check()
 
 		np.savez(self.outdir+'/save', a=self.saved, b=self.time_stamps)
 		np.savez(self.outdir+'/cons', a=self.fdiff)
-
-		# bash_command('mkdir -p '+self.outdir)
-		# bash_command('cp save.npz cons.npz check params log '+self.outdir)
-		#plt.clf()
 
 	def backup(self):
 		bash_command('mkdir -p '+self.outdir)
@@ -753,7 +876,7 @@ class Grid:
 		ymax=np.max(self.saved[:,:,index])
 		fig,ax=plt.subplots()
 		label=ax.text(0.02, 0.95, '', transform=ax.transAxes)	
-                ax.set_xscale('log')
+		ax.set_xscale('log')
 		if index==0:
 			ax.set_yscale('log')
 		ax.set_ylim(ymin-0.1*np.abs(ymin), ymax+0.1*np.abs(ymax))
