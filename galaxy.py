@@ -18,6 +18,8 @@ from astropy.io import ascii
 import progressbar as progress
 import ipyani
 
+import os.path
+
 #Constants
 G=const.G.cgs.value
 M_sun=const.M_sun.cgs.value
@@ -215,15 +217,16 @@ class Galaxy(object):
 		self.params={'M':3.6E6*M_sun}
 		#Initializing the radial grid
 		if init!=None:
-			assert len(init)==3
+			assert len(init)==3 or len(init)==4
 			r1,r2,f_initial=init[0],init[1],init[2]
+			if len(init)==4:
+				self.init_params=init[3]
+
 			assert r2>r1
 			assert hasattr(f_initial, '__call__')
 			self.length=70
 
-			#Setting up the grid (either logarithmic or linear in r)
-			self.logr=logr
-			if logr:
+			if self.logr:
 				self.radii=np.logspace(np.log(r1), np.log(r2), self.length, base=e)
 			else:
 				self.radii=np.linspace(r1, r2, self.length)
@@ -241,17 +244,14 @@ class Galaxy(object):
 		#Attributes to store length of the list as well as start and end indices (useful for ghost zones)
 		self.start=0
 		self.end=self.length-1
+		self.tcross=(self.radii[-1]-self.radii[0])/(kb*1.E7/mp)**0.5
 		self._num_ghosts=3
-		self.tinterval=None
+		self.tinterval=0.05*self.tcross
 		self.sinterval=100
 
 		self.isot=False
-		if self.isot:
-			self.fields=['log_rho', 'vel']
-			self.gamma=1.
-		else:
-			self.fields=['log_rho', 'vel', 's']
-			self.gamma=5./3.
+		self.gamma=5./3.
+		self.fields=['log_rho', 'vel', 's']
 		self.mu=1.
 
 		self.visc_scheme='default'
@@ -262,7 +262,7 @@ class Galaxy(object):
 		self.bdry='default'
 		self.bdry_fixed=False
 		
-		self.q_grid=np.array(map(self.q, self.radii/pc))/pc**3
+		self.q_grid=np.array([self.q(r) for r in self.radii/pc])/pc**3
 		self.vw_extra=1.E8
 		self.vw=np.array([(self.sigma(r/pc)**2+(self.vw_extra)**2)**0.5 for r in self.radii])
 
@@ -276,17 +276,6 @@ class Galaxy(object):
 		self.movies=False
 		self.outdir='.'
 
-		#Coefficients use to calculate the derivatives 
-		first_deriv_weights=np.array([-1., 9., -45., 0., 45., -9., 1.])/60.
-		second_deriv_weights=np.array([2., -27., 270., -490., 270., -27., 2.])/(180.)
-		if not self.logr:
-			self.first_deriv_coeffs=first_deriv_weights/self.delta[0]
-			self.second_deriv_coeffs=second_deriv_weights/self.delta[0]**2
-		else: 
-			self.first_deriv_coeffs=np.array([first_deriv_weights/(r*self.delta_log) for r in self.radii])
-			self.second_deriv_coeffs=np.array([(1./r**2)*(second_deriv_weights/(self.delta_log**2)-(first_deriv_weights)/(self.delta_log))\
-				for r in self.radii])
-
 
 		#Grid will be stored as list of zones
 		self.grid=[]
@@ -294,18 +283,24 @@ class Galaxy(object):
 		self.time_derivs=np.zeros(self.length, dtype={'names':['log_rho', 'vel', 's'], 'formats':['float64', 'float64', 'float64']})
 		#Initializing the grid using the initial value function f_initial
 		for i in range(len(self.radii)):
-			self.grid.append(Zone(vw=self.vw[i:i+1], q=self.q_grid[i:i+1],  phi=self.phi_grid[i:i+1], rad=self.radii[i], prims=prims[i], isot=self.isot, gamma=gamma, mu=mu))
-		self._add_ghosts(num_ghosts=num_ghosts)
+			self.grid.append(Zone(vw=self.vw[i:i+1], q=self.q_grid[i:i+1],  phi=self.phi_grid[i:i+1], rad=self.radii[i], prims=prims[i], isot=self.isot, gamma=self.gamma, mu=self.mu))
+		self._add_ghosts()
 
 		#Computing differences between all of the grid elements 
 		delta=np.diff(self.radii)
 		self.delta=np.insert(delta, 0, delta[0])
 		delta_log=np.diff(np.log(self.radii))
 		self.delta_log=np.insert(delta_log, 0, delta_log[0])
-		#Coefficients to compute derivatives
-		self.first_deriv_coeffs=np.array([-1., 9., -45., 0., 45., -9., 1.])/60.
-		self.second_deriv_coeffs=np.array([2., -27., 270., -490., 270., -27., 2.])/(180.)
-
+		#Coefficients use to calculate the derivatives 
+		first_deriv_weights=np.array([-1., 9., -45., 0., 45., -9., 1.])/60.
+		second_deriv_weights=np.array([2., -27., 270., -490., 270., -27., 2.])/(180.)
+		if not self.logr:
+			self.first_deriv_coeffs=first_deriv_weights/self.delta[0]
+			self.second_deriv_coeffs=second_deriv_weights/self.delta[0]**2
+		else: 
+			self.first_deriv_coeffs=np.array([first_deriv_weights/(r*self.delta_log[0]) for r in self.radii])
+			self.second_deriv_coeffs=np.array([(1./r**2)*(second_deriv_weights/(self.delta_log[0]**2)-(first_deriv_weights)/(self.delta_log[0]))\
+				for r in self.radii])
 
 		self.delta_t=0
 		self.time_cur=0
@@ -317,29 +312,37 @@ class Galaxy(object):
 		self.output_prep()
 		self.time_stamps=[]
 
+		self.nsolves=0
 
-		def M_enc(self,r):
-			return 0.
+	def M_enc(self,r):
+		return 0.
 
-		def q(self, r):
-			r1=2.4e17
-			r2=1.2e18
-			a=mdotw/(4.*np.pi)/((r2**(eta+3)-r1**(eta+3))/(eta+3))
-			if rad<r2 and rad>r1:
-			    return a*(rad*pc)**eta*pc**3
-			else:
-			    return 0.
+	def q(self, r):
+		r1=2.4e17
+		r2=1.2e18
+		mdotw=6.7*10.**22
+		eta=-2.
 
-		def sigma(self, r):
-			return 0.
+		a=mdotw/(4.*np.pi)/((r2**(eta+3)-r1**(eta+3))/(eta+3))
+		if r*pc<r2 and r*pc>r1:
+		    return a*(r*pc)**(eta)*pc**3
+		else:
+		    return 0.
 
-		def phi_s(self, r):
-			return 0.
+	def sigma(self, r):
+		return 0.
 
-		def phi_r(self, r):
-			return G*self.params['M']/r
+	def phi_s(self, r):
+		return 0.
+
+	def phi_bh(self, r):
+		return -G*self.params['M']/r
+
+	def phi(self,r):
+		'''Total potential
+		'''
+		return self.phi_bh(r)+self.phi_s(r)
 	
-
 	def output_prep(self):
 		bash_command('mkdir -p '+self.outdir)
 		f=open(self.outdir+'/params', 'w')
@@ -396,7 +399,7 @@ class Galaxy(object):
 
 	#Adding ghost zones onto the edges of the grid (moving the start of the grid)
 	def _add_ghosts(self):
-		self.start=num_ghosts
+		self.start=self._num_ghosts
 		self.end=self.end-self._num_ghosts
 	
 	#Interpolating field (using zones wiht indices i1 and i2) to radius rad 
@@ -626,7 +629,7 @@ class Galaxy(object):
 		else:
 			art_visc=art_visc*(self.delta[i]/np.mean(self.delta))
 
-		return -vel*dv_dr-dlog_rho_dr*kb*temp/(self.mu*mp)-(kb/(self.mu*mp))*dtemp_dr-self.grad_phi[i]+art_visc-(self.q_grid[i]*vel/rho)
+		return -vel*dv_dr-dlog_rho_dr*kb*temp/(self.mu*mp)-(kb/(self.mu*mp))*dtemp_dr-self.grad_phi_grid[i]+art_visc-(self.q_grid[i]*vel/rho)
 
 
 	#Evaluating the partial derivative of entropy with respect to time
@@ -650,14 +653,21 @@ class Galaxy(object):
 		#return self.q(rad, **self.params_delta)*(0.5*self.vw**2+0.5*vel**2-self.gamma*cs**2/(self.gamma-1))/(rho*temp)-vel*ds_dr#+art_visc*lap_s
 		return self.q_grid[i]*self.grid[i].sp_heating/(rho*temp)-vel*ds_dr+art_visc
 
-	#Switch off isothermal equation of state for all zones within our grid.
+
 	def isot_off(self):
+		'''Switch off isothermal evolution'''
 		self.set_param('isot', False)
-		self.gamma=5./3.
 		self.set_param('fields', ['log_rho', 'vel', 's'])
 		for zone in self.grid:
 			zone.isot=False
 			zone.entropy()
+
+	def isot_on(self):
+		'''Switch on isothermal evolution'''
+		self.set_param('isot', True)
+		self.set_param('fields', ['log_rho', 'vel'])
+		for zone in self.grid:
+			zone.isot=True
 
 	#Set all mass dependent quantities
 	def place_mass(self):
@@ -671,12 +681,12 @@ class Galaxy(object):
 		self.phi_grid=self.eps*self.phi_s_grid+self.phi_bh_grid
 		self.grad_phi_grid=G*(self.M_bh+self.eps*self.M_enc_grid)/self.radii**2
 
-
-	#High-level controller for solution. Several possible stop conditions (max_steps is reached, time is reached, convergence is reached)
 	def solve(self, time, max_steps=np.inf):
+		'''High-level controller for solution. Several possible stop conditions (max_steps is reached, time is reached)'''
 		self.time_cur=0
 		self.time_target=time
-
+		if not os.path.isfile(self.outdir+'/params') or self.nsolves==0:
+			self.output_prep()
 		#For purposes of easy backup
 		if len(self.saved)==0:
 			self.save_pt=0
@@ -686,17 +696,27 @@ class Galaxy(object):
 		self._evolve(max_steps=max_steps)
 
 		self.write_sol()
+		self.nsolves+=1
 
 	def set_param(self, param, value):
 		old=getattr(self,param)
 		if param=='eps':
 			self.eps=value
 			self.phi=self.eps*self.phi_s+self.phi_bh
-			self.grad_phi=G*(self.M_bh+self.eps*self.M_enc_arr)/self.radii**2
-		elif param=='vw':
-			self.vw[:]=value
+			self.grad_phi_grid=G*(self.M_bh+self.eps*self.M_enc_arr)/self.radii**2
+		elif param=='vw_extra':
+			self.vw_extra=value
+			self.vw[:]=np.array([(self.sigma(r/pc)**2+(self.vw_extra)**2)**0.5 for r in self.radii])
 			for i in range(self.length):
 				self.grid[i].vw=self.vw[i:i+1]
+		elif param=='mu':
+			self.mu=value
+			for i in range(self.length):
+				self.grid[i].mu=value
+		elif param=='gamma':
+			self.gamma=value
+			for i in range(self.lengh):
+				self.grid[i].gamma=gamma
 		else:
 			setattr(self,param,value)
 
@@ -745,7 +765,7 @@ class Galaxy(object):
 
 		#While we have not yet reached the target time
 		while self.time_cur<self.time_target:
-			if (self.tinterval>0 and (self.time_cur/self.tinterval)>=ninterval) or (self.tinterval<=0 and num_steps%self.s_interval==0):
+			if (self.tinterval>0 and (self.time_cur/self.tinterval)>=ninterval) or (self.tinterval<=0 and num_steps%self.sinterval==0):
 				pbar.update(self.time_cur)
 				self._cons_update()
 				self.save()
@@ -891,20 +911,21 @@ class Galaxy(object):
 
 
 class NukerGalaxy(Galaxy):
-	def __init__(self, gname, gdata, init=None, init_array=None):
-	try:
-		self.params=gdata[gname]
-	except KeyError:
-		print 'Error! '+gname+' is not in catalog!'
-		raise
-	self.name=gname
-	print self.name
-	self.eta=1.
-	self.rmin_star=1.E-3
-	self.rmax_star=1.E5
-	self.rg=G*self.params['M']/c**2
+	'''Sub-classing galaxy above to represent Nuker parameterized galaxies'''
+	def __init__(self, gname, gdata,  init=None, init_array=None):
+		try:
+			self.params=gdata[gname]
+		except KeyError:
+			print 'Error! '+gname+' is not in catalog!'
+			raise
+		self.name=gname
+		print self.name
+		self.eta=1.
+		self.rmin_star=1.E-3
+		self.rmax_star=1.E5
+		self.rg=G*self.params['M']/c**2
 
-	Galaxy.__init__(self, init=init, init_array=init_array)
+		Galaxy.__init__(self, init=init, init_array=init_array)
 
 	def rho_stars(self,r):
 		'''Stellar density
@@ -964,15 +985,7 @@ class NukerGalaxy(Galaxy):
 		'''
 		return -G*self.params['M']/r
 
-	def phi(self,r):
-		'''Total potential
 
-		Parameters
-		===========
-		r : float
-			radius 
-		'''
-		return self.phi_bh(r)+self.phi_s(r)
 
 	def q(self, r):
 		'''Source term representing mass loss from stellar winds'''
