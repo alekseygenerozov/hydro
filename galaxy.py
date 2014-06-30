@@ -14,6 +14,7 @@ from math import e
 
 import astropy.constants as const
 from astropy.io import ascii
+from astropy.table import Table
 
 import progressbar as progress
 import ipyani
@@ -50,6 +51,7 @@ def nuker_prime(r, Ib=17.16, alpha=1.26, beta=1.75, rb=343.3, gamma=0, Uv=7., **
 def inverse_abel(i_prime, r, **kwargs):
 	'''Inverse abel transform
 
+	:param i_prime: First derivative of surface brightness profile
 	'''
 	f=lambda y: i_prime(y, **kwargs)/np.sqrt(y**2-r**2)
 	return -(1/np.pi)*integrate.quad(f, r, np.inf)[0]
@@ -132,12 +134,12 @@ def prepare_start(end_state, rescale=1):
 
 
 class Zone:
-	"""Class to store zones of (static) grid, to be used to solve
-	Euler equations numerically. Contains radius (rad), primitive 
-	variables and pressures. Also contains mass enclosed inside 
-	cell.
+	# """Class to store zones of (static) grid, to be used to solve
+	# Euler equations numerically. Contains radius (rad), primitive 
+	# variables and pressures. Also contains mass enclosed inside 
+	# cell.
 
-	"""
+	# """
 	def __init__(self, vw=np.array(0), phi=np.array(0), q=np.array(0), rad=1.E16, prims=(0,0,0), isot=True, gamma=5./3., mu=1.):
 		#Radius of grid zone 
 		self.rad=rad
@@ -209,7 +211,13 @@ class Zone:
 		return 0.5*self.vel**2+(self.pres/self.rho)+u+self.phi[0]
 
 class Galaxy(object):
-	'''Class to representing galaxy--Corresponds to Quataert 2004'''
+	'''Class to representing galaxy--Corresponds to Quataert 2004. Can be initialized either using an analytic function or a
+	numpy ndarray object
+
+	:param init: list contain minimum radius of the grid [cm], maximum radius of the grid [cm], and function to evaluate 
+		initial conditions
+	:param init_array: array containing initial condition for grid.
+	'''
 
 	def __init__(self, init=None, init_array=None):
 		self.logr=True
@@ -687,7 +695,10 @@ class Galaxy(object):
 		self.grad_phi_grid=G*(self.M_bh+self.eps*self.M_enc_grid)/self.radii**2
 
 	def solve(self, time, max_steps=np.inf):
-		'''High-level controller for solution. Several possible stop conditions (max_steps is reached, time is reached)'''
+		'''Controller for solution. Several possible stop conditions (max_steps is reached, time is reached)
+
+		:param max_steps: Maximum number of time steps to take in the solution
+		'''
 		self.time_cur=0
 		self.time_target=time
 		if not os.path.isfile(self.outdir+'/params') or self.nsolves==0:
@@ -704,6 +715,12 @@ class Galaxy(object):
 		self.nsolves+=1
 
 	def set_param(self, param, value):
+		'''Reset parameter
+
+		:param param: parameter to reset
+		:param value: value to reset it to
+		'''
+
 		old=getattr(self,param)
 		if param=='eps':
 			self.eps=value
@@ -732,6 +749,14 @@ class Galaxy(object):
 
 	#Gradually perturb a given parameter (param) to go to the desired value (target). 
 	def solve_adjust(self, time, param, target, n=10, max_steps=np.inf):
+		'''Run solver for time adjusting the value of params to target in the process
+
+		:param str param: parameter to adjust
+		:param target: value to which we would like to adjust the parameter
+		:param int n: Number of time intervals to divide time into for the purposes of parameter adjustment
+		:param int max_steps: Maximum number of steps for solver to take
+
+		'''
 		if len(self.saved==0):
 			self.save_pt=0
 		else:
@@ -905,6 +930,11 @@ class Galaxy(object):
 
 	#Extracting the array corresponding to a particular field from the grid as well as an array of radii
 	def get_field(self, field):
+		'''Extract field list at all grid points
+
+		:param str field: Field to extract
+		:return: list containing two numpy arrays: one containing list of radii and the other containing the field list.
+		'''
 		field_list=np.zeros(self.length)
 		rad_list=np.zeros(self.length)
 		for i in range(0, self.length):
@@ -934,11 +964,7 @@ class NukerGalaxy(Galaxy):
 
 	def rho_stars(self,r):
 		'''Stellar density
-
-		Parameters
-		===========
-		r : float
-			radius in parsecs
+		:param r: radius in parsecs
 		'''
 		if r<self.rmin_star:
 			return 0.
@@ -947,10 +973,7 @@ class NukerGalaxy(Galaxy):
 
 	def M_enc(self,r):
 		'''Mass enclosed within radius r
-		Parameters
-		===========
-		r : float
-			radius 
+		:param r: radius in parsecs
 		'''
 		if r<self.rmin_star:
 			return 0.
@@ -961,35 +984,21 @@ class NukerGalaxy(Galaxy):
 
 	def sigma(self, r):
 		'''Velocity dispersion of galaxy
-
-		Parameters
-		===========
-		r : float
-			radius 
+		:param r: radius in parsecs
 		'''
 		return (c**2*self.rg/pc/r*(self.M_enc(r)+self.params['M'])/self.params['M'])**0.5
 
 	def phi_s(self,r):
 		'''Potential from the stars
-
-		Parameters
-		===========
-		r : float
-			radius 
+		:param r: radius in parsecs
 		'''
 		return (-G*self.M_enc(r)/r)-4.*np.pi*G*integrate.quad(lambda r1:self.rho_stars(r1)*r1, r, self.rmax_star)[0]
 
 	def phi_bh(self,r):
 		'''Potential from the black hole
-
-		Parameters
-		===========
-		r : float
-			radius 
+		:param r: radius in parsecs
 		'''
 		return -G*self.params['M']/r
-
-
 
 	def q(self, r):
 		'''Source term representing mass loss from stellar winds'''
