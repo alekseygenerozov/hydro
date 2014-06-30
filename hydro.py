@@ -206,24 +206,25 @@ class Zone:
 		u=self.pres/(self.rho*(self.gamma-1.))
 		return 0.5*self.vel**2+(self.pres/self.rho)+u+self.phi[0]
 
-class Galaxy:
-	'''Class to representing Nuker parameterized galaxy.'''
+class Galaxy(object):
+	'''Class to representing galaxy--Corresponds to Quataert 2004'''
 
 	def __init__(self, gname, gdata, init=None, init_array=None):
-		try:
-			self.params=gdata[gname]
-		except KeyError:
-			print 'Error! '+gname+' is not in catalog!'
-			raise
-		self.name=gname
-		print self.name
-		self.eta=1.
-		self.rmin_star=1.E-3
-		self.rmax_star=1.E5
-		self.rg=G*self.params['M']/c**2
+		# try:
+		# 	self.params=gdata[gname]
+		# except KeyError:
+		# 	print 'Error! '+gname+' is not in catalog!'
+		# 	raise
+		# self.name=gname
+		# print self.name
+		# self.eta=1.
+		# self.rmin_star=1.E-3
+		# self.rmax_star=1.E5
+		# self.rg=G*self.params['M']/c**2
 		
 		self.logr=True
 		self.init_params=dict()
+		self.params={'M':3.6E6*M_sun}
 		#Initializing the radial grid
 		if init!=None:
 			assert len(init)==3
@@ -274,7 +275,7 @@ class Galaxy:
 		self.bdry_fixed=False
 		
 		self.q_grid=np.array(map(self.q, self.radii/pc))/pc**3
-		self.vw_extra=5.E7
+		self.vw_extra=1.E8
 		self.vw=np.array([(self.sigma(r/pc)**2+(self.vw_extra)**2)**0.5 for r in self.radii])
 
 		self.eps=1.
@@ -329,86 +330,26 @@ class Galaxy:
 		self.time_stamps=[]
 
 
-	def rho_stars(self,r):
-		'''Stellar density
-
-		Parameters
-		===========
-		r : float
-			radius in parsecs
-		'''
-		if r<self.rmin_star:
+		def M_enc(self,r):
 			return 0.
-		else:
-			return M_sun*self.params['Uv']*inverse_abel(nuker_prime, r, **self.params)
 
-	def M_enc(self,r):
-		'''Mass enclosed within radius r
-		Parameters
-		===========
-		r : float
-			radius 
-		'''
-		if r<self.rmin_star:
+		def q(self, r):
+			r1=2.4e17
+			r2=1.2e18
+			a=mdotw/(4.*np.pi)/((r2**(eta+3)-r1**(eta+3))/(eta+3))
+			if rad<r2 and rad>r1:
+			    return a*(rad*pc)**eta*pc**3
+			else:
+			    return 0.
+
+		def sigma(self, r):
 			return 0.
-		# elif self.menc=='circ':
-		#     return integrate.quad(lambda r1:2.*np.pi*r1*M_sun*self.params['Uv']*nuker(r1, **self.params),self.rmin)
-		else:
-			return integrate.quad(lambda r1:4.*np.pi*r1**2*self.rho_stars(r1), self.rmin_star, r)[0]
 
-	def sigma(self, r):
-		'''Velocity dispersion of galaxy
+		def phi_s(self, r):
+			return 0.
 
-		Parameters
-		===========
-		r : float
-			radius 
-		'''
-		rg=G*(self.params['M'])/c**2./pc
-		return (c**2*self.rg/r*(self.M_enc(r)+self.params['M'])/self.params['M'])**0.5
-
-	def phi_s(self,r):
-		'''Potential from the stars
-
-		Parameters
-		===========
-		r : float
-			radius 
-		'''
-		return (-G*self.M_enc(r)/r)-4.*np.pi*G*integrate.quad(lambda r1:self.rho_stars(r1)*r1, r, self.rmax_star)[0]
-
-	def phi_bh(self,r):
-		'''Potential from the black hole
-
-		Parameters
-		===========
-		r : float
-			radius 
-		'''
-		return -G*self.params['M']/r
-
-	def phi(self,r):
-		'''Total potential
-
-		Parameters
-		===========
-		r : float
-			radius 
-		'''
-		return self.phi_bh(r)+self.phi_s(r)
-
-	def q(self, r):
-		'''Source term representing mass loss from stellar winds'''
-		return self.eta*self.rho_stars(r)/th
-
-
-	##Getting the radius of influence: where the enclosed mass begins to equal the mass of the central BH. 
-	def rinf(self):
-		'''Get radius of influence for galaxy'''
-		def mdiff(r):
-			return self.params['M']-self.M_enc(r)
-
-		return fsolve(mdiff, 1)[0]
+		def phi_r(self, r):
+			return G*self.params['M']/r
 	
 
 	def output_prep(self):
@@ -961,10 +902,102 @@ class Galaxy:
 
 
 
+class NukerGalaxy(Galaxy):
+	def __init__(self, gname, gdata, init=None, init_array=None):
+	try:
+		self.params=gdata[gname]
+	except KeyError:
+		print 'Error! '+gname+' is not in catalog!'
+		raise
+	self.name=gname
+	print self.name
+	self.eta=1.
+	self.rmin_star=1.E-3
+	self.rmax_star=1.E5
+	self.rg=G*self.params['M']/c**2
+
+	Galaxy.__init__(self)
+
+	def rho_stars(self,r):
+		'''Stellar density
+
+		Parameters
+		===========
+		r : float
+			radius in parsecs
+		'''
+		if r<self.rmin_star:
+			return 0.
+		else:
+			return M_sun*self.params['Uv']*inverse_abel(nuker_prime, r, **self.params)
+
+	def M_enc(self,r):
+		'''Mass enclosed within radius r
+		Parameters
+		===========
+		r : float
+			radius 
+		'''
+		if r<self.rmin_star:
+			return 0.
+		# elif self.menc=='circ':
+		#     return integrate.quad(lambda r1:2.*np.pi*r1*M_sun*self.params['Uv']*nuker(r1, **self.params),self.rmin)
+		else:
+			return integrate.quad(lambda r1:4.*np.pi*r1**2*self.rho_stars(r1), self.rmin_star, r)[0]
+
+	def sigma(self, r):
+		'''Velocity dispersion of galaxy
+
+		Parameters
+		===========
+		r : float
+			radius 
+		'''
+		rg=G*(self.params['M'])/c**2./pc
+		return (c**2*self.rg/r*(self.M_enc(r)+self.params['M'])/self.params['M'])**0.5
+
+	def phi_s(self,r):
+		'''Potential from the stars
+
+		Parameters
+		===========
+		r : float
+			radius 
+		'''
+		return (-G*self.M_enc(r)/r)-4.*np.pi*G*integrate.quad(lambda r1:self.rho_stars(r1)*r1, r, self.rmax_star)[0]
+
+	def phi_bh(self,r):
+		'''Potential from the black hole
+
+		Parameters
+		===========
+		r : float
+			radius 
+		'''
+		return -G*self.params['M']/r
+
+	def phi(self,r):
+		'''Total potential
+
+		Parameters
+		===========
+		r : float
+			radius 
+		'''
+		return self.phi_bh(r)+self.phi_s(r)
+
+	def q(self, r):
+		'''Source term representing mass loss from stellar winds'''
+		return self.eta*self.rho_stars(r)/th
 
 
+	##Getting the radius of influence: where the enclosed mass begins to equal the mass of the central BH. 
+	def rinf(self):
+		'''Get radius of influence for galaxy'''
+		def mdiff(r):
+			return self.params['M']-self.M_enc(r)
 
-
+		return fsolve(mdiff, 1)[0]
 
 
 		
