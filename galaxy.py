@@ -16,6 +16,8 @@ import astropy.constants as const
 from astropy.io import ascii
 from astropy.table import Table
 
+import tde_jet
+
 import progressbar as progress
 import ipyani
 
@@ -337,9 +339,9 @@ class Galaxy(object):
 
 		a=mdotw/(4.*np.pi)/((r2**(eta+3)-r1**(eta+3))/(eta+3))
 		if r*pc<r2 and r*pc>r1:
-		    return a*(r*pc)**(eta)*pc**3
+			return a*(r*pc)**(eta)*pc**3
 		else:
-		    return 0.
+			return 0.
 
 	def sigma(self, r):
 		return 0.
@@ -1006,6 +1008,7 @@ class NukerGalaxy(Galaxy):
 
 
 	##Getting the radius of influence: where the enclosed mass begins to equal the mass of the central BH. 
+	@property
 	def rinf(self):
 		'''Get radius of influence for galaxy'''
 		def mdiff(r):
@@ -1013,9 +1016,49 @@ class NukerGalaxy(Galaxy):
 
 		return fsolve(mdiff, 1)[0]
 
+	@property
+	def rs(self):
+		'''Find stagnation point in the flow'''
+		guess=self.radii*1.1
+		self.interp_vel=interp1d(self.radii, self.get_field('vel')[1])
+		try:
+			return fsolve(self.interp_vel, guess)
+		except:
+			return None
+
+	def vj(r,jet):
+		f=jet.rho(r)/self.rho_interp(r)
+		beta_sh=(1.-(1./jet.gamma_j)**2.-(2./jet.gamma_j)*(f**-0.5))**0.5
+		return jet.beta_j/beta_sh
+
+	@property
+	def tde_table(self):
+		'''Get crossing radius for jet'''
+		m6=self.params['M']/(1.E6*M_sun)
+		jet=tde_jet.Jet()
+		jet.m6=m6
+
+		r=integrate.ode(vj, jet)
+		r.set_integrator('vode')
+		r.set_initial_value(0., t=jet.delta)
+		try:
+			while r.y<r.t:
+				r.integrate(r.t+0.01*pc)
+			rc=r.y[0]
+		except Exception as inst:
+			print inst
+			rc=np.nan
+
+		self.rho_interp=interp1d(self.radii, self.get_field('rho')[1])
+		f=jet.rho(rc)/self.rho_interp(rc)
+		gamma=gamma_j*(1.+2.*gamma_j*f**(-0.5))**(-0.5)   
+		#Return table of tde related quantities
+		return Table([rc, self.rho_interp(rc)/mp, gamma], names=['rcross', 'rho_rc', 'gamma_rc'])
+
+	@property 
 	def summary(self):
-		'''Return a summary of the galaxy properties'''
-		return Table(self.params)
+		'''Summary of galaxy properties'''
+		return table.hstack([Table([self.params]), self.tde_table, Table([self.rs, self.rinf], names=['rstag','rinf'])])
 
 
 		
