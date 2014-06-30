@@ -210,18 +210,6 @@ class Galaxy(object):
 	'''Class to representing galaxy--Corresponds to Quataert 2004'''
 
 	def __init__(self, init=None, init_array=None):
-		# try:
-		# 	self.params=gdata[gname]
-		# except KeyError:
-		# 	print 'Error! '+gname+' is not in catalog!'
-		# 	raise
-		# self.name=gname
-		# print self.name
-		# self.eta=1.
-		# self.rmin_star=1.E-3
-		# self.rmax_star=1.E5
-		# self.rg=G*self.params['M']/c**2
-		
 		self.logr=True
 		self.init_params=dict()
 		self.params={'M':3.6E6*M_sun}
