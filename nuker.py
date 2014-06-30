@@ -207,14 +207,15 @@ class Galaxy:
         beta_sh=(1.-(1./jet.gamma_j)**2.-(2./gamma_j)*(f**-0.5))**0.5
         return jet.beta_j/beta_sh
 
-    def get_rc(self, ms=1., eta=0.1, theta=0.1, gamma_j=10.):
+    def tde_table(self):
         m6=self.params['M']/(1.E6*M_sun)
         jet=tde_jet.Jet()
         jet.m6=m6
 
-        r=integrate.ode(vj, )
+        r=integrate.ode(vj, jet)
         r.set_integrator('vode')
         r.set_initial_value(0., t=jet.delta/pc)
+        print jet.delta/pc
         try:
             while r.y<r.t:
                 r.integrate(r.t+0.01)
@@ -225,11 +226,12 @@ class Galaxy:
 
         f=jet.rho(rc*pc)/self.rho_g(rc)
         gamma=gamma_j*(1.+2.*gamma_j*f**(-0.5))**(-0.5)   
+        print rc
         # return np.array([self.name, rc, self.rho_g(rc)/mp, gamma],dtype=[('Name',str), ('b',float), ('c', float),('d',float)])
         return [rc, self.rho_g(rc)/mp, gamma]
 
-    def summary(self, vw=1.E8):
-        return Table(data=[self.params])
+    # def summary(self, vw=1.E8):
+    #     return Table(data=[self.params])
 
 
 
