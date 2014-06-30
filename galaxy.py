@@ -214,7 +214,11 @@ class Galaxy(object):
 	def __init__(self, init=None, init_array=None):
 		self.logr=True
 		self.init_params=dict()
-		self.params={'M':3.6E6*M_sun}
+		try:
+			self.params
+		except:
+			self.params={'M':3.6E6*M_sun}
+
 		#Initializing the radial grid
 		if init!=None:
 			assert len(init)==3 or len(init)==4
@@ -413,6 +417,7 @@ class Galaxy(object):
 
 	#Applying boundary conditions
 	def _update_ghosts(self):
+		'''Method to update boundaries'''
 		if self.bdry=='bp':
 			self._s_adjust()
 			self._dens_extrapolate()
@@ -466,7 +471,7 @@ class Galaxy(object):
 
 	#Extrapolate densities to the ghost zones; a lot of this method is redundant 
 	def _dens_extrapolate(self):
-		'''Old method used to extrapolate density into ghost zones'''
+		'''Extrapolate $\rho$ assuming that the $\rho\sim r^{-3/2}$ on inner boundary and $\rho\sim r^{-3/2}$'''
 		r_start=self.grid[self.start].rad
 		r_start2=self.grid[self.start+3].rad
 		log_rho_start=self.grid[self.start].log_rho
@@ -998,6 +1003,10 @@ class NukerGalaxy(Galaxy):
 			return self.params['M']-self.M_enc(r)
 
 		return fsolve(mdiff, 1)[0]
+
+	def summary(self):
+		'''Return a summary of the galaxy properties'''
+		return Table(self.params)
 
 
 		
