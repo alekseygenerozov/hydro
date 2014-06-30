@@ -209,7 +209,7 @@ class Zone:
 class Galaxy(object):
 	'''Class to representing galaxy--Corresponds to Quataert 2004'''
 
-	def __init__(self, gname, gdata, init=None, init_array=None):
+	def __init__(self, init=None, init_array=None):
 		# try:
 		# 	self.params=gdata[gname]
 		# except KeyError:
@@ -916,7 +916,7 @@ class NukerGalaxy(Galaxy):
 	self.rmax_star=1.E5
 	self.rg=G*self.params['M']/c**2
 
-	Galaxy.__init__(self)
+	Galaxy.__init__(self, init=init, init_array=init_array)
 
 	def rho_stars(self,r):
 		'''Stellar density
