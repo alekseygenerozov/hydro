@@ -962,8 +962,7 @@ class NukerGalaxy(Galaxy):
 		r : float
 			radius 
 		'''
-		rg=G*(self.params['M'])/c**2./pc
-		return (c**2*self.rg/r*(self.M_enc(r)+self.params['M'])/self.params['M'])**0.5
+		return (c**2*self.rg/pc/r*(self.M_enc(r)+self.params['M'])/self.params['M'])**0.5
 
 	def phi_s(self,r):
 		'''Potential from the stars
