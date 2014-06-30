@@ -209,7 +209,8 @@ class Galaxy:
 
     def get_rc(self, ms=1., eta=0.1, theta=0.1, gamma_j=10.):
         m6=self.params['M']/(1.E6*M_sun)
-        jet=tde_jet.Jet(ms=ms, m6=m6, eta=eta, theta=theta, gamma_j=gamma_j)
+        jet=tde_jet.Jet()
+        jet.m6=m6
 
         r=integrate.ode(vj, )
         r.set_integrator('vode')
