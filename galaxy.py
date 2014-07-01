@@ -277,12 +277,12 @@ class Galaxy(object):
 		self.bdry='default'
 		self.bdry_fixed=False
 		
-		self.q_grid=np.array([self.q(r) for r in self.radii/pc])/pc**3
+		# self.q_grid=np.array([self.q(r) for r in self.radii/pc])/pc**3
 		self.vw_extra=1.E8
-		self.vw=np.array([(self.sigma(r/pc)**2+(self.vw_extra)**2)**0.5 for r in self.radii])
+		# self.vw=np.array([(self.sigma(r/pc)**2+(self.vw_extra)**2)**0.5 for r in self.radii])
 
 		self.eps=1.
-		self.place_mass()
+		# self.place_mass()
 
 		self.out_fields=['radii', 'rho', 'vel', 'temp', 'frho', 'bernoulli', 's', 'cs']
 		self.cons_fields=['frho', 'bernoulli', 's', 'fen']
@@ -297,7 +297,7 @@ class Galaxy(object):
 		self.vel=prims[:,1]
 		self.temp=prims[:,2]
 		self.s=(kb/(self.mu*mp))*np.log(1./np.exp(self.log_rho)*(self.temp)**(3./2.))
-		self.update_aux()
+
 
 		self._add_ghosts()
 		#Computing differences between all of the grid elements 
@@ -714,11 +714,22 @@ class Galaxy(object):
 		self.phi_grid=self.eps*self.phi_s_grid+self.phi_bh_grid
 		self.grad_phi_grid=G*(self.M_bh+self.eps*self.M_enc_grid)/self.radii**2
 
+	def _solve_prep(self):
+		self.q_grid=np.array([self.q(r) for r in self.radii/pc])/pc**3
+		self.vw=np.array([(self.sigma(r/pc)**2+(self.vw_extra)**2)**0.5 for r in self.radii])
+		self.place_mass()
+		self.update_aux()
+
 	def solve(self, time, max_steps=np.inf):
 		'''Controller for solution. Several possible stop conditions (max_steps is reached, time is reached)
 
 		:param max_steps: Maximum number of time steps to take in the solution
 		'''
+		try:
+			self.q_grid
+		except:
+			self._solve_prep()
+			
 		self.time_cur=0
 		self.time_target=time
 		if not os.path.isfile(self.outdir+'/params') or self.nsolves==0:
@@ -770,8 +781,12 @@ class Galaxy(object):
 		:param target: value to which we would like to adjust the parameter
 		:param int n: Number of time intervals to divide time into for the purposes of parameter adjustment
 		:param int max_steps: Maximum number of steps for solver to take
-
 		'''
+		try:
+			self.q_grid
+		except:
+			self._solve_prep()
+			
 		if len(self.saved==0):
 			self.save_pt=0
 		else:
