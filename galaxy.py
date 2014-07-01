@@ -294,6 +294,7 @@ class Galaxy(object):
 		self.time_derivs=np.zeros(self.length, dtype={'names':['log_rho', 'vel', 's'], 'formats':['float64', 'float64', 'float64']})
 		#Initializing the grid using the initial value function f_initial
 		self.log_rho=prims[:,0]
+		self.rho=np.exp(self.log_rho)
 		self.vel=prims[:,1]
 		self.temp=prims[:,2]
 		self.s=(kb/(self.mu*mp))*np.log(1./np.exp(self.log_rho)*(self.temp)**(3./2.))
@@ -689,6 +690,7 @@ class Galaxy(object):
 		'''Switch off isothermal evolution'''
 		self.isot=False
 		self.s=(kb/(self.mu*mp))*np.log(1./np.exp(self.log_rho)*(self.temp)**(3./2.))
+		self.eos()
 		self.fields=['log_rho', 'vel', 's']
 		# for zone in self.grid:
 		# 	zone.isot=False
