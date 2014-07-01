@@ -135,82 +135,82 @@ def prepare_start(end_state, rescale=1):
 	return start
 
 
-class Zone:
-	# """Class to store zones of (static) grid, to be used to solve
-	# Euler equations numerically. Contains radius (rad), primitive 
-	# variables and pressures. Also contains mass enclosed inside 
-	# cell.
+# class Zone:
+# 	# """Class to store zones of (static) grid, to be used to solve
+# 	# Euler equations numerically. Contains radius (rad), primitive 
+# 	# variables and pressures. Also contains mass enclosed inside 
+# 	# cell.
 
-	# """
-	def __init__(self, vw=np.array(0), phi=np.array(0), q=np.array(0), rad=1.E16, prims=(0,0,0), isot=True, gamma=5./3., mu=1.):
-		#Radius of grid zone 
-		self.rad=rad
-		self.mu=mu
+# 	# """
+# 	def __init__(self, vw=np.array(0), phi=np.array(0), q=np.array(0), rad=1.E16, prims=(0,0,0), isot=True, gamma=5./3., mu=1.):
+# 		#Radius of grid zone 
+# 		self.rad=rad
+# 		self.mu=mu
 
-		#Primitive variables
-		self.log_rho=prims[0]
-		self.vel=prims[1]
-		self.temp=prims[2]
-		self.isot=isot
-		self.gamma=gamma
-		#Entropy
-		self.entropy()
-		self.rho=np.exp(self.log_rho)
-		self.eos()
-		self.r2vel=self.rad**2*self.vel
-		self.frho=self.rad**2*self.vel*self.rho
-
-
-	#Equation of state. Note this could be default in the future there could be functionality to override this.
-	def eos(self):
-		self.pres=self.rho*kb*self.temp/(self.mu*mp)
-		if not self.isot:
-			self.temperature()
-			self.cs=np.sqrt(self.gamma*kb*self.temp/(self.mu*mp))
-		else:                                                                                                     
-			self.cs=np.sqrt(kb*self.temp/(self.mu*mp))
-
-	#Temperature->Entropy
-	def entropy(self):
-		self.s=(kb/(self.mu*mp))*np.log(1./np.exp(self.log_rho)*(self.temp)**(3./2.))
-
-	#Entropy->Temperature
-	def temperature(self):
-		self.temp=(np.exp(self.log_rho)*np.exp(self.mu*mp*self.s/kb))**(2./3.)
-
-	#Calculate hearting in cell
-	def get_sp_heating(self):
-		return (0.5*self.vel**2+0.5*self.vw[0]**2-(self.gamma)/(self.gamma-1)*(self.pres/self.rho))
-
-	#Method which will be used to update non-primitive vars. 
-	def update_aux(self):
-		self.rho=np.exp(self.log_rho)
-		self.eos()
-		self.r2vel=self.rad**2*self.vel
-		self.frho=self.rad**2*self.vel*self.rho
-
-		self.fen=self.rho*self.rad**2*self.vel*self.bernoulli()
-		self.sp_heating=self.get_sp_heating()
-		self.src_rho=self.q[0]*self.rad**2
-		self.src_en=self.rad**2.*self.q[0]*(self.vw**2/2.+self.phi)
-		with warnings.catch_warnings():
-			warnings.simplefilter("ignore")
-			self.src_v=-(self.q[0]*self.vel/self.rho)+(self.q[0]*self.sp_heating/(self.rho*self.vel))
-		if self.isot:
-			self.src_s=0.
-		else:
-			with warnings.catch_warnings():
-				warnings.simplefilter("ignore")
-				self.src_s=self.q[0]*self.sp_heating/(self.rho*self.vel*self.temp)
+# 		#Primitive variables
+# 		self.log_rho=prims[0]
+# 		self.vel=prims[1]
+# 		self.temp=prims[2]
+# 		self.isot=isot
+# 		self.gamma=gamma
+# 		#Entropy
+# 		self.entropy()
+# 		self.rho=np.exp(self.log_rho)
+# 		self.eos()
+# 		self.r2vel=self.rad**2*self.vel
+# 		self.frho=self.rad**2*self.vel*self.rho
 
 
-	#Finding the maximum transport speed across the zone
-	def alpha_max(self):
-		return max([np.abs(self.vel+self.cs), np.abs(self.vel-self.cs)])
+# 	#Equation of state. Note this could be default in the future there could be functionality to override this.
+# 	def eos(self):
+# 		self.pres=self.rho*kb*self.temp/(self.mu*mp)
+# 		if not self.isot:
+# 			self.temperature()
+# 			self.cs=np.sqrt(self.gamma*kb*self.temp/(self.mu*mp))
+# 		else:                                                                                                     
+# 			self.cs=np.sqrt(kb*self.temp/(self.mu*mp))
 
-	def bernoulli(self):
-		u=self.pres/(self.rho*(self.gamma-1.))
-		return 0.5*self.vel**2+(self.pres/self.rho)+u+self.phi[0]
+# 	#Temperature->Entropy
+# 	def entropy(self):
+# 		self.s=(kb/(self.mu*mp))*np.log(1./np.exp(self.log_rho)*(self.temp)**(3./2.))
+
+# 	#Entropy->Temperature
+# 	def temperature(self):
+# 		self.temp=(np.exp(self.log_rho)*np.exp(self.mu*mp*self.s/kb))**(2./3.)
+
+# 	#Calculate hearting in cell
+# 	def get_sp_heating(self):
+# 		return (0.5*self.vel**2+0.5*self.vw[0]**2-(self.gamma)/(self.gamma-1)*(self.pres/self.rho))
+
+# 	#Method which will be used to update non-primitive vars. 
+# 	def update_aux(self):
+# 		self.rho=np.exp(self.log_rho)
+# 		self.eos()
+# 		self.r2vel=self.rad**2*self.vel
+# 		self.frho=self.rad**2*self.vel*self.rho
+
+# 		self.fen=self.rho*self.rad**2*self.vel*self.bernoulli()
+# 		self.sp_heating=(0.5*self.vel**2+0.5*self.vw**2-(self.gamma)/(self.gamma-1)*(self.pres/self.rho))
+# 		self.src_rho=self.q[0]*self.rad**2
+# 		self.src_en=self.rad**2.*self.q[0]*(self.vw**2/2.+self.phi)
+# 		with warnings.catch_warnings():
+# 			warnings.simplefilter("ignore")
+# 			self.src_v=-(self.q[0]*self.vel/self.rho)+(self.q[0]*self.sp_heating/(self.rho*self.vel))
+# 		if self.isot:
+# 			self.src_s=0.
+# 		else:
+# 			with warnings.catch_warnings():
+# 				warnings.simplefilter("ignore")
+# 				self.src_s=self.q[0]*self.sp_heating/(self.rho*self.vel*self.temp)
+
+
+# 	#Finding the maximum transport speed across the zone
+# 	def alpha_max(self):
+# 		return max([np.abs(self.vel+self.cs), np.abs(self.vel-self.cs)])
+
+# 	def bernoulli(self):
+# 		u=self.pres/(self.rho*(self.gamma-1.))
+# 		return 0.5*self.vel**2+(self.pres/self.rho)+u+self.phi_grid
 
 class Galaxy(object):
 	'''Class to representing galaxy--Corresponds to Quataert 2004. Can be initialized either using an analytic function or a
@@ -245,6 +245,7 @@ class Galaxy(object):
 			else:
 				self.radii=np.linspace(r1, r2, self.length)
 			prims=[f_initial(r, **self.init_params) for r in self.radii]
+			prims=np.array(prims)
 			# for i in range(len(self.radii)):
 			# 	prims[i]=f_initial(self.radii[i], **params)
 
@@ -276,33 +277,29 @@ class Galaxy(object):
 		self.bdry='default'
 		self.bdry_fixed=False
 		
-		# # self.q_grid=np.array([self.q(r) for r in self.radii/pc])/pc**3
-		self.q_grid=np.array([None]*self.length)
+		self.q_grid=np.array([self.q(r) for r in self.radii/pc])/pc**3
 		self.vw_extra=1.E8
-		self.vw=np.array([None]*self.length)
-		self.phi_grid=np.array([None]*self.length)
-		# self.vw=np.array([(self.sigma(r/pc)**2+(self.vw_extra)**2)**0.5 for r in self.radii])
+		self.vw=np.array([(self.sigma(r/pc)**2+(self.vw_extra)**2)**0.5 for r in self.radii])
 
 		self.eps=1.
-		# self.place_mass()
+		self.place_mass()
 
-
-		self.out_fields=['rad', 'rho', 'vel', 'temp', 'frho', 'be', 's', 'cs']
+		self.out_fields=['radii', 'rho', 'vel', 'temp', 'frho', 'bernoulli', 's', 'cs']
 		self.cons_fields=['frho', 'be', 's', 'fen']
 		self.src_fields=['src_rho', 'src_v', 'src_s', 'src_en']
 		self.movies=False
 		self.outdir='.'
 
-
-		#Grid will be stored as list of zones
-		self.grid=[]
 		#Will store values of time derivatives at each time step
 		self.time_derivs=np.zeros(self.length, dtype={'names':['log_rho', 'vel', 's'], 'formats':['float64', 'float64', 'float64']})
 		#Initializing the grid using the initial value function f_initial
-		for i in range(len(self.radii)):
-			self.grid.append(Zone(vw=self.vw[i:i+1], q=self.q_grid[i:i+1],  phi=self.phi_grid[i:i+1], rad=self.radii[i], prims=prims[i], isot=self.isot, gamma=self.gamma, mu=self.mu))
-		self._add_ghosts()
+		self.log_rho=prims[:,0]
+		self.vel=prims[:,1]
+		self.temp=prims[:,2]
+		self.s=(kb/(self.mu*mp))*np.log(1./np.exp(self.log_rho)*(self.temp)**(3./2.))
+		self.update_aux()
 
+		self._add_ghosts()
 		#Computing differences between all of the grid elements 
 		delta=np.diff(self.radii)
 		self.delta=np.insert(delta, 0, delta[0])
@@ -330,6 +327,43 @@ class Galaxy(object):
 		self.time_stamps=[]
 
 		self.nsolves=0
+
+	def update_aux(self):
+		self.rho=np.exp(self.log_rho)
+		self.r2vel=self.radii**2*self.vel
+		self.frho=self.radii**2*self.vel*self.rho
+		if not self.isot:
+			self.temp=(np.exp(self.log_rho)*np.exp(self.mu*mp*self.s/kb))**(2./3.)
+		self.eos()
+
+		self.alpha_max=np.amax([np.abs(self.vel+self.cs), np.abs(self.vel-self.cs)])
+		self.sp_heating=(0.5*self.vel**2+0.5*self.vw**2-(self.gamma)/(self.gamma-1)*(self.pres/self.rho))
+		u=self.pres/(self.rho*(self.gamma-1.))
+		self.bernoulli=0.5*self.vel**2+(self.pres/self.rho)+u+self.phi_grid
+		self.src_en=self.radii**2.*self.q_grid*(self.vw**2/2.+self.phi_grid)
+
+		with warnings.catch_warnings():
+			warnings.simplefilter("ignore")
+			self.src_v=-(self.q_grid*self.vel/self.rho)+(self.q_grid*self.sp_heating/(self.rho*self.vel))
+		if self.isot:
+			self.src_s=0.
+		else:
+			with warnings.catch_warnings():
+				warnings.simplefilter("ignore")
+				self.src_s=self.q_grid*self.sp_heating/(self.rho*self.vel*self.temp)
+
+	#Equation of state. Note this could be default in the future there could be functionality to override this.
+	def eos(self):
+		self.pres=self.rho*kb*self.temp/(self.mu*mp)
+
+		if not self.isot:
+			self.cs=np.sqrt(self.gamma*kb*self.temp/(self.mu*mp))
+		else:                                                                                                     
+			self.cs=np.sqrt(kb*self.temp/(self.mu*mp))
+		
+	# def get_bernoulli(self):
+	# 	u=self.pres/(self.rho*(self.gamma-1.))
+	# 	0.5*self.vel**2+(self.pres/self.rho)+u+self.phi_grid
 
 	def M_enc(self,r):
 		return 0.
@@ -377,43 +411,43 @@ class Galaxy(object):
 		return (0.5*self.grid[i].vel**2+0.5*self.vw[i]**2-(self.gamma)/(self.gamma-1)*(self.grid[i].pres/self.grid[i].rho))
 	
 
-	#Update array of conseerved quantities	
-	def _cons_update(self):
-		#differences in fluxes and source terms
-		fdiff=np.empty([2*len(self.cons_fields)+1, self.length-1])
-		fdiff[0]=self.radii[1:]
-		for i in range(3):
-			flux=self.get_field(self.cons_fields[i])[1]
-			#get differences in fluxes for all of the cells.
-			fdiff[i+1]=np.diff(flux)
-			#get the source terms for all of the cells.
-			fdiff[i+4]=(self.get_field(self.src_fields[i])[1]*self.delta)[1:]
+	# #Update array of conseerved quantities	
+	# def _cons_update(self):
+	# 	#differences in fluxes and source terms
+	# 	fdiff=np.empty([2*len(self.cons_fields)+1, self.length-1])
+	# 	fdiff[0]=self.radii[1:]
+	# 	for i in range(3):
+	# 		flux=self.get_field(self.cons_fields[i])[1]
+	# 		#get differences in fluxes for all of the cells.
+	# 		fdiff[i+1]=np.diff(flux)
+	# 		#get the source terms for all of the cells.
+	# 		fdiff[i+4]=(self.get_field(self.src_fields[i])[1]*self.delta)[1:]
 			
-		self.fdiff=np.append(self.fdiff,[np.transpose(fdiff)],0)
+	# 	self.fdiff=np.append(self.fdiff,[np.transpose(fdiff)],0)
 
-	#Check how well conservation holds on grid as a whole.
-	def _cons_check(self):
-		'''Check level of conservation at end of run'''
-		check=file(self.outdir+'/check', 'w')
-		self.check=True
-		for i in range(len(self.cons_fields)):
-			flux=4.*np.pi*self.get_field(self.cons_fields[i])[1]
-			fdiff=flux[self.end]-flux[self.start]
-			src=4.*np.pi*self.get_field(self.src_fields[i])[1]*self.delta
-			integral=np.sum(src[self.start:self.end+1])
-			with warnings.catch_warnings():
-				pdiff=(fdiff-integral)*100./integral
-			if (pdiff>40.) or np.isnan(pdiff):
-				self.check=False
+	# #Check how well conservation holds on grid as a whole.
+	# def _cons_check(self):
+	# 	'''Check level of conservation at end of run'''
+	# 	check=file(self.outdir+'/check', 'w')
+	# 	self.check=True
+	# 	for i in range(len(self.cons_fields)):
+	# 		flux=4.*np.pi*self.get_field(self.cons_fields[i])[1]
+	# 		fdiff=flux[self.end]-flux[self.start]
+	# 		src=4.*np.pi*self.get_field(self.src_fields[i])[1]*self.delta
+	# 		integral=np.sum(src[self.start:self.end+1])
+	# 		with warnings.catch_warnings():
+	# 			pdiff=(fdiff-integral)*100./integral
+	# 		if (pdiff>40.) or np.isnan(pdiff):
+	# 			self.check=False
 
-			check.write(self.cons_fields[i]+'\n')
-			pre=['flux1=','flux2=','diff=','src=','pdiff=']
-			vals=[flux[self.start],flux[self.end],fdiff,integral,pdiff]
-			for j in range(len(vals)):
-				check.write(pre[j])
-				s='{0:4.3e}'.format(vals[j])
-				check.write(s+'\n')
-			check.write('____________________________________\n\n')
+	# 		check.write(self.cons_fields[i]+'\n')
+	# 		pre=['flux1=','flux2=','diff=','src=','pdiff=']
+	# 		vals=[flux[self.start],flux[self.end],fdiff,integral,pdiff]
+	# 		for j in range(len(vals)):
+	# 			check.write(pre[j])
+	# 			s='{0:4.3e}'.format(vals[j])
+	# 			check.write(s+'\n')
+	# 		check.write('____________________________________\n\n')
 
 	#Adding ghost zones onto the edges of the grid (moving the start of the grid)
 	def _add_ghosts(self):
@@ -422,11 +456,12 @@ class Galaxy(object):
 	
 	#Interpolating field (using zones wiht indices i1 and i2) to radius rad 
 	def _interp_zones(self, rad, i1, i2, field):
-		rad1=self.grid[i1].rad
-		rad2=self.grid[i2].rad
+		rad1=self.radii[i1]
+		rad2=self.radii[i2]
 
-		val1=getattr(self.grid[i1],field)
-		val2=getattr(self.grid[i2],field)
+		field_arr=getattr(self, field)
+		val1=field_arr[i1]
+		val2=field_arr[i2]
 		return np.interp(np.log(rad), [np.log(rad1), np.log(rad2)], [val1, val2])
 
 	#Applying boundary conditions
@@ -440,38 +475,37 @@ class Galaxy(object):
 			self._extrapolate('rho')
 			self._extrapolate('vel')
 			self._extrapolate('s')
-		for i in range(0, self.start):
-			self.grid[i].update_aux()
-		for i in range(self.end+1, self.length):
-			self.grid[i].update_aux()
+		self.update_aux()
+
 
 	#Constant entropy across the ghost zones
 	def _s_adjust(self):
-		s_start=self.grid[self.start].s
+		s_start=self.s[self.start]
 		for i in range(0, self.start):
-			self.grid[i].s=s_start
-		s_end=self.grid[self.end].s
+			self.s[i]=s_start
+		s_end=self.s[self.end]
 		for i in range(self.end+1, self.length):
-			self.grid[i].s=s_end
+			self.s[i]=s_end
 
 	#Power law extrapolation of quantities into ghost zones 
 	def _extrapolate(self, field):
 		'''Perform power law extrapolation of quantities on grid to boundaries'''
-		r1=self.grid[self.start].rad
-		r2=self.grid[self.start+3].rad
-		field1=getattr(self.grid[self.start], field)
-		field2=getattr(self.grid[self.start+3], field)
+		r1=self.radii[self.start]
+		r2=self.radii[self.start+3]
+		field_arr=get_attr(self.grid, field)
+		field1=field_arr[self.start]
+		field2=field_arr[self.start+3]
 		slope=np.log(field2/field1)/np.log(r2/r1)
 
 		for i in range(0, self.start):
 			val=field1*np.exp(slope*np.log(self.grid[i].rad/r1))
-			setattr(self.grid[i], field, val)
+			field_arr[i]=val
 			if field=='rho':
-				self.grid[i].log_rho=np.log(val)
+				self.log_rho[i]=np.log(val)
 			
 		#Updating the end ghost zones
-		r1=self.grid[self.end].rad
-		r2=self.grid[self.end-3].rad
+		r1=self.radii[self.end]
+		r2=self.radii[self.end-3]
 		field1=getattr(self.grid[self.end], field)
 		field2=getattr(self.grid[self.end-3], field)
 		slope=np.log(field2/field1)/np.log(r2/r1)
@@ -479,65 +513,58 @@ class Galaxy(object):
 		#Updating the end ghost zones, extrapolating using a power law density
 		for i in range(self.end+1, self.length):
 			val=field1*np.exp(slope*np.log(self.grid[i].rad/r1))
-			setattr(self.grid[i], field, val)
+			field_arr[i]=val
 			if field=='rho':
-				self.grid[i].log_rho=np.log(val)
+				self.log_rho[i]=np.log(val)
 
 	#Extrapolate densities to the ghost zones; a lot of this method is redundant 
 	def _dens_extrapolate(self):
 		'''Extrapolate $\rho$ assuming that the $\rho\sim r^{-3/2}$ on inner boundary and $\rho\sim r^{-3/2}$'''
-		r_start=self.grid[self.start].rad
-		r_start2=self.grid[self.start+3].rad
-		log_rho_start=self.grid[self.start].log_rho
-		log_rho_start2=self.grid[self.start+3].log_rho
+		r_start=self.radii[self.start]
+		r_start2=self.radii[self.start+3]
+		log_rho_start=self.log_rho[self.start]
+		log_rho_start2=self.log_rho[self.start+3]
 
 		#If the inner bdry is fixed...(appropriate for Parker wind)
 		if self.bdry_fixed:
 			for i in range(1, self.start):
-				self.grid[i].log_rho=self._interp_zones(self.grid[i].rad, 0, self.start, 'log_rho')
-				self.grid[i].rho=np.exp(self.grid[i].log_rho)
+				self.log_rho[i]=self._interp_zones(self.radii[i], 0, self.start, 'log_rho')
+				self.rho[i]=np.exp(self.log_rho[i])
 		#Updating the starting ghost zones, extrapolating using rho prop r^-3/2
 		else:
 			for i in range(0, self.start):
 				slope=-3./2.
 				#slope=(log_rho_start2-log_rho_start)/np.log(r_start2/r_start)
-				log_rho=slope*np.log(self.grid[i].rad/r_start)+log_rho_start
-				self.grid[i].log_rho=log_rho
-				self.grid[i].rho=np.exp(log_rho)
+				log_rho=slope*np.log(self.radii[i]/r_start)+log_rho_start
+				self.log_rho[i]=log_rho
+				self.rho[i]=np.exp(log_rho)
 		#Updating the end ghost zones
-		r_end=self.grid[self.end].rad
-		log_rho_end=self.grid[self.end].log_rho
-		r_end2=self.grid[self.end-3].rad
-		log_rho_end2=self.grid[self.end-3].log_rho
+		r_end=self.radii[self.end]
+		log_rho_end=self.log_rho[self.end]
+		r_end2=self.radii[self.end-3]
+		log_rho_end2=self.log_rho[self.end-3]
 		#Updating the end ghost zones, extrapolating using a power law density
 		for i in range(self.end+1, self.length):
 			slope=-2.
 			#slope=(log_rho_end-log_rho_end2)/np.log(r_end/r_end2)
-			log_rho=slope*np.log(self.grid[i].rad/r_end)+log_rho_end
-			self.grid[i].log_rho=log_rho
-			self.grid[i].rho=np.exp(log_rho)
+			log_rho=slope*np.log(self.radii[i]/r_end)+log_rho_end
+			self.log_rho[i]=log_rho
+			self.rho[i]=np.exp(log_rho)
 
 	#Enforce constant mdot across the boundaries (bondary condition for velocity)
 	def _mdot_adjust(self):
 		#Start zones 
-		frho=self.grid[self.start].frho
+		frho=self.frho[self.start]
 		for i in range(0, self.start):
-			vel=frho/self.grid[i].rho/self.grid[i].rad**2
-			self.grid[i].vel=vel
-			self.grid[i].update_aux()
+			vel=frho/self.rho[i]/self.radii[i]**2
+			self.vel[i]=vel
 		#End zones
-		frho=self.grid[self.end].frho
+		frho=self.frho[self.end]
 		for i in range(self.end+1, self.length):
-			vel=frho/self.grid[i].rho/self.grid[i].rad**2
-			self.grid[i].vel=vel
-			self.grid[i].update_aux()
+			vel=frho/self.rho[i]/self.radii[i]**2
+			self.vel[i]=vel
+		self.update_aux()
 
-	#Get stencil for a particular zone
-	def _get_stencil(self, i, left=3, right=3):
-		assert i-left>=0
-		assert i+right<self.length
-
-		return self.grid[i-left:i+right+1]
 
 	#Evaluate terms of the form div(kappa*df/dr)-->Diffusion like terms (useful for something like the conductivity)
 	def get_diffusion(self, i, coeff, field):
@@ -556,17 +583,7 @@ class Galaxy(object):
 	#Getting derivatives for a given field (density, velocity, etc.). If second is set to be true then the discretized 2nd
 	#deriv is evaluated instead of the first
 	def get_spatial_deriv(self, i, field, second=False):
-		left=3
-		right=3
-		num_zones=left+right+1
-		#Getting stencil for current grid point
-		stencil=self._get_stencil(i, left=left, right=right)
-		field_list=np.zeros(num_zones)
-		for j in range(num_zones):
-			if hasattr(field, '__call__'):
-				field_list[j]=field(stencil[j])
-			else:	
-				field_list[j]=getattr(stencil[j], field)
+		field_list=getattr(self,field)[i-3:i+4]
 
 		if second:
 			return np.sum(field_list*self.second_deriv_coeffs[i])		
@@ -580,12 +597,9 @@ class Galaxy(object):
 
 	#Evaluate Courant condition for the entire grid. This gives us an upper bound on the time step we may take 
 	def _cfl(self):
-		alpha_max=0.
+		# alpha_max=0.
 		delta_t=np.zeros(self.length)
-		#Finding the maximum transport speed across the grid
-		for i in range(0, self.length):
-			alpha_max=self.grid[i].alpha_max()
-			delta_t[i]=self.safety*self.delta[i]/alpha_max
+		delta_t=self.safety*self.delta/self.alpha_max
 
 		#Setting the time step
 		cfl_delta_t=np.min(delta_t)
@@ -607,26 +621,26 @@ class Galaxy(object):
 
 	#Partial derivative of density with respect to time
 	def dlog_rho_dt(self, i):
-		rad=self.grid[i].rad
-		rho=self.grid[i].rho
-		vel=self.grid[i].vel
+		rad=self.radii[i]
+		rho=self.rho[i]
+		vel=self.vel[i]
 
 		#return -cs*drho_dr+art_visc*drho_dr_second
 		return -vel*self.get_spatial_deriv(i, 'log_rho')-(1/rad**2)*self.get_spatial_deriv(i, 'r2vel')+self.q_grid[i]/rho
 
 	#Partial derivative of density with respect to time
 	def drho_dt(self, i):
-		rad=self.grid[i].rad
+		rad=self.radii[i]
 
 		#return -cs*drho_dr+art_visc*drho_dr_second
 		return -(1./rad)**2*self.get_spatial_deriv(i, 'frho')+self.q_grid[i]
 
 	#Evaluating the partial derivative of velocity with respect to time
 	def dvel_dt(self, i):
-		rad=self.grid[i].rad
-		vel=self.grid[i].vel
-		rho=self.grid[i].rho
-		temp=self.grid[i].temp
+		rad=self.radii[i]
+		vel=self.vel[i]
+		rho=self.rho[i]
+		temp=self.temp[i]
 
 		#If the density zero of goes negative return zero to avoid numerical issues
 		if rho<=self.floor:
@@ -640,7 +654,7 @@ class Galaxy(object):
 		drho_dr=dlog_rho_dr*(rho)
 
 		lap_vel=self.get_laplacian(i, 'vel')
-		art_visc=min(self.grid[i].cs,  np.abs(self.grid[i].vel))*(self.radii[self.end]-self.radii[self.start])*lap_vel/self.Re
+		art_visc=min(self.cs[i],  np.abs(self.vel[i]))*(self.radii[self.end]-self.radii[self.start])*lap_vel/self.Re
 		if self.visc_scheme=='const_visc':
 			pass
 		elif self.visc_scheme=='cap_visc':
@@ -653,14 +667,14 @@ class Galaxy(object):
 
 	#Evaluating the partial derivative of entropy with respect to time
 	def ds_dt(self, i):
-		rho=self.grid[i].rho
-		temp=self.grid[i].temp
-		vel=self.grid[i].vel
-		rad=self.grid[i].rad
-		cs=self.grid[i].cs
+		rho=self.rho[i]
+		temp=self.temp[i]
+		vel=self.vel[i]
+		rad=self.radii[i]
+		cs=self.cs[i]
 		ds_dr=self.get_spatial_deriv(i, 's')
 		lap_s=self.get_laplacian(i, 's')
-		art_visc=min(self.grid[i].cs,  np.abs(self.grid[i].vel))*(self.radii[self.end]-self.radii[self.start])*lap_s/self.Re_s
+		art_visc=min(self.cs[i],  np.abs(self.vel[i]))*(self.radii[self.end]-self.radii[self.start])*lap_s/self.Re_s
 		if self.visc_scheme=='const_visc':
 			pass
 		elif self.visc_scheme=='cap_visc':
@@ -670,23 +684,24 @@ class Galaxy(object):
 
 
 		#return self.q(rad, **self.params_delta)*(0.5*self.vw**2+0.5*vel**2-self.gamma*cs**2/(self.gamma-1))/(rho*temp)-vel*ds_dr#+art_visc*lap_s
-		return self.q_grid[i]*self.grid[i].sp_heating/(rho*temp)-vel*ds_dr+art_visc
+		return self.q_grid[i]*self.sp_heating[i]/(rho*temp)-vel*ds_dr+art_visc
 
 
 	def isot_off(self):
 		'''Switch off isothermal evolution'''
 		self.set_param('isot', False)
+		self.s=(kb/(self.mu*mp))*np.log(1./np.exp(self.log_rho)*(self.temp)**(3./2.))
 		self.set_param('fields', ['log_rho', 'vel', 's'])
-		for zone in self.grid:
-			zone.isot=False
-			zone.entropy()
+		# for zone in self.grid:
+		# 	zone.isot=False
+		# 	zone.entropy()
 
 	def isot_on(self):
 		'''Switch on isothermal evolution'''
 		self.set_param('isot', True)
 		self.set_param('fields', ['log_rho', 'vel'])
-		for zone in self.grid:
-			zone.isot=True
+		# for zone in self.grid:
+		# 	zone.isot=True
 
 	#Set all mass dependent quantities
 	def place_mass(self):
@@ -705,20 +720,20 @@ class Galaxy(object):
 
 		:param max_steps: Maximum number of time steps to take in the solution
 		'''
-		try:
-			self.vw
-			self.q_grid
-			self.phi_grid
-		except:
-			self.vw=np.array([(self.sigma(r/pc)**2+(self.vw_extra)**2)**0.5 for r in self.radii])
-			for i in range(self.length):
-				self.grid[i].vw=self.vw[i:i+1]
-			self.q_grid=np.array([self.q(r) for r in self.radii/pc])/pc**3
-			for i in range(self.length):
-				self.grid[i].q=self.q[i:i+1]
-			self.place_mass()
-			for i in range(self.length):
-				self.grid[i].phi=self.phi_grid[i]
+		# try:
+		# 	self.vw
+		# 	self.q_grid
+		# 	self.phi_grid
+		# except:
+		# 	self.vw=np.array([(self.sigma(r/pc)**2+(self.vw_extra)**2)**0.5 for r in self.radii])
+		# 	for i in range(self.length):
+		# 		self.grid[i].vw=self.vw[i:i+1]
+		# 	self.q_grid=np.array([self.q(r) for r in self.radii/pc])/pc**3
+		# 	for i in range(self.length):
+		# 		self.grid[i].q=self.q[i:i+1]
+		# 	self.place_mass()
+		# 	for i in range(self.length):
+		# 		self.grid[i].phi=self.phi_grid[i]
 
 
 		self.time_cur=0
@@ -746,21 +761,11 @@ class Galaxy(object):
 		old=getattr(self,param)
 		if param=='eps':
 			self.eps=value
-			self.phi=self.eps*self.phi_s+self.phi_bh
+			self.phi=self.eps*self.phi_s_grid+self.phi_bh_grid
 			self.grad_phi_grid=G*(self.M_bh+self.eps*self.M_enc_arr)/self.radii**2
 		elif param=='vw_extra':
 			self.vw_extra=value
 			self.vw=np.array([(self.sigma(r/pc)**2+(self.vw_extra)**2)**0.5 for r in self.radii])
-			for i in range(self.length):
-				self.grid[i].vw=self.vw[i:i+1]
-		elif param=='mu':
-			self.mu=value
-			for i in range(self.length):
-				self.grid[i].mu=value
-		elif param=='gamma':
-			self.gamma=value
-			for i in range(self.lengh):
-				self.grid[i].gamma=gamma
 		else:
 			setattr(self,param,value)
 
@@ -779,20 +784,20 @@ class Galaxy(object):
 		:param int max_steps: Maximum number of steps for solver to take
 
 		'''
-		try:
-			self.vw
-			self.q_grid
-			self.phi_grid
-		except:
-			self.vw=np.array([(self.sigma(r/pc)**2+(self.vw_extra)**2)**0.5 for r in self.radii])
-			for i in range(self.length):
-				self.grid[i].vw=self.vw[i:i+1]
-			self.q_grid=np.array([self.q(r) for r in self.radii/pc])/pc**3
-			for i in range(self.length):
-				self.grid[i].q=self.q[i:i+1]
-			self.place_mass()
-			for i in range(self.length):
-				self.grid[i].phi=self.phi_grid[i]
+		# try:
+		# 	self.vw
+		# 	self.q_grid
+		# 	self.phi_grid
+		# except:
+		# 	self.vw=np.array([(self.sigma(r/pc)**2+(self.vw_extra)**2)**0.5 for r in self.radii])
+		# 	for i in range(self.length):
+		# 		self.grid[i].vw=self.vw[i:i+1]
+		# 	self.q_grid=np.array([self.q(r) for r in self.radii/pc])/pc**3
+		# 	for i in range(self.length):
+		# 		self.grid[i].q=self.q[i:i+1]
+		# 	self.place_mass()
+		# 	for i in range(self.length):
+		# 		self.grid[i].phi=self.phi_grid[i]
 
 		if len(self.saved==0):
 			self.save_pt=0
@@ -815,7 +820,7 @@ class Galaxy(object):
 			
 	#Method to write solution info to file
 	def write_sol(self):
-		self._cons_check()
+		#self._cons_check()
 
 		np.savez(self.outdir+'/save', a=self.saved, b=self.time_stamps)
 		np.savez(self.outdir+'/cons', a=self.fdiff)
@@ -835,7 +840,7 @@ class Galaxy(object):
 		while self.time_cur<self.time_target:
 			if (self.tinterval>0 and (self.time_cur/self.tinterval)>=ninterval) or (self.tinterval<=0 and num_steps%self.sinterval==0):
 				pbar.update(self.time_cur)
-				self._cons_update()
+				#self._cons_update()
 				self.save()
 				ninterval=ninterval+1
 
@@ -860,24 +865,24 @@ class Galaxy(object):
 		pbar.finish()
 		print
 
-	#Reverts grid to earlier state. Previous solution
-	def revert(self, index=None):
-		if index==None:
-			index=self.save_pt
-		for i in range(len(self.grid)):
-			self.grid[i].log_rho=np.log(self.saved[index,i,1])
-			self.grid[i].vel=self.saved[index,i,2]*self.saved[index,i,-1]
-			self.grid[i].temp=self.saved[index,i,3]
-			if not self.isot:
-				self.grid[i].entropy()
-			self.grid[i].update_aux()
-		self.saved=self.saved[:index]
-		self.time_stamps=self.time_stamps[:index]
-		self.fdiff=self.fdiff[:index]
-		#Overwriting previous saved files
-		np.savetxt(self.outdir+'/save', self.saved.reshape((-1, len(self.out_fields))))
-		np.savetxt(self.outdir+'/cons', self.fdiff.reshape((-1, 7)))
-		np.savetxt(self.outdir+'/times',self.time_stamps)
+	# #Reverts grid to earlier state. Previous solution
+	# def revert(self, index=None):
+	# 	if index==None:
+	# 		index=self.save_pt
+	# 	for i in range(len(self.grid)):
+	# 		self.grid[i].log_rho=np.log(self.saved[index,i,1])
+	# 		self.grid[i].vel=self.saved[index,i,2]*self.saved[index,i,-1]
+	# 		self.grid[i].temp=self.saved[index,i,3]
+	# 		if not self.isot:
+	# 			self.grid[i].entropy()
+	# 		self.grid[i].update_aux()
+	# 	self.saved=self.saved[:index]
+	# 	self.time_stamps=self.time_stamps[:index]
+	# 	self.fdiff=self.fdiff[:index]
+	# 	#Overwriting previous saved files
+	# 	np.savetxt(self.outdir+'/save', self.saved.reshape((-1, len(self.out_fields))))
+	# 	np.savetxt(self.outdir+'/cons', self.fdiff.reshape((-1, 7)))
+	# 	np.savetxt(self.outdir+'/times',self.time_stamps)
 
 	#Create movie of solution
 	def animate(self,  analytic_func=None, index=1):
@@ -912,11 +917,12 @@ class Galaxy(object):
 	#Save the state of the grid
 	def save(self):
 		#fields=['rho', 'vel', 'temp', 'frho']
-		grid_prims=np.zeros((len(self.out_fields), self.length))
-		for i in range(len(self.out_fields)):
-			grid_prims[i]=self.get_field(self.out_fields[i])[1]
-			if self.out_fields[i]=='vel':
-				grid_prims[i]=grid_prims[i]/self.get_field('cs')[1]
+		# grid_prims=np.zeros((len(self.out_fields), self.length))
+		# for i in range(len(self.out_fields)):
+		# 	grid_prims[i]=self.get_field(self.out_fields[i])[1]
+		# 	if self.out_fields[i]=='vel':
+		# 		grid_prims[i]=grid_prims[i]/self.get_field('cs')[1]
+		grid_prims=[getattr(self, field) for field in self.out_fields]
 
 		#Saving the state of the grid within list
 		#self.saved.append((self.total_time, np.transpose(grid_prims)))
@@ -925,8 +931,8 @@ class Galaxy(object):
 		#Dump to file
 		save_handle=file(self.outdir+'/save','a')
 		np.savetxt(save_handle, self.saved[-1])
-		cons_handle=file(self.outdir+'/cons','a')
-		np.savetxt(cons_handle, self.fdiff[-1])
+		# cons_handle=file(self.outdir+'/cons','a')
+		# np.savetxt(cons_handle, self.fdiff[-1])
 		t_handle=file(self.outdir+'/times', 'a')
 		np.savetxt(t_handle, [self.time_stamps[-1]])
 
@@ -947,9 +953,7 @@ class Galaxy(object):
 
 		for substep in range(3):
 			self._sub_step(gamma[substep], zeta[substep])
-			for i in range(0, self.length):
-				#self.grid[i].u()
-				self.grid[i].update_aux()
+			self.update_aux()
 			self._update_ghosts()
 
 	#Substeps
@@ -961,10 +965,11 @@ class Galaxy(object):
 
 		#Updating the values in the grid: have to calculate the time derivatives for all relevant fields before this step
 		for field in self.fields:
+			field_arr=getattr(self,field)
 			for i in range(self.start, self.end+1):
-				f=getattr(self.grid[i],field)+gamma*self.time_derivs[i][field]*self.delta_t
+				f=field_arr[i]+gamma*self.time_derivs[i][field]*self.delta_t
 				g=f+zeta*self.time_derivs[i][field]*self.delta_t
-				setattr(self.grid[i], field, g)
+				field_arr[i]=g
 
 	#Extracting the array corresponding to a particular field from the grid as well as an array of radii
 	def get_field(self, field):
@@ -973,13 +978,13 @@ class Galaxy(object):
 		:param str field: Field to extract
 		:return: list containing two numpy arrays: one containing list of radii and the other containing the field list.
 		'''
-		field_list=np.zeros(self.length)
-		rad_list=np.zeros(self.length)
-		for i in range(0, self.length):
-			field_list[i]=getattr(self.grid[i], field)
-			rad_list[i]=getattr(self.grid[i],'rad')
+		# field_list=np.zeros(self.length)
+		# rad_list=np.zeros(self.length)
+		# for i in range(0, self.length):
+		# 	field_list[i]=getattr(self.grid[i], field)
+		# 	rad_list[i]=getattr(self.grid[i],'rad')
 
-		return [rad_list, field_list]
+		return [self.radii, getattr(self,field)]
 
 
 
