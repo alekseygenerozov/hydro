@@ -700,6 +700,7 @@ class Galaxy(object):
 	def isot_on(self):
 		'''Switch on isothermal evolution'''
 		self.set_param('isot', True)
+		self.eos()
 		self.set_param('fields', ['log_rho', 'vel'])
 		# for zone in self.grid:
 		# 	zone.isot=True
@@ -917,12 +918,6 @@ class Galaxy(object):
 
 	#Save the state of the grid
 	def save(self):
-		#fields=['rho', 'vel', 'temp', 'frho']
-		# grid_prims=np.zeros((len(self.out_fields), self.length))
-		# for i in range(len(self.out_fields)):
-		# 	grid_prims[i]=self.get_field(self.out_fields[i])[1]
-		# 	if self.out_fields[i]=='vel':
-		# 		grid_prims[i]=grid_prims[i]/self.get_field('cs')[1]
 		grid_prims=[getattr(self, field) for field in self.out_fields]
 
 		#Saving the state of the grid within list
