@@ -336,7 +336,6 @@ class Galaxy(object):
 			self.temp=(np.exp(self.log_rho)*np.exp(self.mu*mp*self.s/kb))**(2./3.)
 		self.eos()
 
-		self.alpha_max=np.max([np.abs(self.vel+self.cs), np.abs(self.vel-self.cs)])
 		self.sp_heating=(0.5*self.vel**2+0.5*self.vw**2-(self.gamma)/(self.gamma-1)*(self.pres/self.rho))
 		u=self.pres/(self.rho*(self.gamma-1.))
 		self.bernoulli=0.5*self.vel**2+(self.pres/self.rho)+u+self.phi_grid
@@ -355,11 +354,11 @@ class Galaxy(object):
 	#Equation of state. Note this could be default in the future there could be functionality to override this.
 	def eos(self):
 		self.pres=self.rho*kb*self.temp/(self.mu*mp)
-
 		if not self.isot:
 			self.cs=np.sqrt(self.gamma*kb*self.temp/(self.mu*mp))
 		else:                                                                                                     
 			self.cs=np.sqrt(kb*self.temp/(self.mu*mp))
+		self.alpha_max=np.max([np.abs(self.vel+self.cs), np.abs(self.vel-self.cs)])
 		
 	# def get_bernoulli(self):
 	# 	u=self.pres/(self.rho*(self.gamma-1.))
@@ -796,7 +795,7 @@ class Galaxy(object):
 			
 	#Method to write solution info to file
 	def write_sol(self):
-		#self._cons_check()
+		self._cons_check()
 
 		np.savez(self.outdir+'/save', a=self.saved, b=self.time_stamps)
 		np.savez(self.outdir+'/cons', a=self.fdiff)
@@ -816,7 +815,7 @@ class Galaxy(object):
 		while self.time_cur<self.time_target:
 			if (self.tinterval>0 and (self.time_cur/self.tinterval)>=ninterval) or (self.tinterval<=0 and num_steps%self.sinterval==0):
 				pbar.update(self.time_cur)
-				#self._cons_update()
+				self._cons_update()
 				self.save()
 				ninterval=ninterval+1
 
@@ -893,6 +892,7 @@ class Galaxy(object):
 	#Save the state of the grid
 	def save(self):
 		grid_prims=[getattr(self, field) for field in self.out_fields]
+		grid_prims[2]=grid_prims[2]/grid_prims[-1]
 
 		#Saving the state of the grid within list
 		#self.saved.append((self.total_time, np.transpose(grid_prims)))
