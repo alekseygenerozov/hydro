@@ -982,6 +982,7 @@ class NukerGalaxy(Galaxy):
 	def __init__(self, gname, gdata,  init=None, init_array=None):
 		try:
 			self.params=gdata[gname]
+			self.params_table=Table([self.params])
 		except KeyError:
 			print 'Error! '+gname+' is not in catalog!'
 			raise
@@ -1056,6 +1057,11 @@ class NukerGalaxy(Galaxy):
 		except:
 			return None
 
+	# def vj(r,jet):
+	#     f=jet.rho(r)/self.rho_interp(r)
+	#     beta_sh=(1.-(1./jet.gamma_j)**2.-(2./gamma_j)*(f**-0.5))**0.5
+	#     return jet.beta_j/beta_sh
+
 	@property
 	def tde_table(self):
 		'''Get crossing radius for jet'''
@@ -1064,10 +1070,10 @@ class NukerGalaxy(Galaxy):
 		jet.m6=m6
 
 		self.rho_interp=interp1d(self.radii, self.rho)
-		r=integrate.ode(tde_jet.vj,[jet,self.rho_interp])
+		r=integrate.ode(jet.vj)
 
 		r.set_integrator('vode')
-		r.set_initial_value(0., t=jet.delta)
+		r.set_initial_value(0., t=jet.delta).set_f_params(self.rho_interp)
 		try:
 			while r.y<r.t:
 				r.integrate(r.t+0.01*pc)
@@ -1076,16 +1082,18 @@ class NukerGalaxy(Galaxy):
 			print inst
 			rc=np.nan
 
-		self.rho_interp=interp1d(self.radii, self.rho)
 		f=jet.rho(rc)/self.rho_interp(rc)
-		gamma=gamma_j*(1.+2.*jet.gamma_j*f**(-0.5))**(-0.5)   
+		gamma=jet.gamma_j*(1.+2.*jet.gamma_j*f**(-0.5))**(-0.5)   
+
+		print [rc, self.rho_interp(rc)/(self.mu*mp), gamma]
 		#Return table of tde related quantities
-		return Table([rc, self.rho_interp(rc)/mp, gamma], names=['rcross', 'rho_rc', 'gamma_rc'])
+		return Table([[rc], [self.rho_interp(rc)/(self.mu*mp)], [gamma]], names=[r'$r_c$', r'$\rho_{rc}$', '$\Gamma_{rc}$'])
 
 	@property 
 	def summary(self):
 		'''Summary of galaxy properties'''
-		return table.hstack([Table([self.params]), self.tde_table, Table([self.rs, self.rinf], names=['rstag','rinf'])])
+		return Table([self.params])
+		# return table.hstack([Table([self.params]), self.tde_table, Table([[self.rs/pc], [self.rinf]], names=['$r_{s}$','$r_{\rm inf}'])])
 
 
 		
