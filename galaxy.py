@@ -1056,11 +1056,6 @@ class NukerGalaxy(Galaxy):
 		except:
 			return None
 
-	def vj(r,jet):
-		f=jet.rho(r)/self.rho_interp(r)
-		beta_sh=(1.-(1./jet.gamma_j)**2.-(2./jet.gamma_j)*(f**-0.5))**0.5
-		return jet.beta_j/beta_sh
-
 	@property
 	def tde_table(self):
 		'''Get crossing radius for jet'''
@@ -1068,7 +1063,9 @@ class NukerGalaxy(Galaxy):
 		jet=tde_jet.Jet()
 		jet.m6=m6
 
-		r=integrate.ode(vj, jet)
+		self.rho_interp=interp1d(self.radii, self.rho)
+		r=integrate.ode(tde_jet.vj,[jet,self.rho_interp])
+
 		r.set_integrator('vode')
 		r.set_initial_value(0., t=jet.delta)
 		try:
