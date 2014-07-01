@@ -285,7 +285,7 @@ class Galaxy(object):
 		self.place_mass()
 
 		self.out_fields=['radii', 'rho', 'vel', 'temp', 'frho', 'bernoulli', 's', 'cs']
-		self.cons_fields=['frho', 'be', 's', 'fen']
+		self.cons_fields=['frho', 'bernoulli', 's', 'fen']
 		self.src_fields=['src_rho', 'src_v', 'src_s', 'src_en']
 		self.movies=False
 		self.outdir='.'
@@ -339,8 +339,10 @@ class Galaxy(object):
 		self.sp_heating=(0.5*self.vel**2+0.5*self.vw**2-(self.gamma)/(self.gamma-1)*(self.pres/self.rho))
 		u=self.pres/(self.rho*(self.gamma-1.))
 		self.bernoulli=0.5*self.vel**2+(self.pres/self.rho)+u+self.phi_grid
-		self.src_en=self.radii**2.*self.q_grid*(self.vw**2/2.+self.phi_grid)
+		self.fen=self.rho*self.radii**2*self.vel*self.bernoulli
 
+		self.src_rho=self.q_grid*self.radii**2
+		self.src_en=self.radii**2.*self.q_grid*(self.vw**2/2.+self.phi_grid)
 		with warnings.catch_warnings():
 			warnings.simplefilter("ignore")
 			self.src_v=-(self.q_grid*self.vel/self.rho)+(self.q_grid*self.sp_heating/(self.rho*self.vel))
@@ -360,10 +362,6 @@ class Galaxy(object):
 			self.cs=np.sqrt(kb*self.temp/(self.mu*mp))
 		self.alpha_max=np.max([np.abs(self.vel+self.cs), np.abs(self.vel-self.cs)])
 		
-	# def get_bernoulli(self):
-	# 	u=self.pres/(self.rho*(self.gamma-1.))
-	# 	0.5*self.vel**2+(self.pres/self.rho)+u+self.phi_grid
-
 	def M_enc(self,r):
 		return 0.
 
@@ -432,7 +430,7 @@ class Galaxy(object):
 		for i in range(len(self.cons_fields)):
 			flux=4.*np.pi*getattr(self, self.cons_fields[i])
 			fdiff=flux[self.end]-flux[self.start]
-			src=4.*np.pi*getattr(self, self.src_field[i])*self.delta
+			src=4.*np.pi*getattr(self, self.src_fields[i])*self.delta
 			integral=np.sum(src[self.start:self.end+1])
 			with warnings.catch_warnings():
 				pdiff=(fdiff-integral)*100./integral
@@ -901,8 +899,8 @@ class Galaxy(object):
 		#Dump to file
 		save_handle=file(self.outdir+'/save','a')
 		np.savetxt(save_handle, self.saved[-1])
-		# cons_handle=file(self.outdir+'/cons','a')
-		# np.savetxt(cons_handle, self.fdiff[-1])
+		cons_handle=file(self.outdir+'/cons','a')
+		np.savetxt(cons_handle, self.fdiff[-1])
 		t_handle=file(self.outdir+'/times', 'a')
 		np.savetxt(t_handle, [self.time_stamps[-1]])
 
@@ -1019,7 +1017,7 @@ class NukerGalaxy(Galaxy):
 
 
 	##Getting the radius of influence: where the enclosed mass begins to equal the mass of the central BH. 
-	@property
+	@property 
 	def rinf(self):
 		'''Get radius of influence for galaxy'''
 		def mdiff(r):
@@ -1031,7 +1029,7 @@ class NukerGalaxy(Galaxy):
 	def rs(self):
 		'''Find stagnation point in the flow'''
 		guess=self.radii*1.1
-		self.interp_vel=interp1d(self.radii, self.get_field('vel')[1])
+		self.interp_vel=interp1d(self.radii, self.vel)
 		try:
 			return fsolve(self.interp_vel, guess)
 		except:
