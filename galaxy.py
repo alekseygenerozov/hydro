@@ -1,5 +1,8 @@
 import numpy as np
 from scipy import integrate
+from scipy.interpolate import interp1d
+from scipy.optimize import fsolve
+
 import copy
 import warnings
 import pickle
@@ -14,6 +17,7 @@ from math import e
 
 import astropy.constants as const
 from astropy.io import ascii
+import astropy.table as table
 from astropy.table import Table
 
 import tde_jet
@@ -1045,10 +1049,10 @@ class NukerGalaxy(Galaxy):
 	@property
 	def rs(self):
 		'''Find stagnation point in the flow'''
-		guess=self.radii*1.1
+		guess=self.radii[0]*1.1
 		self.interp_vel=interp1d(self.radii, self.vel)
 		try:
-			return fsolve(self.interp_vel, guess)
+			return fsolve(self.interp_vel, guess)[0]
 		except:
 			return None
 
@@ -1075,9 +1079,9 @@ class NukerGalaxy(Galaxy):
 			print inst
 			rc=np.nan
 
-		self.rho_interp=interp1d(self.radii, self.get_field('rho')[1])
+		self.rho_interp=interp1d(self.radii, self.rho)
 		f=jet.rho(rc)/self.rho_interp(rc)
-		gamma=gamma_j*(1.+2.*gamma_j*f**(-0.5))**(-0.5)   
+		gamma=gamma_j*(1.+2.*jet.gamma_j*f**(-0.5))**(-0.5)   
 		#Return table of tde related quantities
 		return Table([rc, self.rho_interp(rc)/mp, gamma], names=['rcross', 'rho_rc', 'gamma_rc'])
 
