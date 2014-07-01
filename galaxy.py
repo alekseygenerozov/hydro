@@ -151,15 +151,15 @@ class Zone:
 		self.log_rho=prims[0]
 		self.vel=prims[1]
 		self.temp=prims[2]
-		self.q=q
 		self.isot=isot
 		self.gamma=gamma
-		self.vw=vw
-		self.phi=phi
 		#Entropy
 		self.entropy()
-		#Updating non-primitive variables within zone
-		self.update_aux()
+		self.rho=np.exp(self.log_rho)
+		self.eos()
+		self.r2vel=self.rad**2*self.vel
+		self.frho=self.rad**2*self.vel*self.rho
+
 
 	#Equation of state. Note this could be default in the future there could be functionality to override this.
 	def eos(self):
@@ -188,8 +188,8 @@ class Zone:
 		self.eos()
 		self.r2vel=self.rad**2*self.vel
 		self.frho=self.rad**2*self.vel*self.rho
-		self.be=self.bernoulli()
-		self.fen=self.rho*self.rad**2*self.vel*self.be
+
+		self.fen=self.rho*self.rad**2*self.vel*self.bernoulli()
 		self.sp_heating=self.get_sp_heating()
 		self.src_rho=self.q[0]*self.rad**2
 		self.src_en=self.rad**2.*self.q[0]*(self.vw**2/2.+self.phi)
@@ -276,12 +276,15 @@ class Galaxy(object):
 		self.bdry='default'
 		self.bdry_fixed=False
 		
-		self.q_grid=np.array([self.q(r) for r in self.radii/pc])/pc**3
+		# # self.q_grid=np.array([self.q(r) for r in self.radii/pc])/pc**3
+		self.q_grid=np.array([None]*self.length)
 		self.vw_extra=1.E8
-		self.vw=np.array([(self.sigma(r/pc)**2+(self.vw_extra)**2)**0.5 for r in self.radii])
+		self.vw=np.array([None]*self.length)
+		self.phi_grid=np.array([None]*self.length)
+		# self.vw=np.array([(self.sigma(r/pc)**2+(self.vw_extra)**2)**0.5 for r in self.radii])
 
 		self.eps=1.
-		self.place_mass()
+		# self.place_mass()
 
 
 		self.out_fields=['rad', 'rho', 'vel', 'temp', 'frho', 'be', 's', 'cs']
@@ -369,10 +372,11 @@ class Galaxy(object):
 		times.close()
 
 
-	# #Calculate hearting in cell
-	# def get_sp_heating(self, i):
-	# 	return (0.5*self.grid[i].vel**2+0.5*self.vw[i]**2-(self.gamma)/(self.gamma-1)*(self.grid[i].pres/self.grid[i].rho))
+	#Calculate hearting in cell
+	def sp_heating(self, i):
+		return (0.5*self.grid[i].vel**2+0.5*self.vw[i]**2-(self.gamma)/(self.gamma-1)*(self.grid[i].pres/self.grid[i].rho))
 	
+
 	#Update array of conseerved quantities	
 	def _cons_update(self):
 		#differences in fluxes and source terms
@@ -701,6 +705,22 @@ class Galaxy(object):
 
 		:param max_steps: Maximum number of time steps to take in the solution
 		'''
+		try:
+			self.vw
+			self.q_grid
+			self.phi_grid
+		except:
+			self.vw=np.array([(self.sigma(r/pc)**2+(self.vw_extra)**2)**0.5 for r in self.radii])
+			for i in range(self.length):
+				self.grid[i].vw=self.vw[i:i+1]
+			self.q_grid=np.array([self.q(r) for r in self.radii/pc])/pc**3
+			for i in range(self.length):
+				self.grid[i].q=self.q[i:i+1]
+			self.place_mass()
+			for i in range(self.length):
+				self.grid[i].phi=self.phi_grid[i]
+
+
 		self.time_cur=0
 		self.time_target=time
 		if not os.path.isfile(self.outdir+'/params') or self.nsolves==0:
@@ -730,7 +750,7 @@ class Galaxy(object):
 			self.grad_phi_grid=G*(self.M_bh+self.eps*self.M_enc_arr)/self.radii**2
 		elif param=='vw_extra':
 			self.vw_extra=value
-			self.vw[:]=np.array([(self.sigma(r/pc)**2+(self.vw_extra)**2)**0.5 for r in self.radii])
+			self.vw=np.array([(self.sigma(r/pc)**2+(self.vw_extra)**2)**0.5 for r in self.radii])
 			for i in range(self.length):
 				self.grid[i].vw=self.vw[i:i+1]
 		elif param=='mu':
@@ -759,6 +779,21 @@ class Galaxy(object):
 		:param int max_steps: Maximum number of steps for solver to take
 
 		'''
+		try:
+			self.vw
+			self.q_grid
+			self.phi_grid
+		except:
+			self.vw=np.array([(self.sigma(r/pc)**2+(self.vw_extra)**2)**0.5 for r in self.radii])
+			for i in range(self.length):
+				self.grid[i].vw=self.vw[i:i+1]
+			self.q_grid=np.array([self.q(r) for r in self.radii/pc])/pc**3
+			for i in range(self.length):
+				self.grid[i].q=self.q[i:i+1]
+			self.place_mass()
+			for i in range(self.length):
+				self.grid[i].phi=self.phi_grid[i]
+
 		if len(self.saved==0):
 			self.save_pt=0
 		else:
@@ -775,6 +810,7 @@ class Galaxy(object):
 			self.time_target+=interval
 			self.set_param(param,param_cur)
 		self.write_sol()
+		self.nsolve+=1
 
 			
 	#Method to write solution info to file
