@@ -336,7 +336,7 @@ class Galaxy(object):
 			self.temp=(np.exp(self.log_rho)*np.exp(self.mu*mp*self.s/kb))**(2./3.)
 		self.eos()
 
-		self.alpha_max=np.amax([np.abs(self.vel+self.cs), np.abs(self.vel-self.cs)])
+		self.alpha_max=np.max([np.abs(self.vel+self.cs), np.abs(self.vel-self.cs)])
 		self.sp_heating=(0.5*self.vel**2+0.5*self.vw**2-(self.gamma)/(self.gamma-1)*(self.pres/self.rho))
 		u=self.pres/(self.rho*(self.gamma-1.))
 		self.bernoulli=0.5*self.vel**2+(self.pres/self.rho)+u+self.phi_grid
