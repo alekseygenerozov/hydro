@@ -411,43 +411,43 @@ class Galaxy(object):
 		return (0.5*self.grid[i].vel**2+0.5*self.vw[i]**2-(self.gamma)/(self.gamma-1)*(self.grid[i].pres/self.grid[i].rho))
 	
 
-	# #Update array of conseerved quantities	
-	# def _cons_update(self):
-	# 	#differences in fluxes and source terms
-	# 	fdiff=np.empty([2*len(self.cons_fields)+1, self.length-1])
-	# 	fdiff[0]=self.radii[1:]
-	# 	for i in range(3):
-	# 		flux=self.get_field(self.cons_fields[i])[1]
-	# 		#get differences in fluxes for all of the cells.
-	# 		fdiff[i+1]=np.diff(flux)
-	# 		#get the source terms for all of the cells.
-	# 		fdiff[i+4]=(self.get_field(self.src_fields[i])[1]*self.delta)[1:]
+	#Update array of conseerved quantities	
+	def _cons_update(self):
+		#differences in fluxes and source terms
+		fdiff=np.empty([2*len(self.cons_fields)+1, self.length-1])
+		fdiff[0]=self.radii[1:]
+		for i in range(3):
+			flux=getattr(self, self.cons_fields[i])
+			#get differences in fluxes for all of the cells.
+			fdiff[i+1]=np.diff(flux)
+			#get the source terms for all of the cells.
+			fdiff[i+4]=(getattr(self, self.src_fields[i])*self.delta)[1:]
 			
-	# 	self.fdiff=np.append(self.fdiff,[np.transpose(fdiff)],0)
+		self.fdiff=np.append(self.fdiff,[np.transpose(fdiff)],0)
 
-	# #Check how well conservation holds on grid as a whole.
-	# def _cons_check(self):
-	# 	'''Check level of conservation at end of run'''
-	# 	check=file(self.outdir+'/check', 'w')
-	# 	self.check=True
-	# 	for i in range(len(self.cons_fields)):
-	# 		flux=4.*np.pi*self.get_field(self.cons_fields[i])[1]
-	# 		fdiff=flux[self.end]-flux[self.start]
-	# 		src=4.*np.pi*self.get_field(self.src_fields[i])[1]*self.delta
-	# 		integral=np.sum(src[self.start:self.end+1])
-	# 		with warnings.catch_warnings():
-	# 			pdiff=(fdiff-integral)*100./integral
-	# 		if (pdiff>40.) or np.isnan(pdiff):
-	# 			self.check=False
+	#Check how well conservation holds on grid as a whole.
+	def _cons_check(self):
+		'''Check level of conservation at end of run'''
+		check=file(self.outdir+'/check', 'w')
+		self.check=True
+		for i in range(len(self.cons_fields)):
+			flux=4.*np.pi*getattr(self, self.cons_fields[i])
+			fdiff=flux[self.end]-flux[self.start]
+			src=4.*np.pi*getattr(self, self.src_field[i])*self.delta
+			integral=np.sum(src[self.start:self.end+1])
+			with warnings.catch_warnings():
+				pdiff=(fdiff-integral)*100./integral
+			if (pdiff>40.) or np.isnan(pdiff):
+				self.check=False
 
-	# 		check.write(self.cons_fields[i]+'\n')
-	# 		pre=['flux1=','flux2=','diff=','src=','pdiff=']
-	# 		vals=[flux[self.start],flux[self.end],fdiff,integral,pdiff]
-	# 		for j in range(len(vals)):
-	# 			check.write(pre[j])
-	# 			s='{0:4.3e}'.format(vals[j])
-	# 			check.write(s+'\n')
-	# 		check.write('____________________________________\n\n')
+			check.write(self.cons_fields[i]+'\n')
+			pre=['flux1=','flux2=','diff=','src=','pdiff=']
+			vals=[flux[self.start],flux[self.end],fdiff,integral,pdiff]
+			for j in range(len(vals)):
+				check.write(pre[j])
+				s='{0:4.3e}'.format(vals[j])
+				check.write(s+'\n')
+			check.write('____________________________________\n\n')
 
 	#Adding ghost zones onto the edges of the grid (moving the start of the grid)
 	def _add_ghosts(self):
@@ -456,6 +456,7 @@ class Galaxy(object):
 	
 	#Interpolating field (using zones wiht indices i1 and i2) to radius rad 
 	def _interp_zones(self, rad, i1, i2, field):
+		'''Interpolate field between zone with indices i1 and i2'''
 		rad1=self.radii[i1]
 		rad2=self.radii[i2]
 
@@ -567,17 +568,17 @@ class Galaxy(object):
 
 
 	#Evaluate terms of the form div(kappa*df/dr)-->Diffusion like terms (useful for something like the conductivity)
-	def get_diffusion(self, i, coeff, field):
-		dkappa_dr=self.get_spatial_deriv(i, coeff)
-		dfield_dr=self.get_spatial_deriv(i, field)
-		d2field_dr2=self.get_spatial_deriv(i, field, second=True)
+	# def get_diffusion(self, i, coeff, field):
+	# 	dkappa_dr=self.get_spatial_deriv(i, coeff)
+	# 	dfield_dr=self.get_spatial_deriv(i, field)
+	# 	d2field_dr2=self.get_spatial_deriv(i, field, second=True)
 
-		if hasattr(coeff, '__call__'):
-			kappa=coeff(self.grid[i])
-		else:	
-			kappa=getattr(self.grid[i], coeff)
+	# 	if hasattr(coeff, '__call__'):
+	# 		kappa=coeff(self.grid[i])
+	# 	else:	
+	# 		kappa=getattr(self.grid[i], coeff)
 
-		return kappa*d2field_dr2+dkappa_dr*dfield_dr+(2./self.radii[i])*(kappa*dfield_dr)
+	# 	return kappa*d2field_dr2+dkappa_dr*dfield_dr+(2./self.radii[i])*(kappa*dfield_dr)
 
 
 	#Getting derivatives for a given field (density, velocity, etc.). If second is set to be true then the discretized 2nd
