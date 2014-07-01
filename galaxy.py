@@ -690,18 +690,18 @@ class Galaxy(object):
 
 	def isot_off(self):
 		'''Switch off isothermal evolution'''
-		self.set_param('isot', False)
+		self.isot=False
 		self.s=(kb/(self.mu*mp))*np.log(1./np.exp(self.log_rho)*(self.temp)**(3./2.))
-		self.set_param('fields', ['log_rho', 'vel', 's'])
+		self.fields=['log_rho', 'vel', 's']
 		# for zone in self.grid:
 		# 	zone.isot=False
 		# 	zone.entropy()
 
 	def isot_on(self):
 		'''Switch on isothermal evolution'''
-		self.set_param('isot', True)
+		self.isot=True
 		self.eos()
-		self.set_param('fields', ['log_rho', 'vel'])
+		self.fields=['log_rho', 'vel']
 		# for zone in self.grid:
 		# 	zone.isot=True
 
@@ -722,22 +722,6 @@ class Galaxy(object):
 
 		:param max_steps: Maximum number of time steps to take in the solution
 		'''
-		# try:
-		# 	self.vw
-		# 	self.q_grid
-		# 	self.phi_grid
-		# except:
-		# 	self.vw=np.array([(self.sigma(r/pc)**2+(self.vw_extra)**2)**0.5 for r in self.radii])
-		# 	for i in range(self.length):
-		# 		self.grid[i].vw=self.vw[i:i+1]
-		# 	self.q_grid=np.array([self.q(r) for r in self.radii/pc])/pc**3
-		# 	for i in range(self.length):
-		# 		self.grid[i].q=self.q[i:i+1]
-		# 	self.place_mass()
-		# 	for i in range(self.length):
-		# 		self.grid[i].phi=self.phi_grid[i]
-
-
 		self.time_cur=0
 		self.time_target=time
 		if not os.path.isfile(self.outdir+'/params') or self.nsolves==0:
@@ -768,6 +752,11 @@ class Galaxy(object):
 		elif param=='vw_extra':
 			self.vw_extra=value
 			self.vw=np.array([(self.sigma(r/pc)**2+(self.vw_extra)**2)**0.5 for r in self.radii])
+		elif param=='gamma' or param=='mu':
+			setattr(self,param,value)
+			self.eos()
+		elif param=='isot':
+			print 'Warning! Changing the isothermal flag is done through the isot_on and isot_off methods!'
 		else:
 			setattr(self,param,value)
 
@@ -786,21 +775,6 @@ class Galaxy(object):
 		:param int max_steps: Maximum number of steps for solver to take
 
 		'''
-		# try:
-		# 	self.vw
-		# 	self.q_grid
-		# 	self.phi_grid
-		# except:
-		# 	self.vw=np.array([(self.sigma(r/pc)**2+(self.vw_extra)**2)**0.5 for r in self.radii])
-		# 	for i in range(self.length):
-		# 		self.grid[i].vw=self.vw[i:i+1]
-		# 	self.q_grid=np.array([self.q(r) for r in self.radii/pc])/pc**3
-		# 	for i in range(self.length):
-		# 		self.grid[i].q=self.q[i:i+1]
-		# 	self.place_mass()
-		# 	for i in range(self.length):
-		# 		self.grid[i].phi=self.phi_grid[i]
-
 		if len(self.saved==0):
 			self.save_pt=0
 		else:
