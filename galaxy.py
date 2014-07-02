@@ -18,7 +18,8 @@ from math import e
 import astropy.constants as const
 from astropy.io import ascii
 import astropy.table as table
-from astropy.table import Table
+from astropy.table import Table,Column
+import astropy.units as u
 
 import tde_jet
 
@@ -79,6 +80,7 @@ def nuker_params(skip=False):
 		d=dict()
 		if table['$\\log_{10}\\dot{N}$\\tablenotemark{f}'][i]=='-' and skip:
 			continue
+		d['Name']=table[i]['Name']
 		d['Uv']=table[i]['$\\Upsilon_V $']
 		d['alpha']=table[i]['$\\alpha$']
 		d['beta']=table[i]['$\\beta$']
@@ -138,83 +140,6 @@ def prepare_start(end_state, rescale=1):
 
 	return start
 
-
-# class Zone:
-# 	# """Class to store zones of (static) grid, to be used to solve
-# 	# Euler equations numerically. Contains radius (rad), primitive 
-# 	# variables and pressures. Also contains mass enclosed inside 
-# 	# cell.
-
-# 	# """
-# 	def __init__(self, vw=np.array(0), phi=np.array(0), q=np.array(0), rad=1.E16, prims=(0,0,0), isot=True, gamma=5./3., mu=1.):
-# 		#Radius of grid zone 
-# 		self.rad=rad
-# 		self.mu=mu
-
-# 		#Primitive variables
-# 		self.log_rho=prims[0]
-# 		self.vel=prims[1]
-# 		self.temp=prims[2]
-# 		self.isot=isot
-# 		self.gamma=gamma
-# 		#Entropy
-# 		self.entropy()
-# 		self.rho=np.exp(self.log_rho)
-# 		self.eos()
-# 		self.r2vel=self.rad**2*self.vel
-# 		self.frho=self.rad**2*self.vel*self.rho
-
-
-# 	#Equation of state. Note this could be default in the future there could be functionality to override this.
-# 	def eos(self):
-# 		self.pres=self.rho*kb*self.temp/(self.mu*mp)
-# 		if not self.isot:
-# 			self.temperature()
-# 			self.cs=np.sqrt(self.gamma*kb*self.temp/(self.mu*mp))
-# 		else:                                                                                                     
-# 			self.cs=np.sqrt(kb*self.temp/(self.mu*mp))
-
-# 	#Temperature->Entropy
-# 	def entropy(self):
-# 		self.s=(kb/(self.mu*mp))*np.log(1./np.exp(self.log_rho)*(self.temp)**(3./2.))
-
-# 	#Entropy->Temperature
-# 	def temperature(self):
-# 		self.temp=(np.exp(self.log_rho)*np.exp(self.mu*mp*self.s/kb))**(2./3.)
-
-# 	#Calculate hearting in cell
-# 	def get_sp_heating(self):
-# 		return (0.5*self.vel**2+0.5*self.vw[0]**2-(self.gamma)/(self.gamma-1)*(self.pres/self.rho))
-
-# 	#Method which will be used to update non-primitive vars. 
-# 	def update_aux(self):
-# 		self.rho=np.exp(self.log_rho)
-# 		self.eos()
-# 		self.r2vel=self.rad**2*self.vel
-# 		self.frho=self.rad**2*self.vel*self.rho
-
-# 		self.fen=self.rho*self.rad**2*self.vel*self.bernoulli()
-# 		self.sp_heating=(0.5*self.vel**2+0.5*self.vw**2-(self.gamma)/(self.gamma-1)*(self.pres/self.rho))
-# 		self.src_rho=self.q[0]*self.rad**2
-# 		self.src_en=self.rad**2.*self.q[0]*(self.vw**2/2.+self.phi)
-# 		with warnings.catch_warnings():
-# 			warnings.simplefilter("ignore")
-# 			self.src_v=-(self.q[0]*self.vel/self.rho)+(self.q[0]*self.sp_heating/(self.rho*self.vel))
-# 		if self.isot:
-# 			self.src_s=0.
-# 		else:
-# 			with warnings.catch_warnings():
-# 				warnings.simplefilter("ignore")
-# 				self.src_s=self.q[0]*self.sp_heating/(self.rho*self.vel*self.temp)
-
-
-# 	#Finding the maximum transport speed across the zone
-# 	def alpha_max(self):
-# 		return max([np.abs(self.vel+self.cs), np.abs(self.vel-self.cs)])
-
-# 	def bernoulli(self):
-# 		u=self.pres/(self.rho*(self.gamma-1.))
-# 		return 0.5*self.vel**2+(self.pres/self.rho)+u+self.phi_grid
 
 class Galaxy(object):
 	'''Class to representing galaxy--Corresponds to Quataert 2004. Can be initialized either using an analytic function or a
@@ -983,9 +908,18 @@ class NukerGalaxy(Galaxy):
 		try:
 			self.params=gdata[gname]
 			self.params_table=Table([self.params])
+			# self.params_table['M'].format='3.2E'
 		except KeyError:
 			print 'Error! '+gname+' is not in catalog!'
 			raise
+		names=['Name', 'Type','M', r'$\alpha$', r'$\beta$', r'$\gamma$', r'$I_b$', r'$r_b$']
+		self.params_table=Table(self.params_table['Name', 'type', 'M', 'alpha', 'beta', 'gamma', 'Ib', 'rb'], names=names)
+		self.params_table['M'].format='{0:3.2e}'
+		self.params_table[r'$I_b$'].format='{0:3.2}'
+		self.params_table[r'$r_b$'].format='{0:3.2}'
+		self.params_table['M']=self.params_table['M']/M_sun
+		self.params_table['M'].unit=u.MsolMass
+
 		self.name=gname
 		print self.name
 		self.eta=1.
@@ -1057,6 +991,20 @@ class NukerGalaxy(Galaxy):
 		except:
 			return None
 
+	#Get accretion rate  for galaxy by integrating source from stagnation radius
+	@property
+	def mdot(self):
+	    rs_pc=self.rs/pc
+	    mdot=4.*np.pi*integrate.quad(lambda r: r**2*self.q(r), self.rmin_star, rs_pc)[0]
+	    return mdot
+
+	@property
+	def eddr(self, vw=1.E8):
+	    l_edd=4.*np.pi*G*self.params['M']*c/(0.4)
+	    mdot_edd=l_edd/(0.1*c**2)
+
+	    return self.mdot/mdot_edd
+
 	# def vj(r,jet):
 	#     f=jet.rho(r)/self.rho_interp(r)
 	#     beta_sh=(1.-(1./jet.gamma_j)**2.-(2./gamma_j)*(f**-0.5))**0.5
@@ -1085,15 +1033,19 @@ class NukerGalaxy(Galaxy):
 		f=jet.rho(rc)/self.rho_interp(rc)
 		gamma=jet.gamma_j*(1.+2.*jet.gamma_j*f**(-0.5))**(-0.5)   
 
-		print [rc, self.rho_interp(rc)/(self.mu*mp), gamma]
-		#Return table of tde related quantities
-		return Table([[rc], [self.rho_interp(rc)/(self.mu*mp)], [gamma]], names=[r'$r_c$', r'$\rho_{rc}$', '$\Gamma_{rc}$'])
+		rc_col=Column([rc/pc], name=r'$r_c$', format='{0:3.2}')
+		n_rc_col=Column([self.rho_interp(rc)/(self.mu*mp)], name=r'$n_{rc}$',format='{0:3.2}')
+		gamma_rc_col=Column([gamma], name=r'$\Gamma_{rc}$',format='{0:3.2}')
+		tde_table=Table([rc_col, n_rc_col, gamma_rc_col])
+
+		return tde_table
+
 
 	@property 
 	def summary(self):
 		'''Summary of galaxy properties'''
-		return Table([self.params])
-		# return table.hstack([Table([self.params]), self.tde_table, Table([[self.rs/pc], [self.rinf]], names=['$r_{s}$','$r_{\rm inf}'])])
+		return table.hstack([self.params_table, self.tde_table, Table([[self.rs/pc]], names=['$r_{s}$']), Table([[self.eddr]],\
+			names=[r'$\dot{M}/\dot{M_{\rm edd}}$'])])
 
 
 		

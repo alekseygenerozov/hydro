@@ -43,7 +43,6 @@ class Jet:
 	def vj(self,r,rho_interp):
 	    f=self.rho(r)/rho_interp(r)
 	    beta_sh=(1.-(1./self.gamma_j)**2.-(2./self.gamma_j)*(f**-0.5))**0.5
-	    print self.beta_j/beta_sh
 	    return self.beta_j/beta_sh
 
 
