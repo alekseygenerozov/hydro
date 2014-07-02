@@ -157,6 +157,15 @@ class Galaxy(object):
 			self.params
 		except:
 			self.params={'M':3.6E6*M_sun}
+		try:
+			self.rmin_star
+		except:
+			self.rmin_star=0.
+		try:
+			self.rmax_star
+		except:
+			self.rmax_star=0.
+
 
 		#Initializing the radial grid
 		if init!=None:
@@ -900,6 +909,29 @@ class Galaxy(object):
 
 		return [self.radii, getattr(self,field)]
 
+	@property
+	def rs(self):
+		'''Find stagnation point in the flow'''
+		guess=self.radii[0]*1.1
+		self.interp_vel=interp1d(self.radii, self.vel)
+		try:
+			return fsolve(self.interp_vel, guess)[0]
+		except:
+			return None
+
+	#Get accretion rate  for galaxy by integrating source from stagnation radius
+	@property
+	def mdot(self):
+		rs_pc=self.rs/pc
+		mdot=4.*np.pi*integrate.quad(lambda r: r**2*self.q(r), self.rmin_star, rs_pc)[0]
+		return mdot
+
+	@property
+	def eddr(self, eta=0.1):
+		l_edd=4.*np.pi*G*self.params['M']*c/(0.4)
+		mdot_edd=l_edd/(eta*c**2)
+
+		return self.mdot/mdot_edd
 
 
 class NukerGalaxy(Galaxy):
@@ -980,35 +1012,6 @@ class NukerGalaxy(Galaxy):
 			return self.params['M']-self.M_enc(r)
 
 		return fsolve(mdiff, 1)[0]
-
-	@property
-	def rs(self):
-		'''Find stagnation point in the flow'''
-		guess=self.radii[0]*1.1
-		self.interp_vel=interp1d(self.radii, self.vel)
-		try:
-			return fsolve(self.interp_vel, guess)[0]
-		except:
-			return None
-
-	#Get accretion rate  for galaxy by integrating source from stagnation radius
-	@property
-	def mdot(self):
-	    rs_pc=self.rs/pc
-	    mdot=4.*np.pi*integrate.quad(lambda r: r**2*self.q(r), self.rmin_star, rs_pc)[0]
-	    return mdot
-
-	@property
-	def eddr(self, vw=1.E8):
-	    l_edd=4.*np.pi*G*self.params['M']*c/(0.4)
-	    mdot_edd=l_edd/(0.1*c**2)
-
-	    return self.mdot/mdot_edd
-
-	# def vj(r,jet):
-	#     f=jet.rho(r)/self.rho_interp(r)
-	#     beta_sh=(1.-(1./jet.gamma_j)**2.-(2./gamma_j)*(f**-0.5))**0.5
-	#     return jet.beta_j/beta_sh
 
 	@property
 	def tde_table(self):
