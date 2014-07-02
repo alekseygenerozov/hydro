@@ -619,7 +619,7 @@ class Galaxy(object):
 		'''Switch off isothermal evolution'''
 		self.isot=False
 		self.s=(kb/(self.mu*mp))*np.log(1./np.exp(self.log_rho)*(self.temp)**(3./2.))
-		self.eos()
+		# self.eos()
 		self.fields=['log_rho', 'vel', 's']
 		# for zone in self.grid:
 		# 	zone.isot=False
