@@ -637,6 +637,7 @@ class Galaxy(object):
 		self.s=(kb/(self.mu*mp))*np.log(1./np.exp(self.log_rho)*(self.temp)**(3./2.))
 		# self.eos()
 		self.fields=['log_rho', 'vel', 's']
+		log.write('isot off time:'+str(self.total_time)+'\n')
 		# for zone in self.grid:
 		# 	zone.isot=False
 		# 	zone.entropy()
@@ -646,6 +647,10 @@ class Galaxy(object):
 		self.isot=True
 		self.eos()
 		self.fields=['log_rho', 'vel']
+
+		log=open(self.outdir+'/log', 'a')
+		log.write('isot on time:'+str(self.total_time)+'\n')
+		log.close()
 		# for zone in self.grid:
 		# 	zone.isot=True
 
