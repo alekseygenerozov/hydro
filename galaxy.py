@@ -45,6 +45,13 @@ def bash_command(cmd):
 	process=subprocess.Popen(['/bin/bash', '-c',cmd],  stdin=subprocess.PIPE, stdout=subprocess.PIPE)
 	return process.communicate()[0]
 
+def lambda_c(temp):
+	'''Power law approximation to cooling function for solar abundance plasma (taken from figure 34.1 of Draine)'''
+	if temp>2.E7:
+		return 2.3E-24*(temp/1.E6)**0.5
+	else:
+		return 1.1E-22*(temp/1.E6)**-0.7
+
 def nuker(r, Ib=17.16, alpha=1.26, beta=1.75, rb=343.3, gamma=0, Uv=7., **kwargs):
 	'''Nuker parameterization'''
 	return Ib*2.**((beta-gamma)/alpha)*(rb/r)**gamma*(1.+(r/rb)**alpha)**((gamma-beta)/alpha)
@@ -922,17 +929,33 @@ class Galaxy(object):
 	#Get accretion rate  for galaxy by integrating source from stagnation radius
 	@property
 	def mdot(self):
+		'''Mass accretion rate based on stagnation radius 
+		'''
 		rs_pc=self.rs/pc
 		mdot=4.*np.pi*integrate.quad(lambda r: r**2*self.q(r), self.rmin_star, rs_pc)[0]
 		return mdot
 
 	@property
 	def eddr(self, eta=0.1):
+		'''Compute the Eddington ratio
+
+		:param float eta: The assumed radiarive efficiency
+		'''
 		l_edd=4.*np.pi*G*self.params['M']*c/(0.4)
 		mdot_edd=l_edd/(eta*c**2)
 
 		return self.mdot/mdot_edd
 
+	@property	
+	def cooling(self):
+		'''Cooling luminosity'''
+		lambdas=np.array([lambda_c(temp) for temp in self.temp])
+		return lambdas*(self.rho/(self.mu*mp))**2
+
+	@property
+	def x_ray_lum(self):
+		'''Integrated x-ray luminosity at each grid radius'''
+		return np.cumsum(4.*np.pi*self.cooling*self.delta*self.radii**2)
 
 class NukerGalaxy(Galaxy):
 	'''Sub-classing galaxy above to represent Nuker parameterized galaxies'''
@@ -944,8 +967,8 @@ class NukerGalaxy(Galaxy):
 		except KeyError:
 			print 'Error! '+gname+' is not in catalog!'
 			raise
-		names=['Name', 'Type','M', r'$\alpha$', r'$\beta$', r'$\gamma$', r'$I_b$', r'$r_b$']
-		self.params_table=Table(self.params_table['Name', 'type', 'M', 'alpha', 'beta', 'gamma', 'Ib', 'rb'], names=names)
+		names=['Name', 'Type','M', r'$\alpha$', r'$\beta$', r'$\gamma$', r'$I_b$', r'$r_b$', 'Uv']
+		self.params_table=Table(self.params_table['Name', 'type', 'M', 'alpha', 'beta', 'gamma', 'Ib', 'rb', 'Uv'], names=names)
 		self.params_table['M'].format='{0:3.2e}'
 		self.params_table[r'$I_b$'].format='{0:3.2}'
 		self.params_table[r'$r_b$'].format='{0:3.2}'
