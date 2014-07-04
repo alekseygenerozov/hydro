@@ -681,6 +681,7 @@ class Galaxy(object):
 		try:
 			self.q_grid
 		except:
+			print 'Running _solve_prep'
 			self._solve_prep()
 			
 		self.time_cur=0
