@@ -714,6 +714,7 @@ class Galaxy(object):
 			self.vw=np.array([(self.sigma(r/pc)**2+(self.vw_extra)**2)**0.5 for r in self.radii])
 		elif param=='gamma' or param=='mu':
 			setattr(self,param,value)
+			self.s=(kb/(self.mu*mp))*np.log(1./np.exp(self.log_rho)*(self.temp)**(3./2.))
 			self.eos()
 		elif param=='isot':
 			print 'Warning! Changing the isothermal flag is done through the isot_on and isot_off methods!'
