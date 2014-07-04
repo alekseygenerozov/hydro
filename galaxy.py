@@ -278,8 +278,8 @@ class Galaxy(object):
 		self.rho=np.exp(self.log_rho)
 		self.r2vel=self.radii**2*self.vel
 		self.frho=self.radii**2*self.vel*self.rho
-		if not self.isot:
-			self.temp=(np.exp(self.log_rho)*np.exp(self.mu*mp*self.s/kb))**(2./3.)
+		# if not self.isot:
+		# 	self.temp=(np.exp(self.log_rho)*np.exp(self.mu*mp*self.s/kb))**(2./3.)
 		self.eos()
 
 		self.sp_heating=(0.5*self.vel**2+0.5*self.vw**2-(self.gamma)/(self.gamma-1)*(self.pres/self.rho))
@@ -303,6 +303,7 @@ class Galaxy(object):
 	def eos(self):
 		self.pres=self.rho*kb*self.temp/(self.mu*mp)
 		if not self.isot:
+			self.temp=(np.exp(self.log_rho)*np.exp(self.mu*mp*self.s/kb))**(2./3.)
 			self.cs=np.sqrt(self.gamma*kb*self.temp/(self.mu*mp))
 		else:                                                                                                     
 			self.cs=np.sqrt(kb*self.temp/(self.mu*mp))
