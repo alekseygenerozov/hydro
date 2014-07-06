@@ -1048,6 +1048,17 @@ class NukerGalaxy(Galaxy):
 		return fsolve(mdiff, 1)[0]
 
 	@property
+	def rb(self):
+		'''Nominal bondi radius--computed using black hole mass and tempearture on the edge of the grid'''
+		try:
+			rb=G*self.params['M']/self.cs[-1]**2
+		except AttributeError:
+			self.eos()
+			rb=G*self.params['M']/self.cs[-1]**2
+
+		return rb
+
+	@property
 	def tde_table(self):
 		'''Get crossing radius for jet'''
 		m6=self.params['M']/(1.E6*M_sun)
