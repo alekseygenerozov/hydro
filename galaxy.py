@@ -709,8 +709,11 @@ class Galaxy(object):
 		old=getattr(self,param)
 		if param=='eps':
 			self.eps=value
-			self.phi=self.eps*self.phi_s_grid+self.phi_bh_grid
-			self.grad_phi_grid=G*(self.M_bh+self.eps*self.M_enc_arr)/self.radii**2
+			try:
+				self.phi=self.eps*self.phi_s_grid+self.phi_bh_grid
+				self.grad_phi_grid=G*(self.M_bh+self.eps*self.M_enc_arr)/self.radii**2
+			except AttributeError:
+				pass
 		elif param=='vw_extra':
 			self.vw_extra=value
 			self.vw=np.array([(self.sigma(r/pc)**2+(self.vw_extra)**2)**0.5 for r in self.radii])

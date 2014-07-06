@@ -47,14 +47,14 @@ def run_hydro(gal_name, vw=5.E7, save='', rescale=1., index=-1, time=5., outdir=
 
 
 #Compute density profile from scratch
-def run_hydro_scratch(gal_name, vw=5.E7, rmin=1.36E17, rmax=7.E19):
+def run_hydro_scratch(gal_name, vw=5.E7, rmin=1.36E17, rmax=7.E19, outdir=''):
 	gal_dict=galaxy.nuker_params()
 	#Solving from the isothermal evolution
 	gal=galaxy.NukerGalaxy(gal_name, gal_dict, init=[rmin, rmax, parker.background])
 	if outdir:
 		gal.set_param('outdir', outdir)
 	else:
-		gal.set_params('outdir', galaxy.name+'/vw_'+str(vw/1.E5))
+		gal.set_param('outdir', gal.name+'/vw_'+str(vw/1.E5))
 	gal.isot_on()
 	gal.set_param('bdry', 'bp')
 	gal.set_param('eps', 0.)
@@ -102,7 +102,7 @@ def main():
 			run_hydro(init['gal'][i], vw=init['vw'][i], save=init['save'][i], rescale=init['rescale'][i], index=int(init['index'][i]), time=init['time'][i],\
 				outdir=init['outdir'][i], ss=init['ss'][i])
 		else:
-			run_hydro_scratch(init['gal'][i], vw=init['vws'][i], rmin=init['rmin'][i], rmax=init['rmax'][i], outdir=init['outdir'][i])
+			run_hydro_scratch(init['gal'][i], vw=init['vw'][i], rmin=init['rmin'][i], rmax=init['rmax'][i], outdir=init['outdir'][i])
 
 
 
