@@ -721,6 +721,7 @@ class Galaxy(object):
 		elif param=='outdir':
 			self.outdir=value
 			bash_command('mkdir -p '+value)
+			bash_command('mv '+old+'/log '+old+'/cons '+old+'/save '+value)
 		elif param=='isot':
 			print 'Warning! Changing the isothermal flag is done through the isot_on and isot_off methods!'
 		else:

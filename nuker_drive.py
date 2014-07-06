@@ -36,9 +36,9 @@ def run_hydro(gal_name, vw=5.E7, save='', rescale=1., index=-1, time=5., outdir=
 	gal_dict=galaxy.nuker_params()
 	gal=galaxy.NukerGalaxy(gal_name, gal_dict, init_array=start)
 	if outdir:
-		gal.outdir=outdir
+		gal.set_param('outdir', outdir)
 	else:
-		gal.outdir=galaxy.name+'/vw_'+str(vw/1.E5)
+		gal.set_params('outdir', galaxy.name+'/vw_'+str(vw/1.E5))
 
 	gal.set_param('vw_extra',vw)
 	gal.solve(time*gal.tcross)
@@ -47,35 +47,30 @@ def run_hydro(gal_name, vw=5.E7, save='', rescale=1., index=-1, time=5., outdir=
 
 
 #Compute density profile from scratch
-def run_hydro_scratch(galaxy, vw=5.E7, rmin=1.36E17, rmax=7.E19):
-	#Get the radial grid
-	print 'Will do this later'
-	# params['outdir']=galaxy.name+'/vw_'+str(vw/1.E5)
-	# radii=np.logspace(np.log(rmin), np.log(rmax), params['n'], base=e)
-	# #Initialize isothermal evolution
-	# params['isot']=True
-	# params['bdry']='bp'
-	# #Note setting eps to 0 should turn off the gravitational effect of the stars 
-	# params['eps']=0.
-	# tcross=parker.tcross(rmin,rmax,1.E7)
-	# params['tinterval']=0.05*tcross
-	# params['vw']=np.array(map(lambda r:np.sqrt(galaxy.sigma(r/pc)**2+(vw)**2), radii))
-	# #Solving from the isothermal evolution
-	# grid2=hydro.Grid(galaxy, init=[rmin, rmax, parker.background], **params)
-	# grid2.solve(2.*tcross)
-	# grid2.isot_off()
-	# grid2.solve(2.*tcross)
-	# #Resetting boundary conditions
-	# grid2.set_param('bdry', 'default')
-	# grid2.solve(tcross)
-	# #Turning on the stellar potential
-	# grid2.set_param('eps',1.)
-	# grid2.solve(8.*tcross)
-
-
+def run_hydro_scratch(gal_name, vw=5.E7, rmin=1.36E17, rmax=7.E19):
+	gal_dict=galaxy.nuker_params()
+	#Solving from the isothermal evolution
+	gal=galaxy.NukerGalaxy(gal_name, gal_dict, init=[rmin, rmax, parker.background])
+	if outdir:
+		gal.set_param('outdir', outdir)
+	else:
+		gal.set_params('outdir', galaxy.name+'/vw_'+str(vw/1.E5))
+	gal.isot_on()
+	gal.set_param('bdry', 'bp')
+	gal.set_param('eps', 0.)
+	gal.set_param('vw_extra', vw)
+	gal.solve(2.*gal.tcross)
+	gal.isot_off()
+	gal.solve(2.*gal.tcross)
+	#Resetting boundary conditions
+	gal.set_param('bdry', 'default')
+	gal.solve(gal.tcross)
+	#Turning on the stellar potential
+	gal.set_param('eps',1.)
+	gal.solve(8.*tcross)
 
 	#Save movies
-	ipyani.movie_save(params['outdir'], interval=1, ymin=[None, None, None, 10.**-25, -1., 10.**6], ymax=[None, None, None, 10.**-20, 2., 10.**8], logy=[True, True, True, True, False, True])
+	ipyani.movie_save(outdir, interval=1, ymin=[None, None, None, 10.**-25, -1., 10.**6], ymax=[None, None, None, 10.**-20, 2., 10.**8], logy=[True, True, True, True, False, True])
 
 
 
@@ -107,7 +102,7 @@ def main():
 			run_hydro(init['gal'][i], vw=init['vw'][i], save=init['save'][i], rescale=init['rescale'][i], index=int(init['index'][i]), time=init['time'][i],\
 				outdir=init['outdir'][i], ss=init['ss'][i])
 		else:
-			run_hydro_scratch(galaxy, vw=init['vws'][i], rmin=init['rmin'][i], rmax=init['rmax'][i])
+			run_hydro_scratch(init['gal'][i], vw=init['vws'][i], rmin=init['rmin'][i], rmax=init['rmax'][i], outdir=init['outdir'][i])
 
 
 
