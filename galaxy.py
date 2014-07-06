@@ -301,13 +301,13 @@ class Galaxy(object):
 
 	#Equation of state. Note this could be default in the future there could be functionality to override this.
 	def eos(self):
-		self.pres=self.rho*kb*self.temp/(self.mu*mp)
 		if not self.isot:
 			self.temp=(np.exp(self.log_rho)*np.exp(self.mu*mp*self.s/kb))**(2./3.)
 			self.cs=np.sqrt(self.gamma*kb*self.temp/(self.mu*mp))
 		else:                                                                                                     
 			self.cs=np.sqrt(kb*self.temp/(self.mu*mp))
 		self.alpha_max=np.max([np.abs(self.vel+self.cs), np.abs(self.vel-self.cs)])
+		self.pres=self.rho*kb*self.temp/(self.mu*mp)
 		
 	def M_enc(self,r):
 		return 0.
@@ -636,7 +636,7 @@ class Galaxy(object):
 		'''Switch off isothermal evolution'''
 		self.isot=False
 		self.s=(kb/(self.mu*mp))*np.log(1./np.exp(self.log_rho)*(self.temp)**(3./2.))
-		# self.eos()
+		self.eos()
 		self.fields=['log_rho', 'vel', 's']
 		# log.write('isot off time:'+str(self.total_time)+'\n')
 		# for zone in self.grid:
