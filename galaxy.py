@@ -437,7 +437,7 @@ class Galaxy(object):
 		'''Perform power law extrapolation of quantities on grid to boundaries'''
 		r1=self.radii[self.start]
 		r2=self.radii[self.start+3]
-		field_arr=get_attr(self.grid, field)
+		field_arr=getattr(self.grid, field)
 		field1=field_arr[self.start]
 		field2=field_arr[self.start+3]
 		slope=np.log(field2/field1)/np.log(r2/r1)
@@ -628,7 +628,7 @@ class Galaxy(object):
 			art_visc=art_visc*(self.delta[i]/np.mean(self.delta))
 
 
-		#return self.q(rad, **self.params_delta)*(0.5*self.vw**2+0.5*vel**2-self.gamma*cs**2/(self.gamma-1))/(rho*temp)-vel*ds_dr#+art_visc*lap_s
+		#return self.q(rad, **self.params_delta)*(0.5*self.vw**2+0.5*vel**2-self.gamma*cs**2/(self.gamma-1))/(rho*temp)-vel*def s_dr#+art_visc*lap_s
 		return self.q_grid[i]*self.sp_heating[i]/(rho*temp)-vel*ds_dr+art_visc
 
 

@@ -50,7 +50,7 @@ def run_hydro(gal_name, vw=5.E7, save='', rescale=1., index=-1, time=5., outdir=
 def run_hydro_scratch(gal_name, vw=5.E7, rmin=1.36E17, rmax=7.E19, outdir=''):
 	gal_dict=galaxy.nuker_params()
 	#Solving from the isothermal evolution
-	gal=galaxy.NukerGalaxy(gal_name, gal_dict, init=[rmin, rmax, parker.background])
+	gal=galaxy.NukerGalaxy(gal_name, gal_dict, init=[rmin, rmax, parker.background,{'log': True, 'temp': 1.E7, 'rho_0': 1e-23}])
 	if outdir:
 		gal.set_param('outdir', outdir)
 	else:
