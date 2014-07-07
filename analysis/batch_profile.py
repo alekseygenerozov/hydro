@@ -59,59 +59,57 @@ ax[2].set_xlabel('r [cm]')
 # ax.set_ylabel(r'$r_{\rm stag}/r_{\rm soi}$')
 
 
-linestyles=['-', '-.',':']
-vws=[200., 500.,1000.]
+linestyles=['-.', '-']
+vws=[200., 1000.]
 selection=['NGC3115', 'NGC1172', 'NGC4478']
 
 cols=mpl.rcParams['axes.color_cycle']
-for i in range(len(galaxies)):
-	dirs=galaxy.bash_command('echo '+galaxies[i]+'/*')
-	dirs=np.array(shlex.split(dirs))
-	filt=np.array(map(check, dirs))
-	print dirs,filt
-	dirs=dirs[filt]
-	vws_present=[float(d.split('_')[-1]) for d in dirs]
-
-	if not np.in1d(gnames[i],selection):
-		continue
-	# filt=np.in1d(200., vws_present) and np.in1d(1000., vws_present)
-	# if not filt:
-	# 	continue
-
-	print vws_present
-	for j in range(len(vws)):
-		if j!=2 and 
-		
-		filt=np.array([np.allclose(vw,vws[j]) for vw in vws_present])
-		print filt
+gal_dict=galaxy.nuker_params()
+for i,name in enumerate(selection):
+	for j,vw in enumerate(vws):
+		d=name+'/vw_'+str(vw)
+		if not check(d):
+			continue
 		try:
-			print dirs[filt]
-			d=dirs[filt][0]
-			print d
+			saved=np.load(d+'/save.npz')['a']
 		except:
 			continue
+		if j!=1 and name!='NGC4478':
+			continue
 
-		# grid2=pickle.load(open(d+'/grid.p', 'rb'))
-		saved=np.load(d+'/save.npz')['a']
 		start=galaxy.prepare_start(saved[-1])
+		gal=galaxy.NukerGalaxy(name, gal_dict, init_array=start)
+		#gal.set_param('vw_extra', vw)
 
-		
-		gal=galaxy.NukerGalaxy(galaxies[i], gal_dict, init_array=start)
 		rho_interp=interp1d(gal.radii,gal.rho)
+		temp_interp=interp1d(gal.radii,gal.temp)
+		x_ray_interp=interp1d(gal.radii, gal.x_ray_lum)
+
 		rho_rb=rho_interp(gal.rb)
 		rho_rs=rho_interp(gal.rs)
 
+		temp_rb=temp_interp(gal.rb)
+		temp_rs=temp_interp(gal.rs)
+
+		x_ray_rb=x_ray_interp(gal.rb)
+		x_ray_rs=x_ray_interp(gal.rs)
 		
 		ax[0].loglog(gal.radii, gal.rho, linestyle=linestyles[j],color=cols[i%len(cols)], label=gal.name)
-		ax[0].loglog(gal.rb, rho_rb, 'o',color=cols[i%len(cols)])
-		ax[0].loglog(gal.rs, rho_rs, 's',color=cols[i%len(cols)])
-		#handles, labels = ax[0].get_legend_handles_labels()
-		#ax[0].legend(handles, labels)
-		if j==2:
-			ax[0].text(gal.rs, rho_rs,gal.name, color=cols[i%len(cols)])
+		ax[0].loglog(gal.rb, rho_rb, 'o', color=cols[i%len(cols)], markersize=10)
+		ax[0].loglog(gal.rs, rho_rs, 's', color=cols[i%len(cols)],  markersize=10)
+		if j==1:
+			ax[0].text(1.1*gal.rs, rho_rs,gal.name, color=cols[i%len(cols)])
 
 		ax[1].loglog(gal.radii, gal.temp, linestyle=linestyles[j],color=cols[i%len(cols)])
-		ax[2].loglog(gal.radii, gal.x_ray_lum, linestyle=linestyles[j],color=cols[i%len(cols)])
+		ax[1].loglog(gal.rb, temp_rb, 'o',color=cols[i%len(cols)], markersize=10)
+		ax[1].loglog(gal.rs, temp_rs, 's',color=cols[i%len(cols)], markersize=10)
+		if j==1:
+			ax[1].text(1.1*gal.rs, temp_rs,gal.name, color=cols[i%len(cols)])
 
+		ax[2].loglog(gal.radii, gal.x_ray_lum, linestyle=linestyles[j],color=cols[i%len(cols)])
+		ax[2].loglog(gal.rb, x_ray_rb, 'o',color=cols[i%len(cols)], markersize=10)
+		ax[2].loglog(gal.rs, x_ray_rs, 's',color=cols[i%len(cols)], markersize=10)
+		if j==2:
+			ax[2].text(1.1*gal.rs, x_ray_rs,gal.name, color=cols[i%len(cols)])
 
 plt.savefig('profiles.png')

@@ -21,6 +21,8 @@ import astropy.table as table
 from astropy.table import Table,Column
 import astropy.units as u
 
+from latex_exp import latex_exp
+
 import tde_jet
 
 import progressbar as progress
@@ -99,9 +101,9 @@ def nuker_params(skip=False):
 		d['M']=M_sun*10.**table[i]['$\\log_{10}(M_{\\bullet}/M_{\\odot})$\\tablenotemark{e}']
 		d['type']=table[i][r'Profile\tablenotemark{b}']
 		if d['type']=='$\\cap$':
-			d['type']='core'
+			d['type']='Core'
 		else:
-			d['type']='cusp'
+			d['type']='Cusp'
 		galaxies[table[i]['Name']]=d
 
 	return galaxies
@@ -437,13 +439,13 @@ class Galaxy(object):
 		'''Perform power law extrapolation of quantities on grid to boundaries'''
 		r1=self.radii[self.start]
 		r2=self.radii[self.start+3]
-		field_arr=getattr(self.grid, field)
+		field_arr=getattr(self, field)
 		field1=field_arr[self.start]
 		field2=field_arr[self.start+3]
 		slope=np.log(field2/field1)/np.log(r2/r1)
 
 		for i in range(0, self.start):
-			val=field1*np.exp(slope*np.log(self.grid[i].rad/r1))
+			val=field1*np.exp(slope*np.log(self.radii[i]/r1))
 			field_arr[i]=val
 			if field=='rho':
 				self.log_rho[i]=np.log(val)
@@ -451,13 +453,14 @@ class Galaxy(object):
 		#Updating the end ghost zones
 		r1=self.radii[self.end]
 		r2=self.radii[self.end-3]
-		field1=getattr(self.grid[self.end], field)
-		field2=getattr(self.grid[self.end-3], field)
+		field_arr=getattr(self, field)
+		field1=field_arr[self.end]
+		field2=field_arr[self.end-3]
 		slope=np.log(field2/field1)/np.log(r2/r1)
 		
 		#Updating the end ghost zones, extrapolating using a power law density
 		for i in range(self.end+1, self.length):
-			val=field1*np.exp(slope*np.log(self.grid[i].rad/r1))
+			val=field1*np.exp(slope*np.log(self.radii[i]/r1))
 			field_arr[i]=val
 			if field=='rho':
 				self.log_rho[i]=np.log(val)
@@ -977,16 +980,17 @@ class NukerGalaxy(Galaxy):
 	def __init__(self, gname, gdata,  init=None, init_array=None):
 		try:
 			self.params=gdata[gname]
-			self.params_table=Table([self.params])
-			# self.params_table['M'].format='3.2E'
+			
 		except KeyError:
 			print 'Error! '+gname+' is not in catalog!'
 			raise
 		names=['Name', 'Type','M', r'$\alpha$', r'$\beta$', r'$\gamma$', r'$I_b$', r'$r_b$', 'Uv']
+		
+		self.params_table=Table([self.params])
 		self.params_table=Table(self.params_table['Name', 'type', 'M', 'alpha', 'beta', 'gamma', 'Ib', 'rb', 'Uv'], names=names)
-		self.params_table['M'].format='{0:3.2e}'
-		self.params_table[r'$I_b$'].format='{0:3.2}'
-		self.params_table[r'$r_b$'].format='{0:3.2}'
+		self.params_table['M'].format=latex_exp.latex_exp
+		self.params_table[r'$I_b$'].format=latex_exp.latex_exp
+		#self.params_table[r'$r_b$'].format=latex_exp.latex_exp
 		self.params_table['M']=self.params_table['M']/M_sun
 		self.params_table['M'].unit=u.MsolMass
 
@@ -1085,10 +1089,14 @@ class NukerGalaxy(Galaxy):
 		f=jet.rho(rc)/self.rho_interp(rc)
 		gamma=jet.gamma_j*(1.+2.*jet.gamma_j*f**(-0.5))**(-0.5)   
 
-		rc_col=Column([rc/pc], name=r'$r_c$', format='{0:3.2}')
-		n_rc_col=Column([self.rho_interp(rc)/(self.mu*mp)], name=r'$n_{rc}$',format='{0:3.2}')
-		gamma_rc_col=Column([gamma], name=r'$\Gamma_{rc}$',format='{0:3.2}')
-		tde_table=Table([rc_col, n_rc_col, gamma_rc_col])
+		rc_col=Column([rc/pc], name=r'$r_c$', format=latex_exp.latex_exp)
+		n_rc_col=Column([self.rho_interp(rc)/(self.mu*mp)], name=r'$n_{rc}$',format=latex_exp.latex_exp)
+		gamma_rc_col=Column([gamma], name=r'$\Gamma_{rc}$',format=latex_exp.latex_exp)
+		M_col=self.params_table['M']
+		type_col=self.params_table['Type']
+		name_col=self.params_table['Name']
+
+		tde_table=Table([name_col, M_col, type_col, rc_col, n_rc_col, gamma_rc_col])
 
 		return tde_table
 
