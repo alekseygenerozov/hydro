@@ -38,7 +38,7 @@ def run_hydro(gal_name, vw=5.E7, save='', rescale=1., index=-1, time=5., outdir=
 	if outdir:
 		gal.set_param('outdir', outdir)
 	else:
-		gal.set_params('outdir', galaxy.name+'/vw_'+str(vw/1.E5))
+		gal.set_param('outdir', galaxy.name+'/vw_'+str(vw/1.E5))
 
 	gal.set_param('vw_extra',vw)
 	gal.solve(time*gal.tcross)
