@@ -39,6 +39,7 @@ h=const.h.cgs.value
 c=const.c.cgs.value
 pc=const.pc.cgs.value
 th=4.35*10**17
+year=3.15569E7
 #params=dict(Ib=17.16, alpha=1.26, beta=1.75, rb=343.3, gamma=0, Uv=7.)
 
 
@@ -400,6 +401,17 @@ class Galaxy(object):
 		self.start=self._num_ghosts
 		self.end=self.end-self._num_ghosts
 	
+	def _power_zones(self, rad, i1, i2, field):
+		'''Power law extrapolation from zones'''
+		r1=self.radii[i1]
+		r2=self.radii[i2]
+		field_arr=getattr(self, field)
+		field1=field_arr[i1]
+		field2=field_arr[i2]
+		slope=np.log(field2/field1)/np.log(r2/r1)
+
+		return field1*np.exp(slope*np.log(rad/r1))
+
 	#Interpolating field (using zones wiht indices i1 and i2) to radius rad 
 	def _interp_zones(self, rad, i1, i2, field):
 		'''Interpolate field between zone with indices i1 and i2'''
@@ -1066,6 +1078,15 @@ class NukerGalaxy(Galaxy):
 
 		return rb
 
+	def rho_func(self, r):
+		try:
+			return np.interp(r, self.radii, self.rho)
+		except:
+			if r<self.radii[0]:
+				return self._power_zones(r, 0, 3, 'rho')
+			else:
+				return self._power_zones(r, self.length-1, self.length-4, 'rho')
+
 	@property
 	def tde_table(self):
 		'''Get crossing radius for jet'''
@@ -1073,30 +1094,35 @@ class NukerGalaxy(Galaxy):
 		jet=tde_jet.Jet()
 		jet.m6=m6
 
-		self.rho_interp=interp1d(self.radii, self.rho)
 		r=integrate.ode(jet.vj)
 
 		r.set_integrator('vode')
-		r.set_initial_value(0., t=jet.delta).set_f_params(self.rho_interp)
+		r.set_initial_value(0., t=jet.delta/jet.gamma_j).set_f_params(self.rho_func)
+		time=0.
 		try:
 			while r.y<r.t:
+				old=r.y[0]
 				r.integrate(r.t+0.01*pc)
+				new=r.y[0]
+				time+=(new-old)/(jet.beta_j*c)
 			rc=r.y[0]
 		except Exception as inst:
 			print inst
 			rc=np.nan
 
-		f=jet.rho(rc)/self.rho_interp(rc)
+		f=jet.rho(rc)/self.rho_func(rc)
 		gamma=jet.gamma_j*(1.+2.*jet.gamma_j*f**(-0.5))**(-0.5)   
 
 		rc_col=Column([rc/pc], name=r'$r_c$', format=latex_exp.latex_exp)
-		n_rc_col=Column([self.rho_interp(rc)/(self.mu*mp)], name=r'$n_{rc}$',format=latex_exp.latex_exp)
+		n_rc_col=Column([self.rho_func(rc)/(self.mu*mp)], name=r'$n_{rc}$',format=latex_exp.latex_exp)
 		gamma_rc_col=Column([gamma], name=r'$\Gamma_{rc}$',format=latex_exp.latex_exp)
+		t_rc_col=Column([time/year], name=r't$_{rc}$',format=latex_exp.latex_exp)
 		M_col=self.params_table['M']
+
 		type_col=self.params_table['Type']
 		name_col=self.params_table['Name']
 
-		tde_table=Table([name_col, M_col, type_col, rc_col, n_rc_col, gamma_rc_col])
+		tde_table=Table([name_col, M_col, type_col, rc_col, n_rc_col, gamma_rc_col, t_rc_col])
 
 		return tde_table
 
