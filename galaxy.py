@@ -422,7 +422,7 @@ class Galaxy(object):
 		val1=field_arr[i1]
 		val2=field_arr[i2]
 		return np.interp(np.log(rad), [np.log(rad1), np.log(rad2)], [val1, val2])
-
+		
 	#Applying boundary conditions
 	def _update_ghosts(self):
 		'''Method to update boundaries'''
@@ -1097,7 +1097,7 @@ class NukerGalaxy(Galaxy):
 		r=integrate.ode(jet.vj)
 
 		r.set_integrator('vode')
-		r.set_initial_value(0., t=jet.delta/jet.gamma_j).set_f_params(self.rho_func)
+		r.set_initial_value(0., t=jet.delta).set_f_params(self.rho_func)
 		time=0.
 		try:
 			while r.y<r.t:
