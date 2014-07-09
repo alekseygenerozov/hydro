@@ -43,13 +43,13 @@ year=3.15569E7
 #params=dict(Ib=17.16, alpha=1.26, beta=1.75, rb=343.3, gamma=0, Uv=7.)
 
 def lazyprop(fn):
-    attr_name = '_lazy_' + fn.__name__
-    @property
-    def _lazyprop(self):
-        if not hasattr(self, attr_name):
-            setattr(self, attr_name, fn(self))
-        return getattr(self, attr_name)
-    return _lazyprop
+	attr_name = '_lazy_' + fn.__name__
+	@property
+	def _lazyprop(self):
+		if not hasattr(self, attr_name):
+			setattr(self, attr_name, fn(self))
+		return getattr(self, attr_name)
+	return _lazyprop
 
 
 def bash_command(cmd):
@@ -251,7 +251,6 @@ class Galaxy(object):
 		self.time_derivs=np.zeros(self.length, dtype={'names':['log_rho', 'vel', 's'], 'formats':['float64', 'float64', 'float64']})
 		#Initializing the grid using the initial value function f_initial
 		self.log_rho=prims[:,0]
-		self.rho=np.exp(self.log_rho)
 		self.vel=prims[:,1]
 		self.temp=prims[:,2]
 		self.s=(kb/(self.mu*mp))*np.log(1./np.exp(self.log_rho)*(self.temp)**(3./2.))
@@ -286,41 +285,109 @@ class Galaxy(object):
 
 		self.nsolves=0
 
-	def update_aux(self):
-		self.rho=np.exp(self.log_rho)
-		self.r2vel=self.radii**2*self.vel
-		self.frho=self.radii**2*self.vel*self.rho
-		# if not self.isot:
-		# 	self.temp=(np.exp(self.log_rho)*np.exp(self.mu*mp*self.s/kb))**(2./3.)
-		self.eos()
 
-		self.sp_heating=(0.5*self.vel**2+0.5*self.vw**2-(self.gamma)/(self.gamma-1)*(self.pres/self.rho))
-		u=self.pres/(self.rho*(self.gamma-1.))
-		self.bernoulli=0.5*self.vel**2+(self.pres/self.rho)+u+self.phi_grid
-		self.fen=self.rho*self.radii**2*self.vel*self.bernoulli
+	@lazyprop
+	def q_grid(self):
+		return np.array([self.q(r) for r in self.radii/pc])/pc**3
 
-		self.src_rho=self.q_grid*self.radii**2
-		self.src_en=self.radii**2.*self.q_grid*(self.vw**2/2.+self.phi_grid)
+	@lazyprop
+	def M_enc_grid(self):
+		return np.array(map(self.M_enc, self.radii/pc))
+
+	@lazyprop
+	def sigma_grid(self):
+		return np.array([self.sigma(r/pc) for r in self.radii])
+
+	@lazyprop
+	def phi_s_grid(self):
+		return np.array(map(self.phi_s, self.radii/pc))/pc
+
+	@lazyprop
+	def  phi_bh_grid(self): 
+		return np.array(map(self.phi_bh, self.radii/pc))/pc
+
+	@property
+	def phi_grid(self):
+		return self.eps*self.phi_s_grid+self.phi_bh_grid
+
+	@property
+	def grad_phi_grid(self):
+		return G*(self.M_bh+self.eps*self.M_enc_grid)/self.radii**2
+
+	@property 
+	def vw(self):
+		return (self.sigma_grid**2+(self.vw_extra)**2)**0.5
+
+	@property
+	def rho(self):
+		return np.exp(self.log_rho)
+
+	@property 
+	def r2vel(self):
+		return self.radii**2*self.vel
+
+	@property 
+	def frho(self):
+		self.radii**2*self.vel*self.rho
+
+	@property
+	def pres(self):
+		return (kb*self.temp*self.rho)/(self.mu*mp)
+
+	@property
+	def cs(self):
+		if not self.isot:
+			return np.sqrt(self.gamma*kb*self.temp/(self.mu*mp))
+		else:                                                                                                     
+			return np.sqrt(kb*self.temp/(self.mu*mp))
+
+	@property 
+	def alpha_max(self):
+		return np.max([np.abs(self.vel+self.cs), np.abs(self.vel-self.cs)])
+
+	@property 
+	def sp_heating(self):
+		return (0.5*self.vel**2+0.5*self.vw**2-(self.gamma)/(self.gamma-1)*(self.pres/self.rho))
+
+	@property 
+	def u(self):
+		return self.pres/(self.rho*(self.gamma-1.))
+
+	@property 
+	def bernoulli(self):
+		return 0.5*self.vel**2+(self.pres/self.rho)+self.u+self.phi_grid
+
+	@property 
+	def fen(self):
+		return self.rho*self.radii**2*self.vel*self.bernoulli
+
+	@property 
+	def src_rho(self):
+		return self.q_grid*self.radii**2
+
+	@property 
+	def src_en(self):
+		return self.radii**2.*self.q_grid*(self.vw**2/2.+self.phi_grid)
+
+	@property
+	def src_v(self):
 		with warnings.catch_warnings():
 			warnings.simplefilter("ignore")
-			self.src_v=-(self.q_grid*self.vel/self.rho)+(self.q_grid*self.sp_heating/(self.rho*self.vel))
+			return -(self.q_grid*self.vel/self.rho)+(self.q_grid*self.sp_heating/(self.rho*self.vel))
+
+	@property
+	def src_s(self):
 		if self.isot:
-			self.src_s=0.
+			src_s=0.
 		else:
 			with warnings.catch_warnings():
 				warnings.simplefilter("ignore")
-				self.src_s=self.q_grid*self.sp_heating/(self.rho*self.vel*self.temp)
+				src_s=self.q_grid*self.sp_heating/(self.rho*self.vel*self.temp)
+		return src_s
 
-	#Equation of state. Note this could be default in the future there could be functionality to override this.
-	def eos(self):
-		if not self.isot:
-			self.temp=(np.exp(self.log_rho)*np.exp(self.mu*mp*self.s/kb))**(2./3.)
-			self.cs=np.sqrt(self.gamma*kb*self.temp/(self.mu*mp))
-		else:                                                                                                     
-			self.cs=np.sqrt(kb*self.temp/(self.mu*mp))
-		self.alpha_max=np.max([np.abs(self.vel+self.cs), np.abs(self.vel-self.cs)])
-		self.pres=self.rho*kb*self.temp/(self.mu*mp)
-		
+	def update_temp(self):
+		self.temp=(np.exp(self.log_rho)*np.exp(self.mu*mp*self.s/kb))**(2./3.)
+	
 	def M_enc(self,r):
 		return 0.
 
@@ -443,7 +510,8 @@ class Galaxy(object):
 			self._extrapolate('rho')
 			self._extrapolate('vel')
 			self._extrapolate('s')
-		self.update_aux()
+		if not self.isot:
+			self.update_temp()
 
 
 	#Constant entropy across the ghost zones
@@ -532,21 +600,6 @@ class Galaxy(object):
 		for i in range(self.end+1, self.length):
 			vel=frho/self.rho[i]/self.radii[i]**2
 			self.vel[i]=vel
-		self.update_aux()
-
-
-	#Evaluate terms of the form div(kappa*df/dr)-->Diffusion like terms (useful for something like the conductivity)
-	# def get_diffusion(self, i, coeff, field):
-	# 	dkappa_dr=self.get_spatial_deriv(i, coeff)
-	# 	dfield_dr=self.get_spatial_deriv(i, field)
-	# 	d2field_dr2=self.get_spatial_deriv(i, field, second=True)
-
-	# 	if hasattr(coeff, '__call__'):
-	# 		kappa=coeff(self.grid[i])
-	# 	else:	
-	# 		kappa=getattr(self.grid[i], coeff)
-
-	# 	return kappa*d2field_dr2+dkappa_dr*dfield_dr+(2./self.radii[i])*(kappa*dfield_dr)
 
 
 	#Getting derivatives for a given field (density, velocity, etc.). If second is set to be true then the discretized 2nd
@@ -660,72 +713,25 @@ class Galaxy(object):
 		'''Switch off isothermal evolution'''
 		self.isot=False
 		self.s=(kb/(self.mu*mp))*np.log(1./np.exp(self.log_rho)*(self.temp)**(3./2.))
-		self.eos()
+		self.update_temp()
 		self.fields=['log_rho', 'vel', 's']
-		# log.write('isot off time:'+str(self.total_time)+'\n')
-		# for zone in self.grid:
-		# 	zone.isot=False
-		# 	zone.entropy()
 
 	def isot_on(self):
 		'''Switch on isothermal evolution'''
 		self.isot=True
-		self.eos()
 		self.fields=['log_rho', 'vel']
 
 		log=open(self.outdir+'/log', 'a')
 		log.write('isot on time:'+str(self.total_time)+'\n')
 		log.close()
 
-	@lazyprop
-	def q_grid(self):
-		return np.array([self.q(r) for r in self.radii/pc])/pc**3
 
-	@lazyprop
-	def M_enc_grid(self):
-		return np.array(map(self.M_enc, self.radii/pc))
-
-	@lazyprop
-	def sigma_grid(self):
-		return np.array([self.sigma(r/pc) for r in self.radii])
-
-	@lazyprop
-	def phi_s_grid(self):
-		return np.array(map(self.phi_s, self.radii/pc))/pc
-
-	@lazyprop
-	def  phi_bh_grid(self): 
-		return np.array(map(self.phi_bh, self.radii/pc))/pc
-
-	@property
-	def phi_grid(self):
-		return self.eps*self.phi_s_grid+self.phi_bh_grid
-
-	@property
-	def grad_phi_grid(self):
-		return G*(self.M_bh+self.eps*self.M_enc_grid)/self.radii**2
-
-	@property 
-	def vw(self):
-		return (self.sigma_grid**2+(self.vw_extra)**2)**0.5
-
-	# def _solve_prep(self):
-	# 	self.q_grid=np.array([self.q(r) for r in self.radii/pc])/pc**3
-	# 	self.vw=np.array([(self.sigma(r/pc)**2+(self.vw_extra)**2)**0.5 for r in self.radii])
-	# 	#self.place_mass()
-	# 	self.update_aux()
 
 	def solve(self, time, max_steps=np.inf):
 		'''Controller for solution. Several possible stop conditions (max_steps is reached, time is reached)
 
 		:param max_steps: Maximum number of time steps to take in the solution
 		'''
-		# try:
-		# 	self.q_grid
-		# except:
-		# 	print 'Running _solve_prep'
-		# 	self._solve_prep()
-			
 		self.time_cur=0
 		self.time_target=time
 		if not os.path.isfile(self.outdir+'/params') or self.nsolves==0:
@@ -747,22 +753,12 @@ class Galaxy(object):
 		:param param: parameter to reset
 		:param value: value to reset it to
 		'''
-
 		old=getattr(self,param)
-		if param=='eps':
-			self.eps=value
-			try:
-				self.phi=self.eps*self.phi_s_grid+self.phi_bh_grid
-				self.grad_phi_grid=G*(self.M_bh+self.eps*self.M_enc_arr)/self.radii**2
-			except AttributeError:
-				pass
-		elif param=='vw_extra':
-			self.vw_extra=value
-			#self.vw=np.array([(self.sigma(r/pc)**2+(self.vw_extra)**2)**0.5 for r in self.radii])
-		elif param=='gamma' or param=='mu':
+		if param=='gamma' or param=='mu':
 			setattr(self,param,value)
 			self.s=(kb/(self.mu*mp))*np.log(1./np.exp(self.log_rho)*(self.temp)**(3./2.))
-			self.eos()
+			if not self.isot:
+				self.update_temp()
 		elif param=='outdir':
 			self.outdir=value
 			bash_command('mkdir -p '+value)
@@ -914,7 +910,8 @@ class Galaxy(object):
 
 		for substep in range(3):
 			self._sub_step(gamma[substep], zeta[substep])
-			self.update_aux()
+			if not self.isot():
+				self.update_temp()
 			self._update_ghosts()
 
 	#Substeps
