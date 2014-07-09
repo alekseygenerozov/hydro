@@ -159,6 +159,11 @@ def prepare_start(end_state, rescale=1):
 
 	return start
 
+def background(rad, rho_0=2.E-31, temp=1.E6, log=True, r0=5.E11, n=0.):
+	if log:
+		rho_0=np.log(rho_0*(rad/r0)**n)
+	return np.array([rho_0, 0., temp])
+	
 
 class Galaxy(object):
 	'''Class to representing galaxy--Corresponds to Quataert 2004. Can be initialized either using an analytic function or a
@@ -169,7 +174,7 @@ class Galaxy(object):
 	:param init_array: array containing initial condition for grid.
 	'''
 
-	def __init__(self, init=None, init_array=None):
+	def __init__(self, init={'r1':0.1*pc,'r2':10.*pc,'f_initial':background, 'length':70, 'params':{}}, init_array=None):
 		self.logr=True
 		self.init_params=dict()
 		try:
@@ -184,34 +189,37 @@ class Galaxy(object):
 			self.rmax_star
 		except:
 			self.rmax_star=0.
+
 		self.M_bh=self.params['M']
+		init_def={'r1':0.1*pc,'r2':10.*pc,'f_initial':background, 'length':70, 'func_params':{}}
+		for key in init.keys():
+			try:
+				init[key]
+			except KeyError:
+				init[key]=init_def[key]
 
 		#Initializing the radial grid
-		if init!=None:
-			assert len(init)==3 or len(init)==4
-			r1,r2,f_initial=init[0],init[1],init[2]
-			if len(init)==4:
-				self.init_params=init[3]
+		if not init_array:
+			r1,r2,f_initial=init['r1'],init['r2'],init['f_initial']
+			self.func_params=init['func_params']
 
 			assert r2>r1
 			assert hasattr(f_initial, '__call__')
-			self.length=70
+			self.length=init['length']
 
 			if self.logr:
 				self.radii=np.logspace(np.log(r1), np.log(r2), self.length, base=e)
 			else:
 				self.radii=np.linspace(r1, r2, self.length)
-			prims=[f_initial(r, **self.init_params) for r in self.radii]
+			prims=[f_initial(r, **self.func_params) for r in self.radii]
 			prims=np.array(prims)
-			# for i in range(len(self.radii)):
-			# 	prims[i]=f_initial(self.radii[i], **params)
-
-		elif type(init_array)==np.ndarray:
-			self.radii=init_array[:,0]
-			prims=init_array[:,1:]
-			self.length=len(self.radii)
 		else:
-			raise Exception("Not enough initialization info entered!")
+			try:
+				self.radii=init_array[:,0]
+				prims=init_array[:,1:]
+				self.length=len(self.radii)
+			except:
+				raise Exception("Initialization array is not properly formatted!")
 
 		#Attributes to store length of the list as well as start and end indices (useful for ghost zones)
 		self.start=0
