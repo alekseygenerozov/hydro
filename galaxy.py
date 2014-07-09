@@ -184,7 +184,7 @@ class Galaxy(object):
 			self.rmax_star
 		except:
 			self.rmax_star=0.
-
+		self.M_bh=self.params['M']
 
 		#Initializing the radial grid
 		if init!=None:
@@ -328,7 +328,7 @@ class Galaxy(object):
 
 	@property 
 	def frho(self):
-		self.radii**2*self.vel*self.rho
+		return self.radii**2*self.vel*self.rho
 
 	@property
 	def pres(self):
@@ -385,7 +385,7 @@ class Galaxy(object):
 				src_s=self.q_grid*self.sp_heating/(self.rho*self.vel*self.temp)
 		return src_s
 
-	def update_temp(self):
+	def _update_temp(self):
 		self.temp=(np.exp(self.log_rho)*np.exp(self.mu*mp*self.s/kb))**(2./3.)
 	
 	def M_enc(self,r):
@@ -427,12 +427,6 @@ class Galaxy(object):
 		save.close()
 		times=open(self.outdir+'/times', 'w')
 		times.close()
-
-
-	#Calculate hearting in cell
-	def sp_heating(self, i):
-		return (0.5*self.grid[i].vel**2+0.5*self.vw[i]**2-(self.gamma)/(self.gamma-1)*(self.grid[i].pres/self.grid[i].rho))
-	
 
 	#Update array of conseerved quantities	
 	def _cons_update(self):
@@ -511,7 +505,7 @@ class Galaxy(object):
 			self._extrapolate('vel')
 			self._extrapolate('s')
 		if not self.isot:
-			self.update_temp()
+			self._update_temp()
 
 
 	#Constant entropy across the ghost zones
@@ -713,7 +707,7 @@ class Galaxy(object):
 		'''Switch off isothermal evolution'''
 		self.isot=False
 		self.s=(kb/(self.mu*mp))*np.log(1./np.exp(self.log_rho)*(self.temp)**(3./2.))
-		self.update_temp()
+		self._update_temp()
 		self.fields=['log_rho', 'vel', 's']
 
 	def isot_on(self):
@@ -758,7 +752,7 @@ class Galaxy(object):
 			setattr(self,param,value)
 			self.s=(kb/(self.mu*mp))*np.log(1./np.exp(self.log_rho)*(self.temp)**(3./2.))
 			if not self.isot:
-				self.update_temp()
+				self._update_temp()
 		elif param=='outdir':
 			self.outdir=value
 			bash_command('mkdir -p '+value)
@@ -910,8 +904,8 @@ class Galaxy(object):
 
 		for substep in range(3):
 			self._sub_step(gamma[substep], zeta[substep])
-			if not self.isot():
-				self.update_temp()
+			if not self.isot:
+				self._update_temp()
 			self._update_ghosts()
 
 	#Substeps
