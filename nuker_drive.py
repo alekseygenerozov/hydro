@@ -51,7 +51,7 @@ def run_hydro(gal_name, vw=5.E7, save='', rescale=1., index=-1, time=5., outdir=
 def run_hydro_scratch(gal_name, vw=5.E7, rmin=1.36E17, rmax=7.E19, outdir=''):
 	gal_dict=galaxy.nuker_params()
 	#Solving from the isothermal evolution
-	gal=galaxy.NukerGalaxy(gal_name, gal_dict, init=[rmin, rmax, parker.background,{'log': True, 'temp': 1.E7, 'rho_0': 1e-23}])
+	gal=galaxy.NukerGalaxy(gal_name, gal_dict, init={'r1':rmin, 'r2':rmax,'f_initial':galaxy.background,'func_params':{'log': True, 'temp': 1.E7, 'rho_0': 1e-23}})
 	if outdir:
 		gal.set_param('outdir', outdir)
 	else:
@@ -71,7 +71,7 @@ def run_hydro_scratch(gal_name, vw=5.E7, rmin=1.36E17, rmax=7.E19, outdir=''):
 	gal.solve(8.*tcross)
 
 	#Save movies
-	ipyani.movie_save(outdir, interval=1, ymin=[None, None, None, 10.**-25, -1., 10.**6], ymax=[None, None, None, 10.**-20, 2., 10.**8], logy=[True, True, True, True, False, True])
+	#ipyani.movie_save(outdir, interval=1, ymin=[None, None, None, 10.**-25, -1., 10.**6], ymax=[None, None, None, 10.**-20, 2., 10.**8], logy=[True, True, True, True, False, True])
 
 
 
