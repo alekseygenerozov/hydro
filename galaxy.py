@@ -200,7 +200,7 @@ class Galaxy(object):
 				init[key]=init_def[key]
 
 		#Initializing the radial grid
-		if not init_array:
+		if init_array==None:
 			r1,r2,f_initial=init['r1'],init['r2'],init['f_initial']
 			self.func_params=init['func_params']
 
