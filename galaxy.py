@@ -174,7 +174,7 @@ class Galaxy(object):
 	:param init_array: array containing initial condition for grid.
 	'''
 
-	def __init__(self, init={'r1':0.1*pc,'r2':10.*pc,'f_initial':background, 'length':70, 'params':{}}, init_array=None):
+	def __init__(self, init={'r1':0.1*pc,'r2':10.*pc,'f_initial':background, 'length':70, 'func_params':{}}, init_array=None):
 		self.logr=True
 		self.init_params=dict()
 		try:
@@ -192,7 +192,8 @@ class Galaxy(object):
 
 		self.M_bh=self.params['M']
 		init_def={'r1':0.1*pc,'r2':10.*pc,'f_initial':background, 'length':70, 'func_params':{}}
-		for key in init.keys():
+		
+		for key in init_def.keys():
 			try:
 				init[key]
 			except KeyError:
@@ -989,7 +990,7 @@ class Galaxy(object):
 
 class NukerGalaxy(Galaxy):
 	'''Sub-classing galaxy above to represent Nuker parameterized galaxies'''
-	def __init__(self, gname, gdata,  init=None, init_array=None):
+	def __init__(self, gname, gdata, init={'r1':0.1*pc,'r2':10.*pc,'f_initial':background, 'length':70, 'func_params':{}}, init_array=None):
 		try:
 			self.params=gdata[gname]
 			
@@ -1065,7 +1066,8 @@ class NukerGalaxy(Galaxy):
 		def mdiff(r):
 			return self.params['M']-self.M_enc(r)
 
-		return fsolve(mdiff, 1)[0]
+		jac=lambda r: -4.*np.pi*r**2*self.rho_stars(r)
+		return fsolve(mdiff, 0.9*(self.M_bh/(1.E6*M_sun))**0.4, fprime=jac)[0]
 
 	@property
 	def rb(self):
