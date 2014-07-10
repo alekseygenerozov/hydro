@@ -56,8 +56,9 @@ vws=[200., 500., 1000.]
 cols=brewer2mpl.get_map('Set2', 'qualitative', 3).mpl_colors
 
 for name in gal_dict.keys():
+	base_d='/Users/aleksey/Second_Year_Project/hydro/batch/'+name
 	for j,vw in enumerate(vws):
-		d='/Users/aleksey/Second_Year_Project/hydro/batch/'+name+'/vw_'+str(vw)
+		d=base_d+'/vw_'+str(vw)
 		if not check(d):
 			continue
 		try:
@@ -74,7 +75,14 @@ for name in gal_dict.keys():
 		else:
 			symbol='s'
 
-		ax.loglog(vw*1.E5/gal.sigma(gal.rinf), gal.rs/pc/gal.rinf, symbol, color=cols[j])
+		try:
+			rsoi=np.genfromtxt(base_d+'/rsoi')
+			sigma=np.genfromtxt(base_d+'/sigma')
+		except:
+			pass
+		sigma_interp=interp1d(sigma[:,0], sigma[:,1])
+
+		ax.loglog(vw*1.E5/sigma_interp(rsoi*pc), gal.rs/pc/rsoi, symbol, color=cols[j])
 
 for name in gal_dict.keys():
 	for j,vw in enumerate(vws):
@@ -95,6 +103,14 @@ for name in gal_dict.keys():
 			symbol='x'
 		else:
 			symbol='s'
+		try:
+			rsoi=np.genfromtxt(base_d+'/rsoi')
+			sigma=np.genfromtxt(base_d+'/sigma')
+		except:
+			pass
+			
+		sigma_interp=interp1d(sigma[:,0], sigma[:,1])
+
 
 		ax.loglog(vw*1.E5/gal.sigma(gal.rinf), gal.rs/pc/gal.rinf, symbol, color=cols[j])
 
