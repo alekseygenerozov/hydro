@@ -352,7 +352,7 @@ class Galaxy(object):
 
 	@property 
 	def alpha_max(self):
-		return np.max([np.abs(self.vel+self.cs), np.abs(self.vel-self.cs)])
+		return np.max([np.abs(self.vel+self.cs), np.abs(self.vel-self.cs)],axis=0)
 
 	@property 
 	def sp_heating(self):
