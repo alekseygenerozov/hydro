@@ -43,6 +43,7 @@ def run_hydro(gal_name, vw=5.E7, save='', rescale=1., index=-1, time=5., outdir=
 	gal.set_param('vw_extra',vw)
 	gal.set_param('Re_s', 500.)
 	gal.solve(time*gal.tcross)
+	gal.backup()
 
 
 
@@ -60,16 +61,17 @@ def run_hydro_scratch(gal_name, vw=5.E7, rmin=1.36E17, rmax=7.E19, outdir=''):
 	gal.set_param('bdry', 'bp')
 	gal.set_param('eps', 0.)
 	gal.set_param('vw_extra', vw)
+	gal.set_params('Re_s', 500.)
 	gal.solve(2.*gal.tcross)
 	gal.isot_off()
-	gal.backup()
 	gal.solve(2.*gal.tcross)
 	#Resetting boundary conditions
 	gal.set_param('bdry', 'default')
 	gal.solve(gal.tcross)
 	#Turning on the stellar potential
 	gal.set_param('eps',1.)
-	gal.solve(8.*tcross)
+	gal.solve(8.*gal.tcross)
+	gal.backup()
 
 	#Save movies
 	#ipyani.movie_save(outdir, interval=1, ymin=[None, None, None, 10.**-25, -1., 10.**6], ymax=[None, None, None, 10.**-20, 2., 10.**8], logy=[True, True, True, True, False, True])

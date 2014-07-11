@@ -250,7 +250,7 @@ class Galaxy(object):
 		self.eps=1.
 		# self.place_mass()
 
-		self.out_fields=['radii', 'rho', 'vel', 'temp', 'frho', 'bernoulli', 's', 'cs']
+		self.out_fields=['radii', 'rho', 'vel', 'temp', 'frho', 'bernoulli', 's', 'cs', 'q_grid', 'M_enc_grid', 'phi_grid', 'sigma_grid','vw']
 		self.cons_fields=['frho', 'bernoulli', 's', 'fen']
 		self.src_fields=['src_rho', 'src_v', 'src_s', 'src_en']
 		self.movies=False
