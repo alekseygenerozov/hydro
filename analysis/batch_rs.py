@@ -57,6 +57,7 @@ cols=brewer2mpl.get_map('Set2', 'qualitative', 3).mpl_colors
 
 for name in gal_dict.keys():
 	base_d='/Users/aleksey/Second_Year_Project/hydro/batch/'+name
+	gal_data='/Users/aleksey/Second_Year_Project/hydro/gal_data/'+name
 	for j,vw in enumerate(vws):
 		d=base_d+'/vw_'+str(vw)
 		if not check(d):
@@ -76,8 +77,8 @@ for name in gal_dict.keys():
 			symbol='s'
 
 		try:
-			rsoi=np.genfromtxt(base_d+'/rsoi')
-			sigma=np.genfromtxt(base_d+'/sigma')
+			rsoi=np.genfromtxt(gal_data+'/rsoi')
+			sigma=np.genfromtxt(gal_data+'/sigma')
 		except:
 			continue
 		sigma_interp=interp1d(sigma[:,0], sigma[:,1])
@@ -85,7 +86,8 @@ for name in gal_dict.keys():
 		ax.loglog(vw*1.E5/sigma_interp(rsoi*pc), gal.rs/pc/rsoi, symbol, color=cols[j])
 
 for name in gal_dict.keys():
-	base_d='/Users/aleksey/Second_Year_Project/hydro/batch/'+name
+	base_d='/Users/aleksey/Second_Year_Project/hydro/batch_A2052/'+name
+	gal_data='/Users/aleksey/Second_Year_Project/hydro/gal_data/'+name
 	for j,vw in enumerate(vws):
 		d='/Users/aleksey/Second_Year_Project/hydro/batch_A2052/'+name+'/vw_'+str(vw)
 		if not check(d):
@@ -105,8 +107,8 @@ for name in gal_dict.keys():
 		else:
 			symbol='s'
 		try:
-			rsoi=np.genfromtxt(base_d+'/rsoi')
-			sigma=np.genfromtxt(base_d+'/sigma')
+			rsoi=np.genfromtxt(gal_data+'/rsoi')
+			sigma=np.genfromtxt(gal_data+'/sigma')
 		except:
 			continue
 			
