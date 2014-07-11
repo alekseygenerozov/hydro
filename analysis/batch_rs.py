@@ -71,7 +71,7 @@ for name in gal_dict.keys():
 		gal=galaxy.NukerGalaxy(name, gal_dict, init_array=start)
 
 		if gal.params['type']=='Core':
-			symbol='x'
+			symbol='<'
 		else:
 			symbol='s'
 
@@ -79,12 +79,13 @@ for name in gal_dict.keys():
 			rsoi=np.genfromtxt(base_d+'/rsoi')
 			sigma=np.genfromtxt(base_d+'/sigma')
 		except:
-			pass
+			continue
 		sigma_interp=interp1d(sigma[:,0], sigma[:,1])
 
 		ax.loglog(vw*1.E5/sigma_interp(rsoi*pc), gal.rs/pc/rsoi, symbol, color=cols[j])
 
 for name in gal_dict.keys():
+	base_d='/Users/aleksey/Second_Year_Project/hydro/batch/'+name
 	for j,vw in enumerate(vws):
 		d='/Users/aleksey/Second_Year_Project/hydro/batch_A2052/'+name+'/vw_'+str(vw)
 		if not check(d):
@@ -100,19 +101,18 @@ for name in gal_dict.keys():
 
 
 		if gal.params['type']=='Core':
-			symbol='x'
+			symbol='<'
 		else:
 			symbol='s'
 		try:
 			rsoi=np.genfromtxt(base_d+'/rsoi')
 			sigma=np.genfromtxt(base_d+'/sigma')
 		except:
-			pass
+			continue
 			
 		sigma_interp=interp1d(sigma[:,0], sigma[:,1])
 
-
-		ax.loglog(vw*1.E5/gal.sigma(gal.rinf), gal.rs/pc/gal.rinf, symbol, color=cols[j])
+		ax.loglog(vw*1.E5/sigma_interp(rsoi*pc), gal.rs/pc/rsoi, symbol, color=cols[j])
 
 
 plt.savefig('rs.png')
