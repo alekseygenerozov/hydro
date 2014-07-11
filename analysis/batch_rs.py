@@ -25,25 +25,6 @@ h=const.h.cgs.value
 pc=const.pc.cgs.value
 c=const.c.cgs.value
 
-def check(outdir, tol=40.):
-	check=False
-	refloat=r'[+-]?\d+\.?\d*[eE]?[+-]?\d*'
-	try:
-		f=open(outdir+'/check', 'r')
-	except:
-		return False
-	checkf=f.read()
-	
-	pdiffs=re.findall(re.compile('pdiff='+refloat), checkf)
-	try:
-		cons1=re.findall(refloat,pdiffs[0])[0]
-		cons2=re.findall(refloat,pdiffs[-1])[0]
-		if float(cons1)<tol and float(cons2)<tol:
-			check=True
-	except:
-		pass
-	
-	return check 
 
 
 gal_dict=galaxy.nuker_params()
@@ -55,21 +36,22 @@ vws=[200., 500., 1000.]
 # selection=['NGC3115', 'NGC1172', 'NGC4478']
 cols=brewer2mpl.get_map('Set2', 'qualitative', 3).mpl_colors
 
+
 for name in gal_dict.keys():
 	base_d='/Users/aleksey/Second_Year_Project/hydro/batch/'+name
 	gal_data='/Users/aleksey/Second_Year_Project/hydro/gal_data/'+name
 	for j,vw in enumerate(vws):
-		d=base_d+'/vw_'+str(vw)
-		if not check(d):
-			continue
 		try:
 			saved=np.load(d+'/save.npz')['a']
 		except:
 			continue
 
-
 		start=galaxy.prepare_start(saved[-1])
 		gal=galaxy.NukerGalaxy(name, gal_dict, init_array=start)
+		gal.set_param('vw_extra', vw)
+		gal.cons_check(tol=40., write=False)
+		if not gal.check:
+			continue
 
 		if gal.params['type']=='Core':
 			symbol='<'
@@ -86,32 +68,31 @@ for name in gal_dict.keys():
 		ax.loglog(vw*1.E5/sigma_interp(rsoi*pc), gal.rs/pc/rsoi, symbol, color=cols[j])
 
 for name in gal_dict.keys():
-	base_d='/Users/aleksey/Second_Year_Project/hydro/batch_A2052/'+name
+	base_d='/Users/aleksey/Second_Year_Project/hydro/batch/'+name
 	gal_data='/Users/aleksey/Second_Year_Project/hydro/gal_data/'+name
 	for j,vw in enumerate(vws):
-		d='/Users/aleksey/Second_Year_Project/hydro/batch_A2052/'+name+'/vw_'+str(vw)
-		if not check(d):
-			continue
 		try:
 			saved=np.load(d+'/save.npz')['a']
 		except:
 			continue
 
-
 		start=galaxy.prepare_start(saved[-1])
 		gal=galaxy.NukerGalaxy(name, gal_dict, init_array=start)
-
+		gal.set_param('vw_extra', vw)
+		gal.cons_check(tol=40., write=False)
+		if not gal.check:
+			continue
 
 		if gal.params['type']=='Core':
 			symbol='<'
 		else:
 			symbol='s'
+
 		try:
 			rsoi=np.genfromtxt(gal_data+'/rsoi')
 			sigma=np.genfromtxt(gal_data+'/sigma')
 		except:
 			continue
-			
 		sigma_interp=interp1d(sigma[:,0], sigma[:,1])
 
 		ax.loglog(vw*1.E5/sigma_interp(rsoi*pc), gal.rs/pc/rsoi, symbol, color=cols[j])

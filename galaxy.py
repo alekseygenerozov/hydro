@@ -452,9 +452,8 @@ class Galaxy(object):
 		self.fdiff=np.append(self.fdiff,[np.transpose(fdiff)],0)
 
 	#Check how well conservation holds on grid as a whole.
-	def _cons_check(self):
+	def cons_check(self, write=True, tol=40.):
 		'''Check level of conservation at end of run'''
-		check=file(self.outdir+'/check', 'w')
 		self.check=True
 		for i in range(len(self.cons_fields)):
 			flux=4.*np.pi*getattr(self, self.cons_fields[i])
@@ -463,17 +462,20 @@ class Galaxy(object):
 			integral=np.sum(src[self.start:self.end+1])
 			with warnings.catch_warnings():
 				pdiff=(fdiff-integral)*100./integral
-			if (pdiff>40.) or np.isnan(pdiff):
+			if (pdiff>tol) or np.isnan(pdiff):
 				self.check=False
 
-			check.write(self.cons_fields[i]+'\n')
-			pre=['flux1=','flux2=','diff=','src=','pdiff=']
-			vals=[flux[self.start],flux[self.end],fdiff,integral,pdiff]
-			for j in range(len(vals)):
-				check.write(pre[j])
-				s='{0:4.3e}'.format(vals[j])
-				check.write(s+'\n')
-			check.write('____________________________________\n\n')
+			if write:
+				check=file(self.outdir+'/check', 'w')
+				check.write(self.cons_fields[i]+'\n')
+				pre=['flux1=','flux2=','diff=','src=','pdiff=']
+				vals=[flux[self.start],flux[self.end],fdiff,integral,pdiff]
+				for j in range(len(vals)):
+					check.write(pre[j])
+					s='{0:4.3e}'.format(vals[j])
+					check.write(s+'\n')
+				check.write('____________________________________\n\n')
+
 
 	#Adding ghost zones onto the edges of the grid (moving the start of the grid)
 	def _add_ghosts(self):
@@ -811,7 +813,7 @@ class Galaxy(object):
 			
 	#Method to write solution info to file
 	def write_sol(self):
-		self._cons_check()
+		self.cons_check()
 
 		np.savez(self.outdir+'/save', a=self.saved, b=self.time_stamps)
 		np.savez(self.outdir+'/cons', a=self.fdiff)
