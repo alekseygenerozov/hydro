@@ -45,14 +45,11 @@ for name in gal_dict.keys():
 			saved=np.load(d+'/save.npz')['a']
 		except:
 			continue
+		if not sc.check(d):
+			continue
 
 		start=galaxy.prepare_start(saved[-1])
 		gal=galaxy.NukerGalaxy(name, gal_dict, init_array=start)
-		gal.set_param('vw_extra', vw)
-		gal.cons_check(tol=40., write=False)
-		if not gal.check:
-			continue
-
 		if gal.params['type']=='Core':
 			symbol='<'
 		else:
@@ -65,24 +62,21 @@ for name in gal_dict.keys():
 			continue
 		sigma_interp=interp1d(sigma[:,0], sigma[:,1])
 
-		ax.loglog(vw*1.E5/sigma_interp(rsoi*pc), gal.rs/pc/rsoi, symbol, color=cols[j])
+		ax.loglog(vw*1.E5/sigma_interp(rsoi*pc), gal.rs/pc/rsoi, symbol, color=cols[j], markersize=10)
 
 for name in gal_dict.keys():
-	base_d='/Users/aleksey/Second_Year_Project/hydro/batch/'+name
+	base_d='/Users/aleksey/Second_Year_Project/hydro/batch_A2052/'+name
 	gal_data='/Users/aleksey/Second_Year_Project/hydro/gal_data/'+name
 	for j,vw in enumerate(vws):
 		try:
 			saved=np.load(d+'/save.npz')['a']
 		except:
 			continue
+		if not sc.check(d):
+			continue
 
 		start=galaxy.prepare_start(saved[-1])
 		gal=galaxy.NukerGalaxy(name, gal_dict, init_array=start)
-		gal.set_param('vw_extra', vw)
-		gal.cons_check(tol=40., write=False)
-		if not gal.check:
-			continue
-
 		if gal.params['type']=='Core':
 			symbol='<'
 		else:
@@ -95,7 +89,7 @@ for name in gal_dict.keys():
 			continue
 		sigma_interp=interp1d(sigma[:,0], sigma[:,1])
 
-		ax.loglog(vw*1.E5/sigma_interp(rsoi*pc), gal.rs/pc/rsoi, symbol, color=cols[j])
+		ax.loglog(vw*1.E5/sigma_interp(rsoi*pc), gal.rs/pc/rsoi, symbol, color=cols[j], markersize=10)
 
 
 plt.savefig('rs.png')
