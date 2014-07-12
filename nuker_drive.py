@@ -61,7 +61,8 @@ def run_hydro_scratch(gal_name, vw=5.E7, rmin=1.36E17, rmax=7.E19, outdir=''):
 	gal.set_param('bdry', 'bp')
 	gal.set_param('eps', 0.)
 	gal.set_param('vw_extra', vw)
-	gal.set_param('Re_s', 500.)
+	gal.set_param('sigma_heating', False)
+
 	gal.solve(2.*gal.tcross)
 	gal.isot_off()
 	gal.solve(2.*gal.tcross)

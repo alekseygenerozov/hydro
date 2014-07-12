@@ -242,13 +242,11 @@ class Galaxy(object):
 		self.safety=0.6
 		self.bdry='default'
 		self.bdry_fixed=False
-		
-		# self.q_grid=np.array([self.q(r) for r in self.radii/pc])/pc**3
+	
 		self.vw_extra=1.E8
-		# self.vw=np.array([(self.sigma(r/pc)**2+(self.vw_extra)**2)**0.5 for r in self.radii])
+		self.sigma_heating=True
 
 		self.eps=1.
-		# self.place_mass()
 
 		self.out_fields=['radii', 'rho', 'vel', 'temp', 'frho', 'bernoulli', 's', 'cs', 'q_grid', 'M_enc_grid', 'phi_grid', 'sigma_grid','vw']
 		self.cons_fields=['frho', 'bernoulli', 's', 'fen']
@@ -325,7 +323,10 @@ class Galaxy(object):
 
 	@property 
 	def vw(self):
-		return (self.sigma_grid**2+(self.vw_extra)**2)**0.5
+		if not self.sigma_heating:
+			return self.vw_extra
+		else:
+			return (self.sigma_grid**2+(self.vw_extra)**2)**0.5
 
 	@property
 	def rho(self):
