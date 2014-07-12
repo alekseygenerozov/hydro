@@ -18,6 +18,8 @@ import brewer2mpl
 
 import sol_check as sc
 
+from scipy.misc import derivative
+
 #Constants
 G=const.G.cgs.value
 M_sun=const.M_sun.cgs.value
@@ -37,6 +39,9 @@ linestyles=['-.', '-']
 vws=[200., 500., 1000.]
 # selection=['NGC3115', 'NGC1172', 'NGC4478']
 cols=brewer2mpl.get_map('Set2', 'qualitative', 3).mpl_colors
+
+def glaw(eta):
+	return 2./(eta**2)
 
 
 for name in gal_dict.keys():
@@ -65,8 +70,23 @@ for name in gal_dict.keys():
 			continue
 		sigma_interp=interp1d(sigma[:,0], sigma[:,1])
 
+		rho_interp=interp1d(np.log(gal.radii), np.log(gal.rho))
+		dens_slope=derivative(rho_interp, np.log(gal.rs), dx=gal.delta_log[0])
+	
+		irs=len(gal.radii[gal.radii<gal.rs])-1
+		dens_slope2=gal.radii[irs]*gal.get_spatial_deriv(irs, 'log_rho')
+
+		irs=len(gal.radii[gal.radii<gal.rs])
+		dens_slope3=gal.radii[irs]*gal.get_spatial_deriv(irs, 'log_rho')
+
+		dens_slope4=derivative(rho_interp, np.log(gal.radii[irs]), dx=gal.delta_log[0])
+
+		print dens_slope, dens_slope2, dens_slope3
+		print dens_slope3, dens_slope4
+
 		ax.loglog(vw*1.E5/sigma_interp(rsoi*pc), gal.rs/pc/rsoi, symbol, color=cols[j], markersize=10)
 
+ax.loglog([10., 1.], [glaw(10.), glaw(1.)])
 for name in gal_dict.keys():
 	base_d='/Users/aleksey/Second_Year_Project/hydro/batch_A2052/'+name
 	gal_data='/Users/aleksey/Second_Year_Project/hydro/gal_data/'+name
