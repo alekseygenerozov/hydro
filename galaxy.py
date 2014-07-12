@@ -324,7 +324,7 @@ class Galaxy(object):
 	@property 
 	def vw(self):
 		if not self.sigma_heating:
-			return self.vw_extra
+			return np.array(self.length*[self.vw_extra])
 		else:
 			return (self.sigma_grid**2+(self.vw_extra)**2)**0.5
 
