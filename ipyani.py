@@ -71,7 +71,7 @@ def animate(fname,  index=1, symbol='r', logx=True, logy=False, max_index=-1, ym
             label.set_text(str(times[n*interval]))
 
     #Exporting animation
-    sol_ani=animation.FuncAnimation(fig,update_img,len(saved[:max_index,:,index])/interval,interval=50, blit=True)
+    sol_ani=animation.FuncAnimation(fig,update_img,len(saved[:max_index,:,index])/interval,interval=5)
     return sol_ani
 
 
@@ -84,6 +84,6 @@ def movie_save(loc, interval=10, ymin=[None, None, None, None, -1, None], ymax=[
         ani.save(loc+files[i])
     for i in range(3, 6):
         ani=animate(loc+'/save.npz', index=i-2, ymin=ymin[i], ymax=ymax[i], times=times, symbol='b', interval=interval, logy=logy[i])
-        ani.save(loc+files[i])
+        ani.save(loc+files[i], dpi=300)
 
 

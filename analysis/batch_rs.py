@@ -39,10 +39,10 @@ vws=[200., 500., 1000.]
 # selection=['NGC3115', 'NGC1172', 'NGC4478']
 cols=brewer2mpl.get_map('Set2', 'qualitative', 3).mpl_colors
 
-def glaw(eta, dens_slope=1):
-	return 2./(dens_slope*eta**2)
+def glaw(eta, dens_slope=1, ad_index=5./3., gamma=1.):
+	return 2./(dens_slope*eta**2)*(4.*ad_index-(1+gamma)*(ad_index-1.))/(4.*(ad_index-1.))
 
-
+dens_slopes=[]
 for idx,name in enumerate(gal_dict.keys()):
 	base_d='/Users/aleksey/Second_Year_Project/hydro/batch/'+name
 	gal_data='/Users/aleksey/Second_Year_Project/hydro/gal_data/'+name
@@ -70,13 +70,19 @@ for idx,name in enumerate(gal_dict.keys()):
 		sigma_interp=interp1d(sigma[:,0], sigma[:,1])
 
 		rho_interp=interp1d(np.log(gal.radii), np.log(gal.rho))
-		dens_slope=derivative(rho_interp, np.log(gal.rs), dx=gal.delta_log[0])
-		print dens_slope
+		dens_slope=np.abs(derivative(rho_interp, np.log(gal.rs), dx=gal.delta_log[0]))
+		dens_slopes.append(dens_slope)
+
 
 		x=gal.rs/pc/rsoi
-		eta=vw*1.E5/sigma_interp(rsoi*pc)
-		residual=(glaw(eta)-x)/glaw(eta)
-		residual2=(glaw(eta, dens_slope=dens_slope)-x)/glaw(eta, dens_slope=dens_slope)
+		vw_eff=(sigma_interp(rsoi*pc)**2.+(vw*1.E5)**2.)**0.5
+		#vw_eff=vw*1.E5
+		eta=vw_eff/sigma_interp(rsoi*pc)
+
+		predicted=glaw(eta)
+		residual=(predicted-x)/predicted
+		predicted2=glaw(eta, dens_slope=dens_slope, gamma=gal.params['gamma'])
+		residual2=(predicted2-x)/predicted2
 
 
 		ax[0].loglog(eta, x, symbol, color=cols[j], markersize=10)
@@ -84,6 +90,8 @@ for idx,name in enumerate(gal_dict.keys()):
 		ax[0].loglog(etas, [glaw(eta) for eta in etas])
 		ax[1].plot(idx, residual, symbol, color=cols[j], markersize=10)
 		ax[2].plot(idx, residual2, symbol, color=cols[j], markersize=10)
+
+print np.mean(dens_slopes)
 
 
 
