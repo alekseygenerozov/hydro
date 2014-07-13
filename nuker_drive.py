@@ -67,6 +67,7 @@ def run_hydro_scratch(gal_name, vw=5.E7, rmin=1.36E17, rmax=7.E19, outdir=''):
 	gal.isot_off()
 	gal.solve(2.*gal.tcross)
 	#Resetting boundary conditions
+	gal.set_param('Re_s', 500.)
 	gal.set_param('bdry', 'default')
 	gal.solve(gal.tcross)
 	#Turning on the stellar potential
