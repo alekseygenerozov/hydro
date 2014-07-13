@@ -151,7 +151,7 @@ def extend_to_ss(dat):
 def prepare_start(end_state, rescale=1):
 
 	# end_state=dat[-70:]
-	end_state[:,2]=end_state[:,2]*end_state[:,-1]
+	end_state[:,2]=end_state[:,2]*end_state[:,7]
 	end_state[:,1]=np.log(end_state[:,1])
 	start=end_state[:,:4]
 	#rescaling radial grid. This will be useful for going from one mass black hole to another. 
@@ -885,7 +885,7 @@ class Galaxy(object):
 	#Save the state of the grid
 	def save(self):
 		grid_prims=[getattr(self, field) for field in self.out_fields]
-		grid_prims[2]=grid_prims[2]/grid_prims[-1]
+		grid_prims[2]=grid_prims[2]/grid_prims[7]
 
 		#Saving the state of the grid within list
 		#self.saved.append((self.total_time, np.transpose(grid_prims)))
