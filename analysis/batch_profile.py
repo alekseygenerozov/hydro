@@ -112,4 +112,4 @@ for i,name in enumerate(selection):
 		if j==2:
 			ax[2].text(1.1*gal.rs, x_ray_rs,gal.name, color=cols[i%len(cols)])
 
-plt.savefig('profiles.png')
+plt.savefig('profiles.eps')
