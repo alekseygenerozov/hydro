@@ -39,8 +39,9 @@ vws=[200., 500., 1000.]
 # selection=['NGC3115', 'NGC1172', 'NGC4478']
 cols=brewer2mpl.get_map('Set2', 'qualitative', 3).mpl_colors
 
-def glaw(eta, dens_slope=1, ad_index=5./3., gamma=1.):
-	return 2./(dens_slope*eta**2)*(4.*ad_index-(1+gamma)*(ad_index-1.))/(4.*(ad_index-1.))
+def glaw(eta, chi=1., dens_slope=1, ad_index=5./3., gamma=1.):
+	A=(4.*ad_index-(1+gamma)*(ad_index-1.))/(4.*(ad_index-1.))
+	return 1./(dens_slope*eta**2)*(A*(1+chi)-(2.-gamma)/4.)
 
 dens_slopes=[]
 for idx,name in enumerate(gal_dict.keys()):
@@ -75,13 +76,15 @@ for idx,name in enumerate(gal_dict.keys()):
 
 
 		x=gal.rs/pc/rsoi
-		vw_eff=(sigma_interp(rsoi*pc)**2.+(vw*1.E5)**2.)**0.5
-		#vw_eff=vw*1.E5
+		vw_eff=(sigma_interp(gal.rs)**2.+(vw*1.E5)**2.)**0.5
 		eta=vw_eff/sigma_interp(rsoi*pc)
+
+		M_enc_rs=(sigma_interp(gal.rs)**2*gal.rs/G)-gal.M_bh
+		chi=M_enc_rs/gal.M_bh
 
 		predicted=glaw(eta)
 		residual=(predicted-x)/predicted
-		predicted2=glaw(eta, dens_slope=dens_slope, gamma=gal.params['gamma'])
+		predicted2=glaw(eta, chi=chi, dens_slope=dens_slope, gamma=gal.params['gamma'])
 		residual2=(predicted2-x)/predicted2
 
 
