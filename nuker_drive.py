@@ -29,7 +29,7 @@ pc=const.pc.cgs.value
 def run_hydro(gal_name, vw=5.E7, save='', rescale=1., index=-1, time=5., outdir='', ss=False):
 	#Prepare initixal data
 	saved=np.load(save+'/save.npz')['a']
-	saved=saved[index][:,[0,1,2,3,-1]]
+	saved=saved[index]
 
 	#Set up galaxy for run
 	start=galaxy.prepare_start(saved, rescale=rescale)
