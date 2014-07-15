@@ -788,11 +788,7 @@ class Galaxy(object):
 		:param int n: Number of time intervals to divide time into for the purposes of parameter adjustment
 		:param int max_steps: Maximum number of steps for solver to take
 		'''
-		try:
-			self.q_grid
-		except:
-			self._solve_prep()
-			
+
 		if len(self.saved==0):
 			self.save_pt=0
 		else:

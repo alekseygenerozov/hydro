@@ -109,7 +109,7 @@ for idx,name in enumerate(gal_dict.keys()):
 
 last=idx
 for idx,name in enumerate(gal_dict.keys()):
-	base_d='/Users/aleksey/Second_Year_Project/hydro/batch_A2052/'+name
+	base_d='/Users/aleksey/Second_Year_Project/hydro/batch_A2052_unique/'+name
 	gal_data='/Users/aleksey/Second_Year_Project/hydro/gal_data/'+name
 	for j,vw in enumerate(vws):
 		d=base_d+'/vw_'+str(vw)
