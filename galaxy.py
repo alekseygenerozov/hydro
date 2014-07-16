@@ -788,7 +788,6 @@ class Galaxy(object):
 		:param int n: Number of time intervals to divide time into for the purposes of parameter adjustment
 		:param int max_steps: Maximum number of steps for solver to take
 		'''
-
 		if len(self.saved==0):
 			self.save_pt=0
 		else:
@@ -961,8 +960,9 @@ class Galaxy(object):
 	def mdot(self):
 		'''Mass accretion rate based on stagnation radius 
 		'''
-		rs_pc=self.rs/pc
-		mdot=4.*np.pi*integrate.quad(lambda r: r**2*self.q(r), self.rmin_star, rs_pc)[0]
+		#rs_pc=self.rs/pc
+		#mdot=4.*np.pi*integrate.quad(lambda r: r**2*self.q(r), self.rmin_star, rs_pc)[0]
+		mdot=4.*np.pi*grid.radii[self.start]**2*grid.rho[self.start]*grid.vel[self.start]
 		return mdot
 
 	@property

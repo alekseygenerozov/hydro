@@ -51,7 +51,8 @@ x_core=[]
 x_cusp=[]
 dens_slope_cusp=[]
 dens_slope_core=[]
-for idx,name in enumerate(gal_dict.keys()):
+idx=0
+for name in gal_dict.keys():
 	base_d='/Users/aleksey/Second_Year_Project/hydro/batch/'+name
 	gal_data='/Users/aleksey/Second_Year_Project/hydro/gal_data/'+name
 	for j,vw in enumerate(vws):
@@ -104,11 +105,10 @@ for idx,name in enumerate(gal_dict.keys()):
 		ax[0].loglog(eta, x, symbol, color=cols[j], markersize=10)
 		# etas=[1.,10.]
 		ax[1].plot(idx, residual2, symbol, color=cols[j], markersize=10)
+		idx+=1
 
 
-
-last=idx
-for idx,name in enumerate(gal_dict.keys()):
+for name in gal_dict.keys():
 	base_d='/Users/aleksey/Second_Year_Project/hydro/batch_A2052_unique/'+name
 	gal_data='/Users/aleksey/Second_Year_Project/hydro/gal_data/'+name
 	for j,vw in enumerate(vws):
@@ -158,15 +158,16 @@ for idx,name in enumerate(gal_dict.keys()):
 			x_cusp.append(x)
 			dens_slope_cusp.append(dens_slope)
 
+		idx+=1
 		ax[0].loglog(eta, x, symbol, color=cols[j], markersize=10)
-
-		ax[1].plot(idx+last, residual2, symbol, color=cols[j], markersize=10)
+		ax[1].plot(idx, residual2, symbol, color=cols[j], markersize=10)
 
 pow_cusp, coeff_cusp=np.polyfit(np.log(eta_cusp),np.log(x_cusp),1)
 pow_core, coeff_core=np.polyfit(np.log(eta_core),np.log(x_core),1)
 
 print np.mean(dens_slope_cusp)
 print np.mean(dens_slope_core)
+print len(x_core)
 
 # =np.polyfit(np.log(x_core),np.log(eta_core),1)
 etas=[0.2,20.]
