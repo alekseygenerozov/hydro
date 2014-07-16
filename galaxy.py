@@ -456,6 +456,8 @@ class Galaxy(object):
 	def cons_check(self, write=True, tol=40.):
 		'''Check level of conservation at end of run'''
 		self.check=True
+		check=file(self.outdir+'/check', 'w')
+
 		for i in range(len(self.cons_fields)):
 			flux=4.*np.pi*getattr(self, self.cons_fields[i])
 			fdiff=flux[self.end]-flux[self.start]
@@ -467,7 +469,6 @@ class Galaxy(object):
 				self.check=False
 
 			if write:
-				check=file(self.outdir+'/check', 'w')
 				check.write(self.cons_fields[i]+'\n')
 				pre=['flux1=','flux2=','diff=','src=','pdiff=']
 				vals=[flux[self.start],flux[self.end],fdiff,integral,pdiff]
@@ -476,6 +477,7 @@ class Galaxy(object):
 					s='{0:4.3e}'.format(vals[j])
 					check.write(s+'\n')
 				check.write('____________________________________\n\n')
+		check.close()
 
 
 	#Adding ghost zones onto the edges of the grid (moving the start of the grid)
@@ -804,7 +806,7 @@ class Galaxy(object):
 			self.time_target+=interval
 			self.set_param(param,param_cur)
 		self.write_sol()
-		self.nsolve+=1
+		self.nsolves+=1
 
 			
 	#Method to write solution info to file
