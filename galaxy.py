@@ -960,9 +960,7 @@ class Galaxy(object):
 	def mdot(self):
 		'''Mass accretion rate based on stagnation radius 
 		'''
-		#rs_pc=self.rs/pc
-		#mdot=4.*np.pi*integrate.quad(lambda r: r**2*self.q(r), self.rmin_star, rs_pc)[0]
-		mdot=4.*np.pi*grid.radii[self.start]**2*grid.rho[self.start]*grid.vel[self.start]
+		mdot=4.*np.pi*self.radii[self.start]**2*self.rho[self.start]*abs(self.vel[self.start])
 		return mdot
 
 	@property
