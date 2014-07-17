@@ -29,11 +29,11 @@ c=const.c.cgs.value
 
 
 gal_dict=galaxy.nuker_params()
-fig,ax=plt.subplots(2, sharex=False, figsize=(12,  20))
-ax[0].set_xlabel('$v_w/\sigma$')
+fig,ax=plt.subplots(2, sharex=False, figsize=(10,  16))
+ax[0].set_xlabel(r'$v_w/\sigma$')
 ax[0].set_ylabel(r'$r_{\rm stag}/r_{\rm soi}$')
 
-ax[1].set_ylabel('Residual from analytic prediction')
+ax[1].set_ylabel('Frational difference\n from  analytic prediction')
 
 vws=[200., 500., 1000.]
 # selection=['NGC3115', 'NGC1172', 'NGC4478']

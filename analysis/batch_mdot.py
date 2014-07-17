@@ -26,7 +26,7 @@ h=const.h.cgs.value
 pc=const.pc.cgs.value
 c=const.c.cgs.value
 
-fig1,ax1=plt.subplots(2, sharex=True, figsize=(10,20))
+fig1,ax1=plt.subplots(2, sharex=True, figsize=(5,8))
 fig2,ax2=plt.subplots()
 ax1[0].set_xscale('log')
 ax1[1].set_xscale('log')
@@ -36,6 +36,10 @@ ax1[1].set_ylabel('Number')
 
 ax1[1].set_ylim([0,10])
 ax1[1].set_ylim([0,10])
+
+ax2.set_xlabel(r'$M_{\bullet}/M_{\odot}$')
+ax2.set_ylabel(r'$\dot{M}/\dot{M_{\rm Edd}}$')
+ax2.set_xlim([1.E6, 3.E9])
 
 gal_dict=galaxy.nuker_params()
 cols=brewer2mpl.get_map('Set2', 'qualitative', 3).mpl_colors
@@ -85,20 +89,26 @@ for idx,name in enumerate(gal_dict.keys()):
 		start=galaxy.prepare_start(saved[-1])
 		gal=galaxy.NukerGalaxy(name, gal_dict, init_array=start)
 		if gal.params['type']=='Cusp':
-			eddr[j].append(gal.eddr)
-			mass[j].append(gal.M_bh/galaxy.M_sun)
+			continue
+			# eddr[j].append(gal.eddr)
+			# mass[j].append(gal.M_bh/galaxy.M_sun)
 		else:
 			eddr_core[j].append(gal.eddr)
 			mass_core[j].append(gal.M_bh/galaxy.M_sun)
 
 
+mass_fit=[1.E6, 1.E9]
 
 for j,vw in enumerate(vws):
+	pow_cusp, coeff_cusp=np.polyfit(np.log(mass[j]),np.log(eddr[j]),1)
+	print pow_cusp
+
 	ax1[0].hist(eddr[j], color=cols[j], bins=np.logspace(-9, -1, 16), alpha=0.5)
-	ax2.loglog(mass[j], eddr[j], 's', color=cols[j])
+	ax2.loglog(mass_fit, [np.exp(coeff_cusp)*m**pow_cusp for m in mass_fit], color=cols[j])
+	ax2.loglog(mass[j], eddr[j], 's', color=cols[j], markersize=10)
 
 ax1[1].hist(eddr_core[2], color=cols[2], bins=np.logspace(-9, -1, 16), histtype='step', linestyle='dashed')
-ax2.loglog(mass_core[2], eddr_core[2], '<', color=cols[2])
+ax2.loglog(mass_core[2], eddr_core[2], '<', color=cols[2], markersize=10)
 
 fig1.savefig('mdot_hist.pdf')
 fig2.savefig('mdot_mass.eps')
