@@ -1,8 +1,11 @@
+#!/usr/bin/env python
+
 import matplotlib.animation as animation
 import matplotlib.pyplot as plt
 
 import numpy as np
 from tempfile import NamedTemporaryFile
+import argparse
 
 VIDEO_TAG = """<video controls>
  <source src="data:video/x-m4v;base64,{0}" type="video/mp4">
@@ -75,7 +78,7 @@ def animate(fname,  index=1, symbol='r', logx=True, logy=False, max_index=-1, ym
     return sol_ani
 
 
-def movie_save(loc, interval=10, ymin=[None, None, None, None, -1, None], ymax=[None, None, None, None, 2, None], logy=[True, True, True, True, False, True], times=None):
+def movie_save(loc, interval=1, ymin=[None, None, None, None, -1, None], ymax=[None, None, None, None, 2, None], logy=[True, True, True, True, False, True], times=None):
     #times=grid.time_stamps/parker.tcross(rmin*pc, rmax*pc, temp)
     # times=None
     files=['/mass_cons.mp4', '/be_cons.mp4', '/s_cons.mp4','/rho.mp4', '/vel.mp4', '/temp.mp4']
@@ -86,4 +89,19 @@ def movie_save(loc, interval=10, ymin=[None, None, None, None, -1, None], ymax=[
         ani=animate(loc+'/save.npz', index=i-2, ymin=ymin[i], ymax=ymax[i], times=times, symbol='b', interval=interval, logy=logy[i])
         ani.save(loc+files[i], dpi=300)
 
+def main():
+    parser=argparse.ArgumentParser(
+        description='Code for generating movies')
+    parser.add_argument('loc', nargs=1,
+        help='Name of directory containing saved data.')
+    #Read input file
+    args=parser.parse_args()
+    loc=args.loc[0]
+
+
+    movie_save(loc)
+
+
+if __name__ == '__main__':
+    main()
 
