@@ -176,21 +176,12 @@ class Galaxy(object):
 
 	def __init__(self, init={'r1':0.1*pc,'r2':10.*pc,'f_initial':background, 'length':70, 'func_params':{}}, init_array=None):
 		self.logr=True
-		self.init_params=dict()
-		try:
-			self.params
-		except:
-			self.params={'M':3.6E6*M_sun}
-		try:
-			self.rmin_star
-		except:
-			self.rmin_star=0.
-		try:
-			self.rmax_star
-		except:
-			self.rmax_star=0.
+		self.isot=False
+		self.gamma=5./3.
+		self.fields=['log_rho', 'vel', 's']
+		self.mu=1.
 
-		self.M_bh=self.params['M']
+		self.init_params=dict()
 		init_def={'r1':0.1*pc,'r2':10.*pc,'f_initial':background, 'length':70, 'func_params':{}}
 		
 		for key in init_def.keys():
@@ -198,29 +189,9 @@ class Galaxy(object):
 				init[key]
 			except KeyError:
 				init[key]=init_def[key]
-
-		#Initializing the radial grid
-		if init_array==None:
-			r1,r2,f_initial=init['r1'],init['r2'],init['f_initial']
-			self.func_params=init['func_params']
-
-			assert r2>r1
-			assert hasattr(f_initial, '__call__')
-			self.length=init['length']
-
-			if self.logr:
-				self.radii=np.logspace(np.log(r1), np.log(r2), self.length, base=e)
-			else:
-				self.radii=np.linspace(r1, r2, self.length)
-			prims=[f_initial(r, **self.func_params) for r in self.radii]
-			prims=np.array(prims)
-		else:
-			try:
-				self.radii=init_array[:,0]
-				prims=init_array[:,1:]
-				self.length=len(self.radii)
-			except:
-				raise Exception("Initialization array is not properly formatted!")
+		self.init=init
+		self.init_array=init_array
+		self._init_grid()
 
 		#Attributes to store length of the list as well as start and end indices (useful for ghost zones)
 		self.start=0
@@ -229,11 +200,6 @@ class Galaxy(object):
 		self._num_ghosts=3
 		self.tinterval=0.05*self.tcross
 		self.sinterval=100
-
-		self.isot=False
-		self.gamma=5./3.
-		self.fields=['log_rho', 'vel', 's']
-		self.mu=1.
 
 		self.visc_scheme='default'
 		self.Re=90.
@@ -245,7 +211,6 @@ class Galaxy(object):
 	
 		self.vw_extra=1.E8
 		self.sigma_heating=True
-
 		self.eps=1.
 
 		self.out_fields=['radii', 'rho', 'vel', 'temp', 'frho', 'bernoulli', 's', 'cs', 'q_grid', 'M_enc_grid', 'phi_grid', 'sigma_grid','vw']
@@ -257,18 +222,9 @@ class Galaxy(object):
 		#Will store values of time derivatives at each time step
 		self.time_derivs=np.zeros(self.length, dtype={'names':['log_rho', 'vel', 's'], 'formats':['float64', 'float64', 'float64']})
 		#Initializing the grid using the initial value function f_initial
-		self.log_rho=prims[:,0]
-		self.vel=prims[:,1]
-		self.temp=prims[:,2]
-		self.s=(kb/(self.mu*mp))*np.log(1./np.exp(self.log_rho)*(self.temp)**(3./2.))
 
 
 		self._add_ghosts()
-		#Computing differences between all of the grid elements 
-		delta=np.diff(self.radii)
-		self.delta=np.insert(delta, 0, delta[0])
-		delta_log=np.diff(np.log(self.radii))
-		self.delta_log=np.insert(delta_log, 0, delta_log[0])
 		#Coefficients use to calculate the derivatives 
 		first_deriv_weights=np.array([-1., 9., -45., 0., 45., -9., 1.])/60.
 		second_deriv_weights=np.array([2., -27., 270., -490., 270., -27., 2.])/(180.)
@@ -292,6 +248,52 @@ class Galaxy(object):
 
 		self.nsolves=0
 
+	def _init_grid(self):
+		#Initializing the radial grid
+		if self.init_array==None:
+			r1,r2,f_initial=self.init['r1'],init['r2'],init['f_initial']
+			self.func_params=self.init['func_params']
+
+			assert r2>r1
+			assert hasattr(f_initial, '__call__')
+			self.length=init['length']
+
+			if self.logr:
+				self.radii=np.logspace(np.log(r1), np.log(r2), self.length, base=e)
+			else:
+				self.radii=np.linspace(r1, r2, self.length)
+			prims=[f_initial(r, **self.func_params) for r in self.radii]
+			prims=np.array(prims)
+		else:
+			try:
+				self.radii=self.init_array[:,0]
+				prims=self.init_array[:,1:4]
+				self.length=len(self.radii)
+			except Exception as inst:
+				print inst.args
+				print "Could not read init_array. Check format"
+				raise Exception
+
+		delta=np.diff(self.radii)
+		self.delta=np.insert(delta, 0, delta[0])
+		delta_log=np.diff(np.log(self.radii))
+		self.delta_log=np.insert(delta_log, 0, delta_log[0])
+		
+		if np.min(np.diff(self.radii))<=0:
+			print "Radii must be monotonically increasing" 
+			raise Exception
+		elif np.allclose(np.diff(delta),[0.]):
+			self._logr=False
+		elif np.allclose(np.diff(delta_log),[0.]):
+			self._logr=True
+		else:
+			print "Radii must be evenly spaced in linear or log space"
+			raise exception
+
+		self.log_rho=prims[:,0]
+		self.vel=prims[:,1]
+		self.temp=prims[:,2]
+		self.s=(kb/(self.mu*mp))*np.log(1./np.exp(self.log_rho)*(self.temp)**(3./2.))
 
 	@lazyprop
 	def q_grid(self):
@@ -319,7 +321,7 @@ class Galaxy(object):
 
 	@property
 	def grad_phi_grid(self):
-		return G*(self.M_bh+self.eps*self.M_enc_grid)/self.radii**2
+		return G*(self.params['M']+self.eps*self.M_enc_grid)/self.radii**2
 
 	@property 
 	def vw(self):
@@ -734,7 +736,6 @@ class Galaxy(object):
 		log.close()
 
 
-
 	def solve(self, time, max_steps=np.inf):
 		'''Controller for solution. Several possible stop conditions (max_steps is reached, time is reached)
 
@@ -742,8 +743,6 @@ class Galaxy(object):
 		'''
 		self.time_cur=0
 		self.time_target=time
-		if not os.path.isfile(self.outdir+'/params') or self.nsolves==0:
-			self.output_prep()
 		#For purposes of easy backup
 		if len(self.saved)==0:
 			self.save_pt=0
@@ -770,7 +769,7 @@ class Galaxy(object):
 		elif param=='outdir':
 			self.outdir=value
 			bash_command('mkdir -p '+value)
-			bash_command('mv '+old+'/log '+old+'/cons '+old+'/save '+value)
+			bash_command('mv '+old+'/log '+old+'/cons '+old+'/save '+old+'/params '+value)
 		elif param=='isot':
 			print 'Warning! Changing the isothermal flag is done through the isot_on and isot_off methods!'
 		else:
@@ -990,6 +989,7 @@ class Galaxy(object):
 class NukerGalaxy(Galaxy):
 	'''Sub-classing galaxy above to represent Nuker parameterized galaxies'''
 	def __init__(self, gname, gdata, init={'r1':0.1*pc,'r2':10.*pc,'f_initial':background, 'length':70, 'func_params':{}}, init_array=None):
+		Galaxy.__init__(self, init=init, init_array=init_array)
 		try:
 			self.params=gdata[gname]
 			
@@ -1013,7 +1013,6 @@ class NukerGalaxy(Galaxy):
 		self.rmax_star=1.E5
 		self.rg=G*self.params['M']/c**2
 
-		Galaxy.__init__(self, init=init, init_array=init_array)
 
 	def rho_stars(self,r):
 		'''Stellar density
@@ -1066,7 +1065,7 @@ class NukerGalaxy(Galaxy):
 			return self.params['M']-self.M_enc(r)
 
 		jac=lambda r: -4.*np.pi*r**2*self.rho_stars(r)
-		return fsolve(mdiff, 0.9*(self.M_bh/(1.E6*M_sun))**0.4, fprime=jac)[0]
+		return fsolve(mdiff, 0.9*(self.params['M']/(1.E6*M_sun))**0.4, fprime=jac)[0]
 
 	@property
 	def rb(self):
