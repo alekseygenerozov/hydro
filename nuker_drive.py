@@ -15,6 +15,8 @@ from math import e
 from astropy.io import ascii
 from astropy.table import Column
 
+from ConfigParser import ConfigParser
+
 #Constants
 G=const.G.cgs.value
 M_sun=const.M_sun.cgs.value
@@ -24,77 +26,48 @@ h=const.h.cgs.value
 c=const.c.cgs.value
 pc=const.pc.cgs.value
 
+class CaseConfigParser(ConfigParser):
+	def __init__(self):
+		ConfigParser.__init__(self)
+		self.optionxform = str
+
+def params_parse(conf_file):
+	config = CaseConfigParser({'time':5., 'rescale':1.})
+	params_dict={}
+	param_names=['Re','Re_s','visc_scheme', 'bdry']
+
+	try:
+		f=open(conf_file,'r')
+		config.readfp(f)
+	except: 
+		return {}
+	for name in params_name:
+		params_dict[name]=ast.lit_eval(config.get(name))
+
+	return param_dict
 
 #Run hydro solver for a particular galaxy instance. 
-def run_hydro(gal_name, vw=5.E7, save='', rescale=1., index=-1, time=5., outdir='', ss=False):
-	#Prepare initixal data
-	saved=np.load(save+'/save.npz')['a']
-	saved=saved[index]
-
-	#Set up galaxy for run
-	start=galaxy.prepare_start(saved, rescale=rescale)
-	gal_dict=galaxy.nuker_params()
-	gal=galaxy.NukerGalaxy(gal_name, gal_dict, init_array=start)
-	if outdir:
-		gal.set_param('outdir', outdir)
-	else:
+def run_hydro(gal, time=5.):
+	if gal.outdir=='.':
 		gal.set_param('outdir', gal_name+'/vw_'+str(vw/1.E5))
 
-	gal.set_param('vw_extra',vw)
-	gal.set_param('Re_s', 500.)
 	gal.solve(time*gal.tcross)
 	gal.backup()
-
-
-
-
-#Compute density profile from scratch
-def run_hydro_scratch(gal_name, vw=5.E7, rmin=1.36E17, rmax=7.E19, outdir=''):
-	gal_dict=galaxy.nuker_params()
-	#Solving from the isothermal evolution
-	gal=galaxy.NukerGalaxy(gal_name, gal_dict, init={'r1':rmin, 'r2':rmax,'f_initial':galaxy.background,'func_params':{'log': True, 'temp': 1.E7, 'rho_0': 1e-23}})
-	if outdir:
-		gal.set_param('outdir', outdir)
-	else:
-		gal.set_param('outdir', gal.name+'/vw_'+str(vw/1.E5))
-	gal.isot_on()
-	gal.set_param('bdry', 'bp')
-	gal.set_param('eps', 0.)
-	gal.set_param('vw_extra', vw)
-	gal.set_param('sigma_heating', False)
-
-	gal.solve(2.*gal.tcross)
-	gal.isot_off()
-	gal.solve(2.*gal.tcross)
-	#Resetting boundary conditions
-	gal.set_param('Re_s', 500.)
-	gal.set_param('bdry', 'default')
-	gal.solve(gal.tcross)
-	#Turning on the stellar potential
-	gal.set_param('eps',1.)
-	gal.solve(8.*gal.tcross)
-	gal.backup()
-
-	#Save movies
-	#ipyani.movie_save(outdir, interval=1, ymin=[None, None, None, 10.**-25, -1., 10.**6], ymax=[None, None, None, 10.**-20, 2., 10.**8], logy=[True, True, True, True, False, True])
-
-
 
 
 ##Should add flag to compute all of the nuker galaxies
 def main():
 	parser=argparse.ArgumentParser(
-        description='Code for generating nuker galaxies')
+		description='Code for generating nuker galaxies')
 	parser.add_argument('init', nargs=1,
-		help='Name of file containing galaxy names, vws.')
-	#Read input file
-	params=['gal','vw','save','rescale','rmin','rmax','index','time','outdir','ss']
-	default=['NGC4551',1.E8,None,1.,None,None,-1,5.,'',False]
+		help='File containing list of galaxies and config filed')
+
 	args=parser.parse_args()
-	init=ascii.read(args.init[0])
-	print init
-	#Filling up gaps in the parameter file
-	for i in range(len(params)):
+	cols=['vw_extra','rescale','index','time','config']
+	default=[1.E8, 1., -1, 5.,'']
+
+	init=ascii.read(args.init[0]))
+	for i in range(len(cols)):
 		if np.in1d(params[i], init.colnames):
 			continue
 		else:
@@ -102,15 +75,25 @@ def main():
 			col=Column(name=params[i], data=cole)
 			init.add_column(col) 
 
-    #Iterate over all of the galaxies of interest
+	gal_dict=galaxy.nuker_params()
+
 	for i in range(len(init)):
-		if init['save'][i]:
-			run_hydro(init['gal'][i], vw=init['vw'][i], save=init['save'][i], rescale=init['rescale'][i], index=int(init['index'][i]), time=init['time'][i],\
-				outdir=init['outdir'][i], ss=init['ss'][i])
-		else:
-			run_hydro_scratch(init['gal'][i], vw=init['vw'][i], rmin=init['rmin'][i], rmax=init['rmax'][i], outdir=init['outdir'][i])
+		gal_name=init[i]['name']
+		try:
+			save=params_dict['save']
+			start=galaxy.prepare_start(np.load(save+'/save.npz')[-1], rescale=rescale)
+			gal=galaxy.NukerGalaxy(gal_name,gal_dict,init_array=start)
+			gal.set_param('vw_extra', init[i]['vw_extra'])
+		except:
+			continue
+
+		params_dict=params_parse(init[i]['config'])		
+		for param in params_dict.keys():
+			gal.set_param(param, params_dict[param])
+		run_hydro(gal, params[i]['time'])
+
 
 
 
 if __name__ == '__main__':
-    main()
+	main()
