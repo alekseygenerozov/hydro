@@ -3,7 +3,7 @@
 import galaxy 
 import numpy as np
 
-gal_name='NGC4486_1'
+gal_name='NGC4486'
 save='/vega/astro/users/ag3293/NGC4486_1/vw_500.0'
 saved=np.load(save+'/save.npz')['a']
 saved=saved[-1]
