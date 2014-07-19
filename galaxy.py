@@ -175,15 +175,15 @@ class Galaxy(object):
 	'''
 
 	def __init__(self, init={'r1':0.1*pc,'r2':10.*pc,'f_initial':background, 'length':70, 'func_params':{}}, init_array=None):
+		self.params={'M':3.6E6*M_sun}
+		
 		self.logr=True
 		self.isot=False
 		self.gamma=5./3.
 		self.fields=['log_rho', 'vel', 's']
 		self.mu=1.
 
-		self.init_params=dict()
 		init_def={'r1':0.1*pc,'r2':10.*pc,'f_initial':background, 'length':70, 'func_params':{}}
-		
 		for key in init_def.keys():
 			try:
 				init[key]
@@ -256,7 +256,7 @@ class Galaxy(object):
 
 			assert r2>r1
 			assert hasattr(f_initial, '__call__')
-			self.length=init['length']
+			self.length=self.init['length']
 
 			if self.logr:
 				self.radii=np.logspace(np.log(r1), np.log(r2), self.length, base=e)
