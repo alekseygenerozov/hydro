@@ -95,6 +95,8 @@ def main():
 		for param in params_dict.keys():
 			gal.set_param(param, params_dict[param])
 
+		run_hydro(gal, init[i]['time'])
+
 
 
 
