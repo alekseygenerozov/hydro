@@ -15,7 +15,8 @@ from math import e
 from astropy.io import ascii
 from astropy.table import Column
 
-from ConfigParser import ConfigParser
+from ConfigParser import SafeConfigParser
+import ast
 
 #Constants
 G=const.G.cgs.value
@@ -26,13 +27,13 @@ h=const.h.cgs.value
 c=const.c.cgs.value
 pc=const.pc.cgs.value
 
-class CaseConfigParser(ConfigParser):
+class CaseConfigParser(SafeConfigParser):
 	def __init__(self):
-		ConfigParser.__init__(self)
+		SafeConfigParser.__init__(self)
 		self.optionxform = str
 
 def params_parse(conf_file):
-	config = CaseConfigParser({'time':5., 'rescale':1.})
+	config = CaseConfigParser()
 	params_dict={}
 	param_names=['Re','Re_s','visc_scheme', 'bdry']
 
@@ -41,10 +42,13 @@ def params_parse(conf_file):
 		config.readfp(f)
 	except: 
 		return {}
-	for name in params_name:
-		params_dict[name]=ast.lit_eval(config.get(name))
+	for name in param_names:
+		try:
+			params_dict[name]=ast.literal_eval(config.get('params',name))
+		except:
+			pass
 
-	return param_dict
+	return params_dict
 
 #Run hydro solver for a particular galaxy instance. 
 def run_hydro(gal, time=5.):
@@ -66,31 +70,30 @@ def main():
 	cols=['vw_extra','rescale','index','time','config']
 	default=[1.E8, 1., -1, 5.,'']
 
-	init=ascii.read(args.init[0]))
+	init=ascii.read(args.init[0])
 	for i in range(len(cols)):
-		if np.in1d(params[i], init.colnames):
+		if np.in1d(cols[i], init.colnames):
 			continue
 		else:
 			cole=[default[i]]*len(init)
-			col=Column(name=params[i], data=cole)
+			col=Column(name=cols[i], data=cole)
 			init.add_column(col) 
 
 	gal_dict=galaxy.nuker_params()
-
 	for i in range(len(init)):
-		gal_name=init[i]['name']
+		gal_name=init[i]['gal']
 		try:
-			save=params_dict['save']
-			start=galaxy.prepare_start(np.load(save+'/save.npz')[-1], rescale=rescale)
+			start=galaxy.prepare_start(np.load(init[i]['save']+'/save.npz')['a'][init[i]['index']], rescale=init[i]['rescale'])
+
 			gal=galaxy.NukerGalaxy(gal_name,gal_dict,init_array=start)
 			gal.set_param('vw_extra', init[i]['vw_extra'])
 		except:
 			continue
 
-		params_dict=params_parse(init[i]['config'])		
+		params_dict=params_parse(init[i]['config'])	
+		print params_dict	
 		for param in params_dict.keys():
 			gal.set_param(param, params_dict[param])
-		run_hydro(gal, params[i]['time'])
 
 
 

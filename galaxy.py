@@ -251,7 +251,7 @@ class Galaxy(object):
 	def _init_grid(self):
 		#Initializing the radial grid
 		if self.init_array==None:
-			r1,r2,f_initial=self.init['r1'],init['r2'],init['f_initial']
+			r1,r2,f_initial=self.init['r1'],self.init['r2'],self.init['f_initial']
 			self.func_params=self.init['func_params']
 
 			assert r2>r1
