@@ -53,7 +53,7 @@ def params_parse(conf_file):
 #Run hydro solver for a particular galaxy instance. 
 def run_hydro(gal, time=5.):
 	if gal.outdir=='.':
-		gal.set_param('outdir', gal.name+'/vw_'+str(vw/1.E5))
+		gal.set_param('outdir', gal.name+'/vw_'+str(gal.vw_extra/1.E5))
 
 	gal.solve(time*gal.tcross)
 	gal.backup()
