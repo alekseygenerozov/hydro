@@ -514,7 +514,7 @@ class Galaxy(object):
 		'''Method to update boundaries'''
 		if self.bdry=='bp':
 			self._s_adjust()
-			self._dens_extrapolate()
+			self._dens_adjust()
 			self._mdot_adjust()
 		else:
 			self._extrapolate('rho')
@@ -536,36 +536,23 @@ class Galaxy(object):
 	#Power law extrapolation of quantities into ghost zones 
 	def _extrapolate(self, field):
 		'''Perform power law extrapolation of quantities on grid to boundaries'''
-		r1=self.radii[self.start]
-		r2=self.radii[self.start+3]
 		field_arr=getattr(self, field)
-		field1=field_arr[self.start]
-		field2=field_arr[self.start+3]
-		slope=np.log(field2/field1)/np.log(r2/r1)
-
 		for i in range(0, self.start):
-			val=field1*np.exp(slope*np.log(self.radii[i]/r1))
+			val=self._power_zones(self.radii[i], self.start, self.start+3, field)
 			field_arr[i]=val
 			if field=='rho':
 				self.log_rho[i]=np.log(val)
 			
-		#Updating the end ghost zones
-		r1=self.radii[self.end]
-		r2=self.radii[self.end-3]
-		field_arr=getattr(self, field)
-		field1=field_arr[self.end]
-		field2=field_arr[self.end-3]
-		slope=np.log(field2/field1)/np.log(r2/r1)
 		
 		#Updating the end ghost zones, extrapolating using a power law density
 		for i in range(self.end+1, self.length):
-			val=field1*np.exp(slope*np.log(self.radii[i]/r1))
+			val=self._power_zones(self.radii[i], self.end, self.end-3, field)
 			field_arr[i]=val
 			if field=='rho':
 				self.log_rho[i]=np.log(val)
 
 	#Extrapolate densities to the ghost zones; a lot of this method is redundant 
-	def _dens_extrapolate(self):
+	def _dens_adjust(self):
 		'''Extrapolate $\rho$ assuming that the $\rho\sim r^{-3/2}$ on inner boundary and $\rho\sim r^{-3/2}$'''
 		r_start=self.radii[self.start]
 		r_start2=self.radii[self.start+3]
