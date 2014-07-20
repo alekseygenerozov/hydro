@@ -563,7 +563,6 @@ class Galaxy(object):
 		if self.bdry_fixed:
 			for i in range(1, self.start):
 				self.log_rho[i]=self._interp_zones(self.radii[i], 0, self.start, 'log_rho')
-				self.rho[i]=np.exp(self.log_rho[i])
 		#Updating the starting ghost zones, extrapolating using rho prop r^-3/2
 		else:
 			for i in range(0, self.start):
@@ -571,7 +570,6 @@ class Galaxy(object):
 				#slope=(log_rho_start2-log_rho_start)/np.log(r_start2/r_start)
 				log_rho=slope*np.log(self.radii[i]/r_start)+log_rho_start
 				self.log_rho[i]=log_rho
-				self.rho[i]=np.exp(log_rho)
 		#Updating the end ghost zones
 		r_end=self.radii[self.end]
 		log_rho_end=self.log_rho[self.end]
@@ -583,7 +581,6 @@ class Galaxy(object):
 			#slope=(log_rho_end-log_rho_end2)/np.log(r_end/r_end2)
 			log_rho=slope*np.log(self.radii[i]/r_end)+log_rho_end
 			self.log_rho[i]=log_rho
-			self.rho[i]=np.exp(log_rho)
 
 	#Enforce constant mdot across the boundaries (bondary condition for velocity)
 	def _mdot_adjust(self):
