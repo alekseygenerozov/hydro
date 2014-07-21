@@ -29,8 +29,7 @@ sys.excepthook = info
 
 
 def test_init_array_lin():
-	start=np.load('data/lin_grid.npz')['arr_0']
-	gal=galaxy.Galaxy(init_array=start)
+	gal=galaxy.Galaxy.from_dir('data/lin_grid',prep_start=False)
 
 	assert gal._logr==False
 	assert np.allclose(gal.radii,np.linspace(1.,100.,gal.length))
@@ -41,8 +40,7 @@ def test_init_array_lin():
 	assert np.allclose(gal.temp, np.ones(gal.length))
 
 def test_init_array_log():
-	start=np.load('data/log_grid.npz')['arr_0']
-	gal=galaxy.Galaxy(init_array=start)
+	gal=galaxy.Galaxy.from_dir('data/log_grid',prep_start=False)
 
 	assert gal._logr==True
 	assert np.allclose(gal.radii,np.logspace(1.,100.,gal.length, base=e))
@@ -53,20 +51,18 @@ def test_init_array_log():
 	assert np.allclose(gal.temp, np.ones(gal.length))
 
 def test_init_array_bad1():
-	start=np.load('data/bad_grid_1.npz')['arr_0']
+	# start=np.load('data/bad_grid_1.npz')['arr_0']
 	with pytest.raises(Exception):
-		gal=galaxy.Galaxy(init_array=start)
+		gal=galaxy.Galaxy.from_dir('data/bad_grid_1',prep_start=False)
 
 def test_init_array_bad2():
-	start=np.load('data/bad_grid_2.npz')['arr_0']
 	with pytest.raises(Exception):
-		gal=galaxy.Galaxy(init_array=start)
+		gal=galaxy.Galaxy.from_dir('data/bad_grid_2', prep_start=False)
 	# assert exc.args[0]=="Radii must be evenly spaced in linear or log space!"
 
 def test_init_array_bad3():
-	start=np.load('data/bad_grid_3.npz')['arr_0']
 	with pytest.raises(Exception):
-		gal=galaxy.Galaxy(init_array=start)
+		gal=gal=galaxy.Galaxy.from_dir('data/bad_grid_3')
 
 
 

@@ -42,6 +42,26 @@ th=4.35*10**17
 year=3.15569E7
 #params=dict(Ib=17.16, alpha=1.26, beta=1.75, rb=343.3, gamma=0, Uv=7.)
 
+def extrap1d(interpolator):
+    xs = interpolator.x
+    ys = interpolator.y
+
+    def pointwise(x):
+        if x < xs[0]:
+            return ys[0]
+        elif x > xs[-1]:
+            return ys[-1]
+        else:
+            return interpolator(x)
+
+    def ufunclike(xs):
+    	try:
+        	return np.array(map(pointwise, xs))
+        except TypeError:
+        	return pointwise(xs)
+
+    return ufunclike
+
 def lazyprop(fn):
 	attr_name = '_lazy_' + fn.__name__
 	@property
@@ -174,23 +194,21 @@ class Galaxy(object):
 	:param init_dir: name of directory containing previous from which the current run should be initialized
 	'''
 
-	def __init__(self, init={}, init_array=None):
+	def __init__(self, init={}, **kwargs):
 		self.params={'M':3.6E6*M_sun}
-		
-		self.logr=True
 		self.isot=False
 		self.gamma=5./3.
 		self.fields=['log_rho', 'vel', 's']
 		self.mu=1.
 
-		init_def={'r1':0.1*pc,'r2':10.*pc,'f_initial':background, 'length':70, 'func_params':{}}
+		init_def={'r1':0.1*pc,'r2':10.*pc,'f_initial':background, 'length':70, 'func_params':{}, 'logr':True}
 		for key in init_def.keys():
 			try:
 				init[key]
 			except KeyError:
 				init[key]=init_def[key]
 		self.init=init
-		self.init_array=init_array
+		# self.init_array=init_array
 		self._init_grid()
 
 		#Attributes to store length of the list as well as start and end indices (useful for ghost zones)
@@ -228,7 +246,7 @@ class Galaxy(object):
 		#Coefficients use to calculate the derivatives 
 		first_deriv_weights=np.array([-1., 9., -45., 0., 45., -9., 1.])/60.
 		second_deriv_weights=np.array([2., -27., 270., -490., 270., -27., 2.])/(180.)
-		if not self.logr:
+		if not self._logr:
 			self.first_deriv_coeffs=first_deriv_weights/self.delta[0]
 			self.second_deriv_coeffs=second_deriv_weights/self.delta[0]**2
 		else: 
@@ -248,48 +266,63 @@ class Galaxy(object):
 		self.time_stamps=[]
 
 		self.nsolves=0
+		for key in kwargs.keys():
+			setattr(self,key,kwargs[key])
+
+	@classmethod
+	def from_dir(cls, loc, index=-1, rescale=1, prep_start=True):
+		init={}
+		if prep_start:
+			init_array=prepare_start(np.load(loc+'/save.npz')['a'][index])
+		else:
+			init_array=np.load(loc+'/save.npz')['a']
+
+		radii=init_array[:,0]
+		radii=rescale*radii
+		init['r1']=radii[0]
+		init['r2']=radii[-1]
+
+		delta=np.diff(radii)
+		delta_log=np.diff(np.log(radii))
+		
+		if np.min(np.diff(radii))<=0:
+			print "Radii must be monotonically increasing" 
+			raise Exception
+		elif np.allclose(np.diff(delta),[0.]):
+			init['logr']=False
+		elif np.allclose(np.diff(delta_log),[0.]):
+			init['logr']=True
+		else:
+			print "Radii must be evenly spaced in linear or log space"
+			raise exception
+
+		init['f_initial']=extrap1d(interp1d(init_array[:,0], init_array[:,1:4], axis=0))
+		init['length']=len(radii)
+
+		return cls(init=init)
+
 
 	def _init_grid(self):
 		#Initializing the radial grid
-		if self.init_array==None:
-			r1,r2,f_initial=self.init['r1'],self.init['r2'],self.init['f_initial']
-			self.func_params=self.init['func_params']
+		r1,r2,f_initial=self.init['r1'],self.init['r2'],self.init['f_initial']
+		self.func_params=self.init['func_params']
+		self._logr=self.init['logr']
 
-			assert r2>r1
-			assert hasattr(f_initial, '__call__')
-			self.length=self.init['length']
+		assert r2>r1
+		assert hasattr(f_initial, '__call__')
+		self.length=self.init['length']
 
-			if self.logr:
-				self.radii=np.logspace(np.log(r1), np.log(r2), self.length, base=e)
-			else:
-				self.radii=np.linspace(r1, r2, self.length)
-			prims=[f_initial(r, **self.func_params) for r in self.radii]
-			prims=np.array(prims)
+		if self._logr:
+			self.radii=np.logspace(np.log(r1), np.log(r2), self.length, base=e)
 		else:
-			try:
-				self.radii=self.init_array[:,0]
-				prims=self.init_array[:,1:4]
-				self.length=len(self.radii)
-			except Exception as inst:
-				print inst.args
-				print "Could not read init_array. Check format"
-				raise Exception
+			self.radii=np.linspace(r1, r2, self.length)
+		prims=[f_initial(r, **self.func_params) for r in self.radii]
+		prims=np.array(prims)
 
 		delta=np.diff(self.radii)
 		self.delta=np.insert(delta, 0, delta[0])
 		delta_log=np.diff(np.log(self.radii))
 		self.delta_log=np.insert(delta_log, 0, delta_log[0])
-		
-		if np.min(np.diff(self.radii))<=0:
-			print "Radii must be monotonically increasing" 
-			raise Exception
-		elif np.allclose(np.diff(delta),[0.]):
-			self._logr=False
-		elif np.allclose(np.diff(delta_log),[0.]):
-			self._logr=True
-		else:
-			print "Radii must be evenly spaced in linear or log space"
-			raise exception
 
 		self.log_rho=prims[:,0]
 		self.vel=prims[:,1]
@@ -939,12 +972,6 @@ class Galaxy(object):
 		:param str field: Field to extract
 		:return: list containing two numpy arrays: one containing list of radii and the other containing the field list.
 		'''
-		# field_list=np.zeros(self.length)
-		# rad_list=np.zeros(self.length)
-		# for i in range(0, self.length):
-		# 	field_list[i]=getattr(self.grid[i], field)
-		# 	rad_list[i]=getattr(self.grid[i],'rad')
-
 		return [self.radii, getattr(self,field)]
 
 	@property
@@ -997,8 +1024,8 @@ class Galaxy(object):
 
 class NukerGalaxy(Galaxy):
 	'''Sub-classing galaxy above to represent Nuker parameterized galaxies'''
-	def __init__(self, gname, gdata=None, init={}, init_array=None):
-		Galaxy.__init__(self, init=init, init_array=init_array)
+	def __init__(self, gname, gdata=None, init={}, **kwargs):
+		Galaxy.__init__(self, init=init, **kwargs)
 		if not gdata:
 			gdata=nuker_params()
 		try:
@@ -1023,6 +1050,42 @@ class NukerGalaxy(Galaxy):
 		self.rmin_star=1.E-3
 		self.rmax_star=1.E5
 		self.rg=G*self.params['M']/c**2
+
+
+	@classmethod
+	def from_dir(cls, name, loc, index=-1, rescale=1., gdata=None, prep_start=True):
+		init={}
+		if prep_start:
+			init_array=prepare_start(np.load(loc+'/save.npz')['a'][index])
+		else:
+			init_array=np.load(loc+'/save.npz')['a']
+
+
+		init_array=prepare_start(np.load(loc+'/save.npz')['a'][index])
+
+		radii=init_array[:,0]
+		radii=rescale*radii
+		init['r1']=radii[0]
+		init['r2']=radii[-1]
+
+		delta=np.diff(radii)
+		delta_log=np.diff(np.log(radii))
+		
+		if np.min(np.diff(radii))<=0:
+			print "Radii must be monotonically increasing" 
+			raise Exception
+		elif np.allclose(np.diff(delta),[0.]):
+			init['logr']=False
+		elif np.allclose(np.diff(delta_log),[0.]):
+			init['logr']=True
+		else:
+			print "Radii must be evenly spaced in linear or log space"
+			raise exception
+
+		init['f_initial']=extrap1d(interp1d(init_array[:,0], init_array[:,1:4], axis=0))
+		init['length']=len(radii)
+
+		return cls(name, init=init, gdata=gdata)
 
 
 	def rho_stars(self,r):
