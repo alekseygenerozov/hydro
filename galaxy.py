@@ -334,6 +334,18 @@ class Galaxy(object):
 	def rho(self):
 		return np.exp(self.log_rho)
 
+	def rho_interp(self, r):
+		return interp1d(self.radii, self.rho)(r)
+
+	def vel_interp(self, r):
+		return interp1d(self.radii, self.vel)(r)
+
+	def temp_interp(self, r):
+		return interp1d(self.radii, self.temp)(r)
+
+	def cs_interp(self, r):
+		return interp1d(self.radii, self.cs)(r)
+
 	@property 
 	def r2vel(self):
 		return self.radii**2*self.vel
@@ -946,7 +958,7 @@ class Galaxy(object):
 		'''Mass accretion rate based on stagnation radius 
 		'''
 		mdot=4.*np.pi*self.radii[self.start]**2*self.rho[self.start]*abs(self.vel[self.start])
-		return mdot
+		return mdot*(u.gram/u.second)
 
 	@property
 	def eddr(self, eta=0.1):
@@ -1053,12 +1065,9 @@ class NukerGalaxy(Galaxy):
 
 	@property
 	def rb(self):
-		'''Nominal bondi radius--computed using black hole mass and tempearture on the edge of the grid'''
-		try:
-			rb=G*self.params['M']/self.cs[-1]**2
-		except AttributeError:
-			self.eos()
-			rb=G*self.params['M']/self.cs[-1]**2
+		'''Bondi radius computed from G M/cs(rb)^2=rb'''
+		f=lambda r:G*self.params['M']/(self.cs_interp(r))**2-r
+		rb=fsolve(f, G*self.params['M']/self.cs[-1]**2)
 
 		return rb
 
