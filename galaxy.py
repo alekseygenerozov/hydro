@@ -958,11 +958,11 @@ class Galaxy(object):
 		'''Mass accretion rate based on stagnation radius 
 		'''
 		mdot=4.*np.pi*self.radii[self.start]**2*self.rho[self.start]*abs(self.vel[self.start])
-		return mdot*(u.gram/u.second)
+		return mdot
 
 	@property
 	def mdot_bondi(self):
-		return 4.*np.pi*0.25*(G*gal.params['M'])**2.*self.cs_interp(self.rb)**-3*self.rho_interp(self.rb)*(u.gram/u.second)
+		return 4.*np.pi*0.25*(G*self.params['M'])**2.*self.cs_interp(self.rb)**-3*self.rho_interp(self.rb)
 
 	@property
 	def mdot_approx(self):
