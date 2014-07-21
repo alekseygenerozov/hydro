@@ -171,10 +171,10 @@ class Galaxy(object):
 
 	:param init: list contain minimum radius of the grid [cm], maximum radius of the grid [cm], and function to evaluate 
 		initial conditions
-	:param init_array: array containing initial condition for grid.
+	:param init_dir: name of directory containing previous from which the current run should be initialized
 	'''
 
-	def __init__(self, init={'r1':0.1*pc,'r2':10.*pc,'f_initial':background, 'length':70, 'func_params':{}}, init_array=None):
+	def __init__(self, init={}, init_array=None):
 		self.params={'M':3.6E6*M_sun}
 		
 		self.logr=True
@@ -997,14 +997,16 @@ class Galaxy(object):
 
 class NukerGalaxy(Galaxy):
 	'''Sub-classing galaxy above to represent Nuker parameterized galaxies'''
-	def __init__(self, gname, gdata, init={'r1':0.1*pc,'r2':10.*pc,'f_initial':background, 'length':70, 'func_params':{}}, init_array=None):
+	def __init__(self, gname, gdata=None, init={}, init_array=None):
 		Galaxy.__init__(self, init=init, init_array=init_array)
+		if not gdata:
+			gdata=nuker_params()
 		try:
 			self.params=gdata[gname]
-			
 		except KeyError:
 			print 'Error! '+gname+' is not in catalog!'
 			raise
+
 		names=['Name', 'Type','M', r'$\alpha$', r'$\beta$', r'$\gamma$', r'$I_b$', r'$r_b$', 'Uv']
 		
 		self.params_table=Table([self.params])
