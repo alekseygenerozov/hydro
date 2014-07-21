@@ -961,6 +961,14 @@ class Galaxy(object):
 		return mdot*(u.gram/u.second)
 
 	@property
+	def mdot_bondi(self):
+		return 4.*np.pi*0.25*(G*gal.params['M'])**2.*self.cs_interp(self.rb)**-3*self.rho_interp(self.rb)*(u.gram/u.second)
+
+	@property
+	def mdot_approx(self):
+		(4./3.)*np.pi*self.rs**2*self.rho_interp(self.rs)*(G*self.params['M']/self.rs)**0.5
+
+	@property
 	def eddr(self, eta=0.1):
 		'''Compute the Eddington ratio
 
