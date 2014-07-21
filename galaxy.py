@@ -244,6 +244,7 @@ class Galaxy(object):
 		self.saved=np.empty([0, self.length, len(self.out_fields)])
 		self.fdiff=np.empty([0, self.length-1, 2*len(self.cons_fields)+1])
 		self.output_prep()
+		self.non_standard={}
 		self.time_stamps=[]
 
 		self.nsolves=0
@@ -443,10 +444,9 @@ class Galaxy(object):
 	
 	def output_prep(self):
 		bash_command('mkdir -p '+self.outdir)
-		f=open(self.outdir+'/params', 'w')
-		f.write(str(vars(self)))
 		log=open(self.outdir+'/log', 'w')
 		log.close()
+
 		save=open(self.outdir+'/save', 'w')
 		save.close()
 		times=open(self.outdir+'/times', 'w')
@@ -714,11 +714,11 @@ class Galaxy(object):
 		#return self.q(rad, **self.params_delta)*(0.5*self.vw**2+0.5*vel**2-self.gamma*cs**2/(self.gamma-1))/(rho*temp)-vel*def s_dr#+art_visc*lap_s
 		return self.q_grid[i]*self.sp_heating[i]/(rho*temp)-vel*ds_dr+art_visc
 
-
 	def isot_off(self):
 		'''Switch off isothermal evolution'''
 		self.isot=False
 		self.s=(kb/(self.mu*mp))*np.log(1./np.exp(self.log_rho)*(self.temp)**(3./2.))
+		#The next line should not be necessary...
 		self._update_temp()
 		self.fields=['log_rho', 'vel', 's']
 
@@ -726,11 +726,6 @@ class Galaxy(object):
 		'''Switch on isothermal evolution'''
 		self.isot=True
 		self.fields=['log_rho', 'vel']
-
-		log=open(self.outdir+'/log', 'a')
-		log.write('isot on time:'+str(self.total_time)+'\n')
-		log.close()
-
 
 	def solve(self, time, max_steps=np.inf):
 		'''Controller for solution. Several possible stop conditions (max_steps is reached, time is reached)
@@ -767,11 +762,20 @@ class Galaxy(object):
 			bash_command('mkdir -p '+value)
 			bash_command('mv '+old+'/log '+old+'/cons '+old+'/save '+old+'/params '+value)
 		elif param=='isot':
-			print 'Warning! Changing the isothermal flag is done through the isot_on and isot_off methods!'
+			if value==True:
+				self.isot_on()
+			elif value==False:
+				self.isot_off()
+			else:
+				print 'Warning! Invalid value for the passed for parameter isot'
 		else:
 			setattr(self,param,value)
 
 		log=open(self.outdir+'/log', 'a')
+
+		if param!='outdir':
+			self.non_standard[param]=value
+
 		new=getattr(self, param)
 		log.write(param+' old:'+str(old)+' new:'+str(value)+' time:'+str(self.total_time)+'\n')
 		log.close()
@@ -810,10 +814,11 @@ class Galaxy(object):
 
 		np.savez(self.outdir+'/save', a=self.saved, b=self.time_stamps)
 		np.savez(self.outdir+'/cons', a=self.fdiff)
+		pickle.dump(self.non_standard, open(self.outdir+'/non_standard.p','wb'))
 
 	def backup(self):
 		bash_command('mkdir -p '+self.outdir)
-		pickle.dump(self, open( self.outdir+'/grid.p', 'wb' ) )
+		pickle.dump(self, open(self.outdir+'/grid.p', 'wb' ) )
 
 	#Lower level evolution method
 	def _evolve(self, max_steps=np.inf):
