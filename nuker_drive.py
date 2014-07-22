@@ -83,9 +83,7 @@ def main():
 	for i in range(len(init)):
 		gal_name=init[i]['gal']
 		try:
-			start=galaxy.prepare_start(np.load(init[i]['save']+'/save.npz')['a'][init[i]['index']], rescale=init[i]['rescale'])
-
-			gal=galaxy.NukerGalaxy(gal_name,gal_dict,init_array=start)
+			gal=galaxy.NukerGalaxy.from_dir(gal_name,init[i]['save'], rescale=rescale, index=index)
 			gal.set_param('vw_extra', init[i]['vw_extra'])
 		except:
 			continue

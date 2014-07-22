@@ -276,8 +276,9 @@ class Galaxy(object):
 		else:
 			init_array=np.load(loc+'/save.npz')['a']
 
+		init_array[:,0]=rescale*init_array[:,0]
 		radii=init_array[:,0]
-		radii=rescale*radii
+		
 		init['r1']=radii[0]
 		init['r2']=radii[-1]
 
@@ -1058,11 +1059,9 @@ class NukerGalaxy(Galaxy):
 		else:
 			init_array=np.load(loc+'/save.npz')['a']
 
-
-		init_array=prepare_start(np.load(loc+'/save.npz')['a'][index])
-
+		init_array[:,0]=rescale*init_array[:,0]
 		radii=init_array[:,0]
-		radii=rescale*radii
+
 		init['r1']=radii[0]
 		init['r2']=radii[-1]
 
@@ -1152,7 +1151,7 @@ class NukerGalaxy(Galaxy):
 		'''Analytic formula for the stagnation radius'''
 		A=(4.*self.gamma-(1+self.params['gamma'])*(self.gamma-1.))/(4.*(self.gamma-1.))
 		eta=self.vw_extra/self.sigma(self.rinf)
-		omega=self.M_enc(self.rs)/self.params['M']
+		omega=self.M_enc(self.rs/pc)/self.params['M']
 
 		lrho_interp=interp1d(np.log(self.radii),self.log_rho)
 		dens_slope=np.abs(derivative(lrho_interp, np.log(self.rs), dx=self.delta_log[0]))
@@ -1162,7 +1161,7 @@ class NukerGalaxy(Galaxy):
 	@property 
 	def rs_residual(self):
 		'''Residual of the stagnation radius from the analytic result'''
-		return (self.rs_analytic-(self.rs/self.rinf))/self.rs_analytic
+		return (self.rs_analytic-(self.rs/pc/self.rinf))/self.rs_analytic
 
 	def rho_func(self, r):
 		try:
