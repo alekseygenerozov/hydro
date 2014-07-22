@@ -2,6 +2,7 @@ import numpy as np
 from scipy import integrate
 from scipy.interpolate import interp1d
 from scipy.optimize import fsolve
+from scipy.misc import derivative
 
 import copy
 import warnings
@@ -1145,6 +1146,23 @@ class NukerGalaxy(Galaxy):
 		rb=fsolve(f, G*self.params['M']/self.cs[-1]**2)
 
 		return rb
+
+	@property
+	def rs_analytic(self):
+		'''Analytic formula for the stagnation radius'''
+		A=(4.*self.gamma-(1+self.params['gamma'])*(self.gamma-1.))/(4.*(self.gamma-1.))
+		eta=self.vw_extra/self.sigma(self.rinf)
+		omega=self.M_enc(self.rs)/self.params['M']
+
+		lrho_interp=interp1d(np.log(self.radii),self.log_rho)
+		dens_slope=np.abs(derivative(lrho_interp, np.log(self.rs), dx=self.delta_log[0]))
+
+		return 1./(dens_slope*eta**2)*((0.5)*(2*A-dens_slope)*(1+omega)-(2.-self.params['gamma'])/4.)
+
+	@property 
+	def rs_residual(self):
+		'''Residual of the stagnation radius from the analytic result'''
+		return (self.rs_analytic-(self.rs/self.rinf))/self.rs_analytic
 
 	def rho_func(self, r):
 		try:
