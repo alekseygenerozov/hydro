@@ -194,7 +194,7 @@ class Galaxy(object):
 	:param init_dir: name of directory containing previous from which the current run should be initialized
 	'''
 
-	def __init__(self, init={}, **kwargs):
+	def __init__(self, init={}):
 		self.params={'M':3.6E6*M_sun}
 		self.isot=False
 		self.gamma=5./3.
@@ -266,8 +266,6 @@ class Galaxy(object):
 		self.time_stamps=[]
 
 		self.nsolves=0
-		for key in kwargs.keys():
-			setattr(self,key,kwargs[key])
 
 	@classmethod
 	def from_dir(cls, loc, index=-1, rescale=1, prep_start=True):
@@ -1024,8 +1022,8 @@ class Galaxy(object):
 
 class NukerGalaxy(Galaxy):
 	'''Sub-classing galaxy above to represent Nuker parameterized galaxies'''
-	def __init__(self, gname, gdata=None, init={}, **kwargs):
-		Galaxy.__init__(self, init=init, **kwargs)
+	def __init__(self, gname, gdata=None, init={}):
+		Galaxy.__init__(self, init=init)
 		if not gdata:
 			gdata=nuker_params()
 		try:
@@ -1045,7 +1043,6 @@ class NukerGalaxy(Galaxy):
 		self.params_table['M'].unit=u.MsolMass
 
 		self.name=gname
-		print self.name
 		self.eta=1.
 		self.rmin_star=1.E-3
 		self.rmax_star=1.E5
