@@ -64,7 +64,6 @@ vws=[200., 1000.]
 selection=['NGC3115', 'NGC1172', 'NGC4478']
 
 cols=mpl.rcParams['axes.color_cycle']
-gal_dict=galaxy.nuker_params()
 for i,name in enumerate(selection):
 	for j,vw in enumerate(vws):
 		d=name+'/vw_'+str(vw)
@@ -77,8 +76,7 @@ for i,name in enumerate(selection):
 		if j!=1 and name!='NGC4478':
 			continue
 
-		start=galaxy.prepare_start(saved[-1])
-		gal=galaxy.NukerGalaxy(name, gal_dict, init_array=start)
+		gal=galaxy.NukerGalaxy.from_dir(name, d)
 		#gal.set_param('vw_extra', vw)
 
 		rho_interp=interp1d(gal.radii,gal.rho)

@@ -28,7 +28,7 @@ c=const.c.cgs.value
 
 fig1,ax1=plt.subplots(2, sharex=True, figsize=(5,8))
 fig2,ax2=plt.subplots()
-fig3,ax3=plt.subplots(2, sharex=True, figsize=(5,8))
+fig3,ax3=plt.subplots()
 
 ax1[0].set_xscale('log')
 ax1[1].set_xscale('log')
@@ -71,14 +71,13 @@ for idx,name in enumerate(gal_dict.keys()):
 		if not sc.check(d):
 			continue
 
-		start=galaxy.prepare_start(saved[-1])
-		gal=galaxy.NukerGalaxy(name, gal_dict, init_array=start)
+		gal=galaxy.NukerGalaxy.from_dir(name, d)
 		if gal.params['type']=='Cusp':
 			eddr[j].append(gal.eddr)
 			mass[j].append(gal.params['M']/galaxy.M_sun)
 		else:
 			eddr_core[j].append(gal.eddr)
-			mass_core[j].append(gal.M_bh/galaxy.M_sun)
+			mass_core[j].append(gal.params['M']/galaxy.M_sun)
 
 		mdot[j].append(gal.mdot)
 		mdot_approx[j].append(gal.mdot_approx)
@@ -88,35 +87,33 @@ for idx,name in enumerate(gal_dict.keys()):
 			mdot_bondi[j].append(np.nan)
 		# 	break
 
+for idx,name in enumerate(gal_dict.keys()):
+	base_d='/Users/aleksey/Second_Year_Project/hydro/batch_A2052_unique/'+name
+	gal_data='/Users/aleksey/Second_Year_Project/hydro/gal_data/'+name
+	for j,vw in enumerate(vws):
+		d=base_d+'/vw_'+str(vw)
+		try:
+			saved=np.load(d+'/save.npz')['a']
+		except:
+			continue
+		if not sc.check(d):
+			continue
 
+		gal=galaxy.NukerGalaxy.from_dir(name, d)
+		if gal.params['type']=='Cusp':
+			eddr[j].append(gal.eddr)
+			mass[j].append(gal.params['M']/galaxy.M_sun)
+		else:
+			eddr_core[j].append(gal.eddr)
+			mass_core[j].append(gal.params['M']/galaxy.M_sun)
 
+		# mdot[j].append(gal.mdot)
+		# mdot_approx[j].append(gal.mdot_approx)
+		# try:
+		# 	mdot_bondi[j].append(gal.mdot_bondi)
+		# except:
+		# 	mdot_bondi[j].append(np.nan)
 
-# for idx,name in enumerate(gal_dict.keys()):
-# 	base_d='/Users/aleksey/Second_Year_Project/hydro/batch_A2052_unique/'+name
-# 	gal_data='/Users/aleksey/Second_Year_Project/hydro/gal_data/'+name
-# 	for j,vw in enumerate(vws):
-# 		d=base_d+'/vw_'+str(vw)
-# 		try:
-# 			saved=np.load(d+'/save.npz')['a']
-# 		except:
-# 			continue
-# 		if not sc.check(d):
-# 			continue
-
-# 		start=galaxy.prepare_start(saved[-1])
-# 		gal=galaxy.NukerGalaxy(name, gal_dict, init_array=start)
-# 		if gal.params['type']=='Cusp':
-# 			continue
-# 			# eddr[j].append(gal.eddr)
-# 			# mass[j].append(gal.M_bh/galaxy.M_sun)
-# 		else:
-# 			eddr_core[j].append(gal.eddr)
-# 			mass_core[j].append(gal.M_bh/galaxy.M_sun)
-
-
-# 		mdot[j].append(gal.mdot)
-# 		mdot_approx[j].append(gal.mdot_approx)
-# 		mdot_bondi[j].append(gal.mdot_bondi)
 
 mdot=np.array(mdot)
 mdot_approx=np.array(mdot_approx)
@@ -136,12 +133,12 @@ for j,vw in enumerate(vws):
 	ax2.loglog(mass[j], eddr[j], 's', color=cols[j], markersize=10)
 
 
-	ax3[0].plot(range(0,len(mdot[j])), np.abs((mdot[j]-mdot_bondi[j])/mdot[j]), color=cols[j])
-
+	ax3.plot(range(0,len(mdot[j])), [np.abs((mdot[j,i]-mdot_bondi[j,i])/mdot[j,i]) for i in range(0, len(mdot[j]))],'s',color=cols[j])
+	#ax3[1].plot(range(0,len(mdot[j])), np.abs((mdot[j]-mdot_approx[j])/mdot[j]),'s',color=cols[j])
 ax1[1].hist(eddr_core[2], color=cols[2], bins=np.logspace(-9, -1, 16), histtype='step', linestyle='dashed')
 ax2.loglog(mass_core[2], eddr_core[2], '<', color=cols[2], markersize=10)
 
 fig1.savefig('mdot_hist.pdf')
 fig2.savefig('mdot_mass.eps')
-fig3.savefig('mdot_comp.png')
+fig3.savefig('mdot_comp.pdf')
 

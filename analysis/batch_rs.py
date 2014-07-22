@@ -64,8 +64,7 @@ for name in gal_dict.keys():
 		if not sc.check(d):
 			continue
 
-		start=galaxy.prepare_start(saved[-1])
-		gal=galaxy.NukerGalaxy(name, gal_dict, init_array=start)
+		gal=galaxy.NukerGalaxy.from_dir(name, d)
 		
 		try:
 			rsoi=np.genfromtxt(gal_data+'/rsoi')
@@ -83,8 +82,8 @@ for name in gal_dict.keys():
 		vw_eff=(sigma_interp(gal.rs)**2.+(vw*1.E5)**2.)**0.5
 		eta=vw*1.E5/sigma_interp(rsoi*pc)
 
-		M_enc_rs=(sigma_interp(gal.rs)**2*gal.rs/G)-gal.M_bh
-		omega=M_enc_rs/gal.M_bh
+		M_enc_rs=(sigma_interp(gal.rs)**2*gal.rs/G)-gal.params['M']
+		omega=M_enc_rs/gal.params['M']
 
 		predicted=glaw(eta)
 		residual=(predicted-x)/predicted
@@ -120,8 +119,7 @@ for name in gal_dict.keys():
 		if not sc.check(d):
 			continue
 
-		start=galaxy.prepare_start(saved[-1])
-		gal=galaxy.NukerGalaxy(name, gal_dict, init_array=start)
+		gal=galaxy.NukerGalaxy.from_dir(name, d)
 
 		try:
 			rsoi=np.genfromtxt(gal_data+'/rsoi')
@@ -139,8 +137,8 @@ for name in gal_dict.keys():
 		vw_eff=(sigma_interp(gal.rs)**2.+(vw*1.E5)**2.)**0.5
 		eta=vw*1.E5/sigma_interp(rsoi*pc)
 
-		M_enc_rs=(sigma_interp(gal.rs)**2*gal.rs/G)-gal.M_bh
-		omega=M_enc_rs/gal.M_bh
+		M_enc_rs=(sigma_interp(gal.rs)**2*gal.rs/G)-gal.params['M']
+		omega=M_enc_rs/gal.params['M']
 
 		predicted=glaw(eta)
 		residual=(predicted-x)/predicted

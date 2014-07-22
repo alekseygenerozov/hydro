@@ -1,6 +1,5 @@
 import sys
 import hydro_experiment as hydro
-import nuker
 import parker
 import astropy.constants as const
 import numpy as np
@@ -23,7 +22,7 @@ h=const.h.cgs.value
 pc=const.pc.cgs.value
 c=const.c.cgs.value
 
-galaxies=nuker.nuker_params()
+# galaxies=nuker.nuker_params()
 
 # g1_2=nuker.Galaxy('NGC4551', galaxies, cgs=False, eta=1.) 
 def M_enc_simp(r):
