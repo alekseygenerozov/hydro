@@ -50,6 +50,20 @@ def test_init_array_log():
 	assert np.allclose(gal.vel, np.ones(gal.length))
 	assert np.allclose(gal.temp, np.ones(gal.length))
 
+def test_init_array_log2():
+	gal=galaxy.NukerGalaxy.from_dir('NGC4551','data/log_grid',prep_start=False)
+	gal_dict=galaxy.nuker_params()
+
+	assert gal.params==gal_dict['NGC4551']
+
+	assert gal._logr==True
+	assert np.allclose(gal.radii,np.logspace(1.,100.,gal.length, base=e))
+	assert gal.length==100
+
+	assert np.allclose(gal.log_rho,np.ones(gal.length))
+	assert np.allclose(gal.vel, np.ones(gal.length))
+	assert np.allclose(gal.temp, np.ones(gal.length))
+
 def test_init_array_bad1():
 	# start=np.load('data/bad_grid_1.npz')['arr_0']
 	with pytest.raises(Exception):

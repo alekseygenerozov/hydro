@@ -329,6 +329,42 @@ class Galaxy(object):
 		self.temp=prims[:,2]
 		self.s=(kb/(self.mu*mp))*np.log(1./np.exp(self.log_rho)*(self.temp)**(3./2.))
 
+	def M_enc(self,r):
+		return 0.
+
+	def q(self, r):
+		r1=2.4e17
+		r2=1.2e18
+		mdotw=6.7*10.**22
+		eta=-2.
+
+		a=mdotw/(4.*np.pi)/((r2**(eta+3)-r1**(eta+3))/(eta+3))
+		if r*pc<r2 and r*pc>r1:
+			return a*(r*pc)**(eta)*pc**3
+		else:
+			return 0.
+
+	def sigma(self, r):
+		return 0.
+
+	def phi_s(self, r):
+		return 0.
+
+	def phi_bh(self, r):
+		return -G*self.params['M']/r
+
+	def phi(self,r):
+		'''Total potential
+		'''
+		return self.phi_bh(r)+self.phi_s(r)
+
+	@lazyprop
+	def rho_s_interp(self,r):
+		rho_stars_rad=np.logspace(self.rmin_star, self.rmax_star,100)
+		rho_stars=[self.rho_stars(r) for r in rho_s_rad]
+
+		return interp1d(rho_stars_rad, rho_stars)
+
 	@lazyprop
 	def q_grid(self):
 		return np.array([self.q(r) for r in self.radii/pc])/pc**3
@@ -446,34 +482,7 @@ class Galaxy(object):
 	def _update_temp(self):
 		self.temp=(np.exp(self.log_rho)*np.exp(self.mu*mp*self.s/kb))**(2./3.)
 	
-	def M_enc(self,r):
-		return 0.
 
-	def q(self, r):
-		r1=2.4e17
-		r2=1.2e18
-		mdotw=6.7*10.**22
-		eta=-2.
-
-		a=mdotw/(4.*np.pi)/((r2**(eta+3)-r1**(eta+3))/(eta+3))
-		if r*pc<r2 and r*pc>r1:
-			return a*(r*pc)**(eta)*pc**3
-		else:
-			return 0.
-
-	def sigma(self, r):
-		return 0.
-
-	def phi_s(self, r):
-		return 0.
-
-	def phi_bh(self, r):
-		return -G*self.params['M']/r
-
-	def phi(self,r):
-		'''Total potential
-		'''
-		return self.phi_bh(r)+self.phi_s(r)
 	
 	def output_prep(self):
 		bash_command('mkdir -p '+self.outdir)
@@ -1048,6 +1057,8 @@ class NukerGalaxy(Galaxy):
 		self.eta=1.
 		self.rmin_star=1.E-3
 		self.rmax_star=1.E5
+
+		self._v_rho_stars=np.vectorize(self.rho_stars)
 		self.rg=G*self.params['M']/c**2
 
 
@@ -1100,10 +1111,8 @@ class NukerGalaxy(Galaxy):
 		'''
 		if r<self.rmin_star:
 			return 0.
-		# elif self.menc=='circ':
-		#     return integrate.quad(lambda r1:2.*np.pi*r1*M_sun*self.params['Uv']*nuker(r1, **self.params),self.rmin)
 		else:
-			return integrate.quad(lambda r1:4.*np.pi*r1**2*self.rho_stars(r1), self.rmin_star, r)[0]
+			return integrate.fixed_quad(lambda r1:4.*np.pi*r1**2*self._v_rho_stars(r1), self.rmin_star, r)[0]
 
 	def sigma(self, r):
 		'''Velocity dispersion of galaxy
