@@ -1059,6 +1059,10 @@ class NukerGalaxy(Galaxy):
 		self.rmax_star=1.E5
 
 		self._v_rho_stars=np.vectorize(self.rho_stars)
+		# _rho_stars_rad=np.logspace(np.log10(self.rmin_star), np.log10(self.rmax_star),1000)
+		# _rho_stars_grid=[self.rho_stars(r) for r in _rho_stars_rad]
+		# self._rho_stars_interp=interp1d(_rho_stars_rad,_rho_stars_grid)
+
 		self.rg=G*self.params['M']/c**2
 
 
@@ -1095,15 +1099,20 @@ class NukerGalaxy(Galaxy):
 
 		return cls(name, init=init, gdata=gdata)
 
-
 	def rho_stars(self,r):
 		'''Stellar density
 		:param r: radius in parsecs
 		'''
-		if r<self.rmin_star:
+		if r<self.rmin_star or r>self.rmax_star:
 			return 0.
 		else:
 			return M_sun*self.params['Uv']*inverse_abel(nuker_prime, r, **self.params)
+
+	@lazyprop
+	def _rho_stars_interp(self):
+		_rho_stars_rad=np.logspace(np.log10(self.rmin_star), np.log10(self.rmax_star),1000)
+		_rho_stars_grid=[self.rho_stars(r) for r in _rho_stars_rad]
+		return interp1d(_rho_stars_rad,_rho_stars_grid)
 
 	def M_enc(self,r):
 		'''Mass enclosed within radius r
@@ -1111,8 +1120,10 @@ class NukerGalaxy(Galaxy):
 		'''
 		if r<self.rmin_star:
 			return 0.
+		elif r>self.rmax_star:
+			return self.M_enc(self.rmax_star)
 		else:
-			return integrate.fixed_quad(lambda r1:4.*np.pi*r1**2*self._v_rho_stars(r1), self.rmin_star, r)[0]
+			return integrate.quad(lambda r1:4.*np.pi*r1**2*self._rho_stars_interp(r1), self.rmin_star, r)[0]
 
 	def sigma(self, r):
 		'''Velocity dispersion of galaxy
