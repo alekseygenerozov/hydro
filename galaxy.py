@@ -1147,6 +1147,15 @@ class NukerGalaxy(Galaxy):
 		'''Source term representing mass loss from stellar winds'''
 		return self.eta*self.rho_stars(r)/th
 
+	@lazyprop
+	def sigma_200(self):
+		'''Reverse engineering the velocity dispersion from Mbh-sigma relationship and BH mass--using the relationship in WM04'''
+		return ((self.params['M'])/(1.48E8*M_sun))**(1./4.65)
+
+	@lazyprop
+	def r_Ia(self):
+		return 4.*(self.sigma_200)**-0.5
+
 	##Getting the radius of influence: where the enclosed mass begins to equal the mass of the central BH. 
 	@lazyprop
 	def rinf(self):
