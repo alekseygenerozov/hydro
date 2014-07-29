@@ -173,7 +173,7 @@ def prepare_start(end_state, rescale=1):
 
 	# end_state=dat[-70:]
 	end_state[:,2]=end_state[:,2]*end_state[:,7]
-	end_state[:,1]=np.log(end_state[:,1])
+	#end_state[:,1]=np.log(end_state[:,1])
 	start=end_state[:,:4]
 	#rescaling radial grid. This will be useful for going from one mass black hole to another. 
 	start[:,0]=start[:,0]*rescale
@@ -269,13 +269,10 @@ class Galaxy(object):
 		self.nsolves=0
 
 	@classmethod
-	def from_dir(cls, loc, index=-1, rescale=1, prep_start=True):
+	def from_dir(cls, loc, index=-1, rescale=1):
 		init={}
-		if prep_start:
-			init_array=prepare_start(np.load(loc+'/save.npz')['a'][index])
-		else:
-			init_array=np.load(loc+'/save.npz')['a']
 
+		init_array=prepare_start(np.load(loc+'/save.npz')['a'][index])
 		init_array[:,0]=rescale*init_array[:,0]
 		radii=init_array[:,0]
 		
@@ -294,7 +291,7 @@ class Galaxy(object):
 			init['logr']=True
 		else:
 			print "Radii must be evenly spaced in linear or log space"
-			raise exception
+			raise Exception
 
 		init['f_initial']=extrap1d(interp1d(init_array[:,0], init_array[:,1:4], axis=0))
 		init['length']=len(radii)
@@ -324,7 +321,7 @@ class Galaxy(object):
 		delta_log=np.diff(np.log(self.radii))
 		self.delta_log=np.insert(delta_log, 0, delta_log[0])
 
-		self.log_rho=prims[:,0]
+		self.log_rho=np.log(prims[:,0])
 		self.vel=prims[:,1]
 		self.temp=prims[:,2]
 		self.s=(kb/(self.mu*mp))*np.log(1./np.exp(self.log_rho)*(self.temp)**(3./2.))
@@ -1069,11 +1066,8 @@ class NukerGalaxy(Galaxy):
 	@classmethod
 	def from_dir(cls, name, loc, index=-1, rescale=1., gdata=None, prep_start=True):
 		init={}
-		if prep_start:
-			init_array=prepare_start(np.load(loc+'/save.npz')['a'][index])
-		else:
-			init_array=np.load(loc+'/save.npz')['a']
 
+		init_array=prepare_start(np.load(loc+'/save.npz')['a'][index])
 		init_array[:,0]=rescale*init_array[:,0]
 		radii=init_array[:,0]
 
@@ -1092,7 +1086,7 @@ class NukerGalaxy(Galaxy):
 			init['logr']=True
 		else:
 			print "Radii must be evenly spaced in linear or log space"
-			raise exception
+			raise Exception
 
 		init['f_initial']=extrap1d(interp1d(init_array[:,0], init_array[:,1:4], axis=0))
 		init['length']=len(radii)
@@ -1136,6 +1130,9 @@ class NukerGalaxy(Galaxy):
 		:param r: radius in parsecs
 		'''
 		return (-G*self.M_enc(r)/r)+4.*G*self.params['Uv']*M_sun*integrate.quad(lambda r1:nuker_prime(r1, **self.params)*(r1**2-r**2)**0.5, r, self.rmax_star)[0]
+
+	def phi_s_2(self,r):
+		return -G*self.M_enc(r)/r-4.*np.pi*G*integrate.quad(lambda r1:self.rho_stars(r1)*r1, r, self.rmax_star)[0]
 
 	def phi_bh(self,r):
 		'''Potential from the black hole

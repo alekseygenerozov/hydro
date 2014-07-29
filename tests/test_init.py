@@ -29,29 +29,31 @@ sys.excepthook = info
 
 
 def test_init_array_lin():
-	gal=galaxy.Galaxy.from_dir('data/lin_grid',prep_start=False)
+	gal=galaxy.Galaxy.from_dir('data/lin_grid')
 
 	assert gal._logr==False
 	assert np.allclose(gal.radii,np.linspace(1.,100.,gal.length))
 	assert gal.length==100
 
-	assert np.allclose(gal.log_rho,np.ones(gal.length))
+	assert np.allclose(gal.rho,np.ones(gal.length))
+	assert np.allclose(gal.log_rho,np.zeros(gal.length))
 	assert np.allclose(gal.vel, np.ones(gal.length))
 	assert np.allclose(gal.temp, np.ones(gal.length))
 
 def test_init_array_log():
-	gal=galaxy.Galaxy.from_dir('data/log_grid',prep_start=False)
+	gal=galaxy.Galaxy.from_dir('data/log_grid')
 
 	assert gal._logr==True
 	assert np.allclose(gal.radii,np.logspace(1.,100.,gal.length, base=e))
 	assert gal.length==100
 
-	assert np.allclose(gal.log_rho,np.ones(gal.length))
+	assert np.allclose(gal.rho,np.ones(gal.length))
+	assert np.allclose(gal.log_rho,np.zeros(gal.length))
 	assert np.allclose(gal.vel, np.ones(gal.length))
 	assert np.allclose(gal.temp, np.ones(gal.length))
 
 def test_init_array_log2():
-	gal=galaxy.NukerGalaxy.from_dir('NGC4551','data/log_grid',prep_start=False)
+	gal=galaxy.NukerGalaxy.from_dir('NGC4551','data/log_grid')
 	gal_dict=galaxy.nuker_params()
 
 	assert gal.params==gal_dict['NGC4551']
@@ -60,23 +62,24 @@ def test_init_array_log2():
 	assert np.allclose(gal.radii,np.logspace(1.,100.,gal.length, base=e))
 	assert gal.length==100
 
-	assert np.allclose(gal.log_rho,np.ones(gal.length))
+	assert np.allclose(gal.rho,np.ones(gal.length))
+	assert np.allclose(gal.log_rho,np.zeros(gal.length))
 	assert np.allclose(gal.vel, np.ones(gal.length))
 	assert np.allclose(gal.temp, np.ones(gal.length))
 
-def test_init_array_bad1():
-	# start=np.load('data/bad_grid_1.npz')['arr_0']
-	with pytest.raises(Exception):
-		gal=galaxy.Galaxy.from_dir('data/bad_grid_1',prep_start=False)
+# def test_init_array_bad1():
+# 	# start=np.load('data/bad_grid_1.npz')['arr_0']
+# 	with pytest.raises(Exception):
+# 		gal=galaxy.Galaxy.from_dir('data/bad_grid_1')
 
-def test_init_array_bad2():
-	with pytest.raises(Exception):
-		gal=galaxy.Galaxy.from_dir('data/bad_grid_2', prep_start=False)
-	# assert exc.args[0]=="Radii must be evenly spaced in linear or log space!"
+# def test_init_array_bad2():
+# 	with pytest.raises(Exception):
+# 		gal=galaxy.Galaxy.from_dir('data/bad_grid_2')
+# 	# assert exc.args[0]=="Radii must be evenly spaced in linear or log space!"
 
-def test_init_array_bad3():
-	with pytest.raises(Exception):
-		gal=gal=galaxy.Galaxy.from_dir('data/bad_grid_3')
+# def test_init_array_bad3():
+# 	with pytest.raises(Exception):
+# 		gal=gal=galaxy.Galaxy.from_dir('data/bad_grid_3')
 
 
 

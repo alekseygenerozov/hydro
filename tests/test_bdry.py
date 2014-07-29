@@ -26,26 +26,26 @@ sys.excepthook = info
 
 
 def test_bdry_def():
-	start=np.load('data/power_laws/save.npz')['a']
+	start=np.load('data/power_laws/save.npz')['a'][-1]
 	start_copy=np.copy(start)
-	gal=galaxy.Galaxy.from_dir('data/power_laws', prep_start=False)
+	gal=galaxy.Galaxy.from_dir('data/power_laws')
 
 
 	gal._update_ghosts()
 
-	assert np.allclose(gal.rho, np.exp(start_copy[:,1]))
+	assert np.allclose(gal.rho, start_copy[:,1])
 	assert np.allclose(gal.vel, start_copy[:,2])
 
 def test_bdry_bp():
-	start=np.load('data/bp/save.npz')['a']
+	start=np.load('data/bp/save.npz')['a'][-1]
 	start_copy=np.copy(start)
 
-	gal=galaxy.Galaxy.from_dir('data/bp/', prep_start=False)
+	gal=galaxy.Galaxy.from_dir('data/bp/')
 	gal.set_param('bdry', 'bp')
 	assert gal.bdry=='bp'
 
 	gal._update_ghosts()
-	assert np.allclose(gal.rho, np.exp(start_copy[:,1]))
+	assert np.allclose(gal.rho, start_copy[:,1])
 	assert np.allclose(gal.vel, start_copy[:,2])
 	
 
