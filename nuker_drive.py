@@ -45,8 +45,8 @@ def main():
 		help='File containing list of galaxies and config filed')
 
 	args=parser.parse_args()
-	cols=['vw_extra','rescale','index','time','config']
-	default=[1.E8, 1., -1, 5.,'']
+	cols=['vw_extra','rescale','index','time','length','config']
+	default=[1.E8, 1., -1, 5.,None,'']
 
 	init=ascii.read(args.init[0])
 	for i in range(len(cols)):
@@ -61,7 +61,8 @@ def main():
 	for i in range(len(init)):
 		gal_name=init[i]['gal']
 		try:
-			gal=galaxy.NukerGalaxy.from_dir(gal_name,init[i]['save'], rescale=rescale, index=index)
+			gal=galaxy.NukerGalaxy.from_dir(gal_name,init[i]['save'], rescale=init[i]['rescale'],\
+				index=init[i]['index'], length=init[i]['length'])
 			gal.set_param('vw_extra', init[i]['vw_extra'])
 		except:
 			continue

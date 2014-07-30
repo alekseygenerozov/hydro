@@ -67,19 +67,6 @@ def test_init_array_log2():
 	assert np.allclose(gal.vel, np.ones(gal.length))
 	assert np.allclose(gal.temp, np.ones(gal.length))
 
-# def test_init_array_bad1():
-# 	# start=np.load('data/bad_grid_1.npz')['arr_0']
-# 	with pytest.raises(Exception):
-# 		gal=galaxy.Galaxy.from_dir('data/bad_grid_1')
-
-# def test_init_array_bad2():
-# 	with pytest.raises(Exception):
-# 		gal=galaxy.Galaxy.from_dir('data/bad_grid_2')
-# 	# assert exc.args[0]=="Radii must be evenly spaced in linear or log space!"
-
-# def test_init_array_bad3():
-# 	with pytest.raises(Exception):
-# 		gal=gal=galaxy.Galaxy.from_dir('data/bad_grid_3')
 
 
 

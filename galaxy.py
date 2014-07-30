@@ -270,7 +270,7 @@ class Galaxy(object):
 		self.nsolves=0
 
 	@classmethod
-	def from_dir(cls, loc, index=-1, rescale=1):
+	def from_dir(cls, loc, index=-1, rescale=1, length=None):
 		init={}
 
 		init_array=prepare_start(np.load(loc+'/save.npz')['a'][index])
@@ -282,20 +282,16 @@ class Galaxy(object):
 
 		delta=np.diff(radii)
 		delta_log=np.diff(np.log(radii))
-		
-		if np.min(np.diff(radii))<=0:
-			print "Radii must be monotonically increasing" 
-			raise Exception
-		elif np.allclose(np.diff(delta),[0.]):
-			init['logr']=False
-		elif np.allclose(np.diff(delta_log),[0.]):
-			init['logr']=True
-		else:
-			print "Radii must be evenly spaced in linear or log space"
-			raise Exception
 
+		if np.allclose(np.diff(delta),[0.]):
+			init['logr']=False
+		else:
+			init['logr']=True
 		init['f_initial']=extrap1d(interp1d(init_array[:,0], init_array[:,1:4], axis=0))
-		init['length']=len(radii)
+		if not length:
+			init['length']=len(radii)
+		else:
+			init['length']=length
 
 		return cls(init=init)
 
@@ -1062,7 +1058,7 @@ class NukerGalaxy(Galaxy):
 
 
 	@classmethod
-	def from_dir(cls, name, loc, index=-1, rescale=1., gdata=None, prep_start=True):
+	def from_dir(cls, name, loc, index=-1, rescale=1., gdata=None, length=None):
 		init={}
 
 		init_array=prepare_start(np.load(loc+'/save.npz')['a'][index])
@@ -1074,20 +1070,16 @@ class NukerGalaxy(Galaxy):
 
 		delta=np.diff(radii)
 		delta_log=np.diff(np.log(radii))
-		
-		if np.min(np.diff(radii))<=0:
-			print "Radii must be monotonically increasing" 
-			raise Exception
-		elif np.allclose(np.diff(delta),[0.]):
-			init['logr']=False
-		elif np.allclose(np.diff(delta_log),[0.]):
-			init['logr']=True
-		else:
-			print "Radii must be evenly spaced in linear or log space"
-			raise Exception
 
+		if np.allclose(np.diff(delta),[0.]):
+			init['logr']=False
+		else:
+			init['logr']=True
 		init['f_initial']=extrap1d(interp1d(init_array[:,0], init_array[:,1:4], axis=0))
-		init['length']=len(radii)
+		if not length:
+			init['length']=len(radii)
+		else:
+			init['length']=length
 
 		return cls(name, init=init, gdata=gdata)
 
