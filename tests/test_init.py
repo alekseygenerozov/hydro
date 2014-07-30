@@ -40,6 +40,30 @@ def test_init_array_lin():
 	assert np.allclose(gal.vel, np.ones(gal.length))
 	assert np.allclose(gal.temp, np.ones(gal.length))
 
+def test_init_array_length():
+	gal=galaxy.Galaxy.from_dir('data/lin_grid', length=50)
+	print gal.length
+
+	assert gal._logr==False
+	assert np.allclose(gal.radii,np.linspace(1.,100.,gal.length))
+
+	assert np.allclose(gal.rho,np.ones(gal.length))
+	assert np.allclose(gal.log_rho,np.zeros(gal.length))
+	assert np.allclose(gal.vel, np.ones(gal.length))
+	assert np.allclose(gal.temp, np.ones(gal.length))
+
+def test_init_array_rescale():
+	gal=galaxy.Galaxy.from_dir('data/lin_grid', rescale=2.)
+	print gal.length
+
+	assert gal._logr==False
+	assert np.allclose(gal.radii,np.linspace(2.,200.,gal.length))
+
+	assert np.allclose(gal.rho,np.ones(gal.length))
+	assert np.allclose(gal.log_rho,np.zeros(gal.length))
+	assert np.allclose(gal.vel, np.ones(gal.length))
+	assert np.allclose(gal.temp, np.ones(gal.length))
+
 def test_init_array_log():
 	gal=galaxy.Galaxy.from_dir('data/log_grid')
 
