@@ -180,9 +180,8 @@ def prepare_start(end_state, rescale=1):
 
 	return start
 
-def background(rad, rho_0=2.E-31, temp=1.E6, log=True, r0=5.E11, n=0.):
-	if log:
-		rho_0=np.log(rho_0*(rad/r0)**n)
+def background(rad, rho_0=2.E-31, temp=1.E6, r0=5.E11, n=0.):
+	rho_0=rho_0*(rad/r0)**n
 	return np.array([rho_0, 0., temp])
 	
 
