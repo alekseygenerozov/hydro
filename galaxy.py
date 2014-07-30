@@ -202,7 +202,7 @@ class Galaxy(object):
 		self.fields=['log_rho', 'vel', 's']
 		self.mu=1.
 
-		init_def={'r1':0.1*pc,'r2':10.*pc,'f_initial':background, 'length':70, 'func_params':{}, 'logr':True}
+		init_def={'rmin':0.1*pc,'rmax':10.*pc,'f_initial':background, 'length':70, 'func_params':{}, 'logr':True}
 		for key in init_def.keys():
 			try:
 				init[key]
@@ -262,10 +262,11 @@ class Galaxy(object):
 
 		self.saved=np.empty([0, self.length, len(self.out_fields)])
 		self.fdiff=np.empty([0, self.length-1, 2*len(self.cons_fields)+1])
-		self.output_prep()
+		# self.output_prep()
 		self.non_standard={}
 		self.time_stamps=[]
 
+		self.log=''
 		self.nsolves=0
 
 	@classmethod
@@ -276,8 +277,8 @@ class Galaxy(object):
 		init_array[:,0]=rescale*init_array[:,0]
 		radii=init_array[:,0]
 		
-		init['r1']=radii[0]
-		init['r2']=radii[-1]
+		init['rmin']=radii[0]
+		init['rmax']=radii[-1]
 
 		delta=np.diff(radii)
 		delta_log=np.diff(np.log(radii))
@@ -301,18 +302,18 @@ class Galaxy(object):
 
 	def _init_grid(self):
 		#Initializing the radial grid
-		r1,r2,f_initial=self.init['r1'],self.init['r2'],self.init['f_initial']
+		rmin,rmax,f_initial=self.init['rmin'],self.init['rmax'],self.init['f_initial']
 		self.func_params=self.init['func_params']
 		self._logr=self.init['logr']
 
-		assert r2>r1
+		assert rmax>rmin
 		assert hasattr(f_initial, '__call__')
 		self.length=self.init['length']
 
 		if self._logr:
-			self.radii=np.logspace(np.log(r1), np.log(r2), self.length, base=e)
+			self.radii=np.logspace(np.log(rmin), np.log(rmax), self.length, base=e)
 		else:
-			self.radii=np.linspace(r1, r2, self.length)
+			self.radii=np.linspace(rmin, rmax, self.length)
 		prims=[f_initial(r, **self.func_params) for r in self.radii]
 		prims=np.array(prims)
 
@@ -479,16 +480,12 @@ class Galaxy(object):
 	def _update_temp(self):
 		self.temp=(np.exp(self.log_rho)*np.exp(self.mu*mp*self.s/kb))**(2./3.)
 	
-
-	
 	def output_prep(self):
 		bash_command('mkdir -p '+self.outdir)
-		log=open(self.outdir+'/log', 'w')
-		log.close()
 
-		save=open(self.outdir+'/save', 'w')
+		save=open(self.outdir+'/save', 'a')
 		save.close()
-		times=open(self.outdir+'/times', 'w')
+		times=open(self.outdir+'/times', 'a')
 		times.close()
 
 	#Update array of conseerved quantities	
@@ -573,7 +570,6 @@ class Galaxy(object):
 			self._extrapolate('s')
 		if not self.isot:
 			self._update_temp()
-
 
 	#Constant entropy across the ghost zones
 	def _s_adjust(self):
@@ -771,6 +767,7 @@ class Galaxy(object):
 
 		:param max_steps: Maximum number of time steps to take in the solution
 		'''
+		self.output_prep()
 		self.time_cur=0
 		self.time_target=time
 		#For purposes of easy backup
@@ -810,14 +807,12 @@ class Galaxy(object):
 		else:
 			setattr(self,param,value)
 
-		log=open(self.outdir+'/log', 'a')
-
 		if param!='outdir':
 			self.non_standard[param]=value
 
 		new=getattr(self, param)
-		log.write(param+' old:'+str(old)+' new:'+str(value)+' time:'+str(self.total_time)+'\n')
-		log.close()
+		self.log=self.log+param+' old:'+str(old)+' new:'+str(value)+' time:'+str(self.total_time)+'\n'
+
 
 	#Gradually perturb a given parameter (param) to go to the desired value (target). 
 	def solve_adjust(self, time, param, target, n=10, max_steps=np.inf):
@@ -828,6 +823,7 @@ class Galaxy(object):
 		:param int n: Number of time intervals to divide time into for the purposes of parameter adjustment
 		:param int max_steps: Maximum number of steps for solver to take
 		'''
+		self.output_prep()
 		if len(self.saved==0):
 			self.save_pt=0
 		else:
@@ -853,6 +849,8 @@ class Galaxy(object):
 
 		np.savez(self.outdir+'/save', a=self.saved, b=self.time_stamps)
 		np.savez(self.outdir+'/cons', a=self.fdiff)
+		log=open(self.outdir+'/log', 'w')
+		log.write(self.log)
 		pickle.dump(self.non_standard, open(self.outdir+'/non_standard.p','wb'))
 
 	def backup(self):
@@ -1071,8 +1069,8 @@ class NukerGalaxy(Galaxy):
 		init_array[:,0]=rescale*init_array[:,0]
 		radii=init_array[:,0]
 
-		init['r1']=radii[0]
-		init['r2']=radii[-1]
+		init['rmin']=radii[0]
+		init['rmax']=radii[-1]
 
 		delta=np.diff(radii)
 		delta_log=np.diff(np.log(radii))
