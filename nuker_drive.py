@@ -28,13 +28,6 @@ h=const.h.cgs.value
 c=const.c.cgs.value
 pc=const.pc.cgs.value
 
-#Run hydro solver for a particular galaxy instance. 
-def run_hydro(gal, time=5.):
-	if gal.outdir=='.':
-		gal.set_param('outdir', gal.name+'/vw_'+str(gal.vw_extra/1.E5))
-
-	gal.solve(time*gal.tcross)
-	gal.backup()
 
 
 ##Should add flag to compute all of the nuker galaxies
@@ -61,7 +54,7 @@ def main():
 	for i in range(len(init)):
 		gal_name=init[i]['gal']
 		try:
-			gal=galaxy.NukerGalaxy.from_dir(gal_name,init[i]['save'], rescale=init[i]['rescale'],\
+			gal=galaxy.NukerGalaxy.from_dir(init[i]['gal'],init[i]['save'], rescale=init[i]['rescale'],\
 				index=init[i]['index'], length=init[i]['length'])
 			gal.set_param('vw_extra', init[i]['vw_extra'])
 		except:
@@ -72,7 +65,11 @@ def main():
 		for param in params_dict.keys():
 			gal.set_param(param, params_dict[param])
 
-		run_hydro(gal, init[i]['time'])
+		if gal.outdir=='.':
+			gal.set_param('outdir', gal.name+'/vw_'+str(gal.vw_extra/1.E5))
+
+		gal.solve(init[i]['time']*gal.tcross)
+		gal.backup()
 
 
 

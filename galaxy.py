@@ -1048,25 +1048,23 @@ class NukerGalaxy(Galaxy):
 		self.rmin_star=1.E-3
 		self.rmax_star=1.E5
 
-		self._v_rho_stars=np.vectorize(self.rho_stars)
-		# _rho_stars_rad=np.logspace(np.log10(self.rmin_star), np.log10(self.rmax_star),1000)
-		# _rho_stars_grid=[self.rho_stars(r) for r in _rho_stars_rad]
-		# self._rho_stars_interp=interp1d(_rho_stars_rad,_rho_stars_grid)
-
 		self.rg=G*self.params['M']/c**2
 
 
 	@classmethod
 	def from_dir(cls, name, loc, index=-1, rescale=1., gdata=None, length=None):
 		init={}
-
 		init_array=prepare_start(np.load(loc+'/save.npz')['a'][index])
+		if rescale=='auto':
+			a=96.52
+			tmp=cls(name, gdata=gdata)
+			rescale=tmp.rinf*pc/init_array[0,0]/a
+			print rescale
+
 		init_array[:,0]=rescale*init_array[:,0]
 		radii=init_array[:,0]
-
 		init['rmin']=radii[0]
 		init['rmax']=radii[-1]
-
 		delta=np.diff(radii)
 		delta_log=np.diff(np.log(radii))
 

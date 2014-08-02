@@ -30,7 +30,7 @@ pc=const.pc.cgs.value
 def main():
 	gal_dict=galaxy.nuker_params()
 	gal=galaxy.NukerGalaxy('NGC4551',gal_dict,init={
-		,'f_initial':galaxy.background,'func_params':{'log': True, 'temp': 1.E7, 'rho_0': 1e-23}, 'length':init[i]['length']}))
+		,'f_initial':galaxy.background,'func_params':{'log': True, 'temp': 1.E7, 'rho_0': 1e-23}, 'length':70}))
 
 	gal.isot_on()
 	gal.set_param('bdry', 'bp')
