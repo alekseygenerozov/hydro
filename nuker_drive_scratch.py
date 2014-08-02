@@ -37,7 +37,8 @@ def main():
 	gal.set_param('eps', 0.)
 	gal.set_param('vw_extra', 1.E8)
 	gal.set_param('sigma_heating', False)
-
+	gal.set_param('outdir', gal.name+'/vw_'+str(gal.vw_extra/1.E5))
+	
 	gal.solve(2.*gal.tcross)
 	gal.isot_off()
 	gal.solve(2.*gal.tcross)
