@@ -29,8 +29,7 @@ pc=const.pc.cgs.value
 
 def main():
 	gal_dict=galaxy.nuker_params()
-	gal=galaxy.NukerGalaxy('NGC4551',gal_dict,init={
-		,'f_initial':galaxy.background,'func_params':{'log': True, 'temp': 1.E7, 'rho_0': 1e-23}, 'length':70}))
+	gal=galaxy.NukerGalaxy('NGC4551',gal_dict,init={'rmin':1.36E17,'rmax':7.E19,'f_initial':galaxy.background,'func_params':{'temp': 1.E7, 'rho_0': 1e-23}, 'length':70})
 
 	gal.isot_on()
 	gal.set_param('bdry', 'bp')
@@ -38,7 +37,7 @@ def main():
 	gal.set_param('vw_extra', 1.E8)
 	gal.set_param('sigma_heating', False)
 	gal.set_param('outdir', gal.name+'/vw_'+str(gal.vw_extra/1.E5))
-	
+
 	gal.solve(2.*gal.tcross)
 	gal.isot_off()
 	gal.solve(2.*gal.tcross)
