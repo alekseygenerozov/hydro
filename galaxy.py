@@ -1122,9 +1122,6 @@ class NukerGalaxy(Galaxy):
 		'''
 		return (-G*self.M_enc(r)/r)+4.*G*self.params['Uv']*M_sun*integrate.quad(lambda r1:nuker_prime(r1, **self.params)*(r1**2-r**2)**0.5, r, self.rmax_star)[0]
 
-	def phi_s_2(self,r):
-		return -G*self.M_enc(r)/r-4.*np.pi*G*integrate.quad(lambda r1:self.rho_stars(r1)*r1, r, self.rmax_star)[0]
-
 	def phi_bh(self,r):
 		'''Potential from the black hole
 		:param r: radius in parsecs
@@ -1153,6 +1150,11 @@ class NukerGalaxy(Galaxy):
 
 		jac=lambda r: -4.*np.pi*r**2*self.rho_stars(r)
 		return fsolve(mdiff, 0.9*(self.params['M']/(1.E6*M_sun))**0.4, fprime=jac)[0]
+
+	@lazyprop
+	def sigma_inf(self):
+		'''Velocity dispersion at the radius of influence.'''
+		return self.sigma(self.rinf)
 
 	@property
 	def rb(self):
