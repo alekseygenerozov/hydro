@@ -53,6 +53,8 @@ def main():
 	gal_dict=galaxy.nuker_params()
 	for i in range(len(init)):
 		gal_name=init[i]['gal']
+		print init[i]['rescale'],init[i]['index'],init[i]['length']
+
 		try:
 			gal=galaxy.NukerGalaxy.from_dir(init[i]['gal'],init[i]['save'], rescale=init[i]['rescale'],\
 				index=init[i]['index'], length=init[i]['length'])
@@ -60,6 +62,7 @@ def main():
 		except:
 			print 'Unable to initialize galaxy'
 			continue
+		print gal.vel
 
 		params_dict=params_parse(init[i]['config'])	
 		print params_dict	

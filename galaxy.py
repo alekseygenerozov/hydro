@@ -72,7 +72,9 @@ def lazyprop(fn):
 		return getattr(self, attr_name)
 	return _lazyprop
 
-
+class StepsError(Exception):
+	pass
+    
 def bash_command(cmd):
 	'''Run command from the bash shell'''
 	process=subprocess.Popen(['/bin/bash', '-c',cmd],  stdin=subprocess.PIPE, stdout=subprocess.PIPE)
@@ -765,17 +767,26 @@ class Galaxy(object):
 		'''
 		self.output_prep()
 		self.time_cur=0
+		self.ninterval=0
+		self.num_steps=0
+		self.max_steps=max_steps
 
 		if not time:
 			while self.time_cur<self.tmax:
 				self.time_target=self.time_cur+self.tcross
-				self._evolve(max_steps=max_steps)
+				try:
+					self._evolve()
+				except StepsError:
+					break
 				self.write_sol()
 				if self.check:
 					break
 		else:
 			self.time_target=time
-			self._evolve(max_steps=max_steps)
+			try:
+				self._evolve()
+			except StepsError:
+				pass
 			self.write_sol()
 		
 		self.nsolves+=1
@@ -823,10 +834,10 @@ class Galaxy(object):
 		:param int max_steps: Maximum number of steps for solver to take
 		'''
 		self.output_prep()
-		if len(self.saved==0):
-			self.save_pt=0
-		else:
-			self.save_pt=len(self.saved)-1
+		self.ninterval=0
+		self.num_steps=0
+		self.max_steps=max_steps
+
 		self.time_cur=0
 		param_cur=getattr(self, param)
 	
@@ -834,7 +845,10 @@ class Galaxy(object):
 		self.time_target=interval
 		delta_param=(target-param_cur)/float(n)
 		while not np.allclose(param_cur, target):
-			self._evolve(max_steps=max_steps)
+			try:
+				self._evolve()
+			except StepsError:
+				break
 			param_cur+=delta_param
 			self.time_target+=interval
 			self.set_param(param,param_cur)
@@ -857,30 +871,30 @@ class Galaxy(object):
 		pickle.dump(self, open(self.outdir+'/grid.p', 'wb' ) )
 
 	#Lower level evolution method
-	def _evolve(self, max_steps=np.inf):
+	def _evolve(self):
 		#Initialize the number of steps and the progress
-		num_steps=0
+		# num_steps=0
 		pbar=progress.ProgressBar(maxval=self.time_target, fd=sys.stdout).start()
-		ninterval=0
 
 		#While we have not yet reached the target time
 		while self.time_cur<self.time_target:
-			if (self.tinterval>0 and (self.time_cur/self.tinterval)>=ninterval) or (self.tinterval<=0 and num_steps%self.sinterval==0):
+			if (self.tinterval>0 and (self.time_cur/self.tinterval)>=self.ninterval) or (self.tinterval<=0 and num_steps%self.sinterval==0):
 				pbar.update(self.time_cur)
 				self._cons_update()
 				self.save()
-				ninterval=ninterval+1
+				self.ninterval+=1
 
 			#Take step and increment current time
 			self._step()
 			#Increment the time and steps variables.
 			self.time_cur+=self.delta_t
 			self.total_time+=self.delta_t
-			num_steps+=1
+			self.num_steps+=1
+			print self.num_steps
 			#If we have exceeded the max number of allowed steps then break
-			if num_steps>max_steps:
+			if self.num_steps>self.max_steps:
 				print "exceeded max number of allowed steps"
-				break
+				raise StepsError
 		pbar.finish()
 		print
 
