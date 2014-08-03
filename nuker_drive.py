@@ -58,6 +58,7 @@ def main():
 				index=init[i]['index'], length=init[i]['length'])
 			gal.set_param('vw_extra', init[i]['vw_extra'])
 		except:
+			print 'Unable to initialize galaxy'
 			continue
 
 		params_dict=params_parse(init[i]['config'])	
