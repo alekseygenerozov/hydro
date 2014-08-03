@@ -68,8 +68,8 @@ def main():
 		if gal.outdir=='.':
 			gal.set_param('outdir', gal.name+'/vw_'+str(gal.vw_extra/1.E5))
 
-		# gal.solve(init[i]['time']*gal.tcross)
-		# gal.backup()
+		gal.solve(init[i]['time']*gal.tcross)
+		gal.backup()
 
 
 
