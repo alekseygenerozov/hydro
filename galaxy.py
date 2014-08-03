@@ -258,6 +258,7 @@ class Galaxy(object):
 		self.time_cur=0
 		self.total_time=0
 		self.time_target=0
+		self.tmax=20.*self.tcross
 
 		self.saved=np.empty([0, self.length, len(self.out_fields)])
 		self.fdiff=np.empty([0, self.length-1, 2*len(self.cons_fields)+1])
@@ -510,7 +511,7 @@ class Galaxy(object):
 			integral=np.sum(src[self.start:self.end+1])
 			with warnings.catch_warnings():
 				pdiff=(fdiff-integral)*100./integral
-			if (pdiff>tol) or np.isnan(pdiff):
+			if (abs(pdiff)>tol) or np.isnan(pdiff):
 				self.check=False
 
 			if write:
@@ -757,23 +758,26 @@ class Galaxy(object):
 		self.isot=True
 		self.fields=['log_rho', 'vel']
 
-	def solve(self, time, max_steps=np.inf):
+	def solve(self, time=None, max_steps=np.inf):
 		'''Controller for solution. Several possible stop conditions (max_steps is reached, time is reached)
 
 		:param max_steps: Maximum number of time steps to take in the solution
 		'''
 		self.output_prep()
 		self.time_cur=0
-		self.time_target=time
-		#For purposes of easy backup
-		if len(self.saved)==0:
-			self.save_pt=0
+
+		if not time:
+			while self.time_cur<self.tmax:
+				self.time_target=self.time_cur+self.tcross
+				self._evolve(max_steps=max_steps)
+				self.write_sol()
+				if self.check:
+					break
 		else:
-			self.save_pt=len(self.saved)-1
-
-		self._evolve(max_steps=max_steps)
-
-		self.write_sol()
+			self.time_target=time
+			self._evolve(max_steps=max_steps)
+			self.write_sol()
+		
 		self.nsolves+=1
 
 	def set_param(self, param, value):

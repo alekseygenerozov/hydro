@@ -39,7 +39,7 @@ def main():
 
 	args=parser.parse_args()
 	cols=['vw_extra','rescale','index','time','length','config']
-	default=[1.E8, 1., -1, 5.,None,'']
+	default=[1.E8, 1., -1, None,None,'']
 
 	init=ascii.read(args.init[0])
 	for i in range(len(cols)):
@@ -68,8 +68,8 @@ def main():
 		if gal.outdir=='.':
 			gal.set_param('outdir', gal.name+'/vw_'+str(gal.vw_extra/1.E5))
 
-		gal.solve(init[i]['time']*gal.tcross)
-		gal.backup()
+		# gal.solve(init[i]['time']*gal.tcross)
+		# gal.backup()
 
 
 
