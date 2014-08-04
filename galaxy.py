@@ -827,7 +827,7 @@ class Galaxy(object):
 			if not time and self.check:
 				break
 
-			if (self.tinterval>0 and (self.time_cur/self.tinterval)>=self.ninterval) or (self.tinterval<=0 and num_steps%self.sinterval==0):
+			if (self.tinterval>0 and (self.time_cur/self.tinterval)>=self.ninterval) or (self.tinterval<=0 and self.num_steps%self.sinterval==0):
 				pbar.update(self.time_cur)
 				self.save()
 
