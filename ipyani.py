@@ -78,7 +78,7 @@ def animate(fname,  index=1, symbol='r', logx=True, logy=False, max_index=-1, ym
     return sol_ani
 
 
-def movie_save(loc, interval=1, ymin=[None, None, None, None, -1, None], ymax=[None, None, None, None, 2, None], logy=[True, True, True, True, False, True], times=None):
+def movie_save(loc, interval=1, ymin=[None, None, None, 1.E-25, -1, 1.E5], ymax=[None, None, None, 1.E-20, 2, 1.E10], logy=[True, True, True, True, False, True], times=None):
     #times=grid.time_stamps/parker.tcross(rmin*pc, rmax*pc, temp)
     # times=None
     files=['/mass_cons.mp4', '/be_cons.mp4', '/s_cons.mp4','/rho.mp4', '/vel.mp4', '/temp.mp4']
