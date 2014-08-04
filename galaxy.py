@@ -821,8 +821,12 @@ class Galaxy(object):
 		pbar=progress.ProgressBar(maxval=self.time_target, fd=sys.stdout).start()
 		self.check=False
 
+		self.cons_check()
 		#While we have not yet reached the target time
-		while (self.time_cur<self.time_target) and not self.check:
+		while (self.time_cur<self.time_target):
+			if not time and self.check:
+				break
+
 			if (self.tinterval>0 and (self.time_cur/self.tinterval)>=self.ninterval) or (self.tinterval<=0 and num_steps%self.sinterval==0):
 				pbar.update(self.time_cur)
 				self.save()
