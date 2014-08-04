@@ -761,37 +761,6 @@ class Galaxy(object):
 		self.isot=True
 		self.fields=['log_rho', 'vel']
 
-	def solve(self, time=None, max_steps=np.inf):
-		'''Controller for solution. Several possible stop conditions (max_steps is reached, time is reached)
-
-		:param max_steps: Maximum number of time steps to take in the solution
-		'''
-		self.output_prep()
-		self.time_cur=0
-		self.ninterval=0
-		self.num_steps=0
-		self.max_steps=max_steps
-
-		if not time:
-			while self.time_cur<self.tmax:
-				self.time_target=self.time_cur+self.tcross
-				try:
-					self._evolve()
-				except StepsError:
-					break
-				self.write_sol()
-				if self.check:
-					break
-		else:
-			self.time_target=time
-			try:
-				self._evolve()
-			except StepsError:
-				pass
-			self.write_sol()
-		
-		self.nsolves+=1
-
 	def set_param(self, param, value):
 		'''Reset parameter
 
@@ -823,39 +792,6 @@ class Galaxy(object):
 
 		new=getattr(self, param)
 		self.log=self.log+param+' old:'+str(old)+' new:'+str(value)+' time:'+str(self.total_time)+'\n'
-
-
-	#Gradually perturb a given parameter (param) to go to the desired value (target). 
-	def solve_adjust(self, time, param, target, n=10, max_steps=np.inf):
-		'''Run solver for time adjusting the value of params to target in the process
-
-		:param str param: parameter to adjust
-		:param target: value to which we would like to adjust the parameter
-		:param int n: Number of time intervals to divide time into for the purposes of parameter adjustment
-		:param int max_steps: Maximum number of steps for solver to take
-		'''
-		self.output_prep()
-		self.ninterval=0
-		self.num_steps=0
-		self.max_steps=max_steps
-
-		self.time_cur=0
-		param_cur=getattr(self, param)
-	
-		interval=time/float(n)
-		self.time_target=interval
-		delta_param=(target-param_cur)/float(n)
-		while not np.allclose(param_cur, target):
-			try:
-				self._evolve()
-			except StepsError:
-				break
-			param_cur+=delta_param
-			self.time_target+=interval
-			self.set_param(param,param_cur)
-		self.write_sol()
-		self.nsolves+=1
-
 			
 	#Method to write solution info to file
 	def write_sol(self):
@@ -871,34 +807,57 @@ class Galaxy(object):
 		bash_command('mkdir -p '+self.outdir)
 		dill.dump(self, open(self.outdir+'/grid.p', 'wb' ) )
 
-	#Lower level evolution method
-	def _evolve(self):
+	def solve(self, time=None, max_steps=np.inf):
 		#Initialize the number of steps and the progress
-		# num_steps=0
+		self.output_prep()
+		self.time_cur=0
+		self.ninterval=0
+		self.num_steps=0
+		self.max_steps=max_steps
+		if not time:
+			self.time_target=self.tmax
+		else:
+			self.time_target=time
 		pbar=progress.ProgressBar(maxval=self.time_target, fd=sys.stdout).start()
+		self.check=False
 
 		#While we have not yet reached the target time
-		while self.time_cur<self.time_target:
+		while (self.time_cur<self.time_target) and not self.check:
 			if (self.tinterval>0 and (self.time_cur/self.tinterval)>=self.ninterval) or (self.tinterval<=0 and num_steps%self.sinterval==0):
 				pbar.update(self.time_cur)
-				self._cons_update()
 				self.save()
-				self.ninterval+=1
 
 			#Take step and increment current time
 			self._step()
-			#Increment the time and steps variables.
-			self.time_cur+=self.delta_t
-			self.total_time+=self.delta_t
-			self.num_steps+=1
-			print self.num_steps
 			#If we have exceeded the max number of allowed steps then break
 			if self.num_steps>self.max_steps:
-				print "exceeded max number of allowed steps"
-				raise StepsError
-		pbar.finish()
-		print
+				print "Exceeded max number of allowed steps"
+				return 1
 
+		pbar.finish()
+		self.write_sol()
+		return 0
+
+	#Gradually perturb a given parameter (param) to go to the desired value (target). 
+	def solve_adjust(self, time, param, target, n=10, max_steps=np.inf):
+		'''Run solver for time adjusting the value of params to target in the process
+
+		:param str param: parameter to adjust
+		:param target: value to which we would like to adjust the parameter
+		:param int n: Number of time intervals to divide time into for the purposes of parameter adjustment
+		:param int max_steps: Maximum number of steps for solver to take
+		'''
+		param_cur=getattr(self, param)
+	
+		interval=time/float(n)
+		delta_param=(target-param_cur)/float(n)
+		while not np.allclose(param_cur, target):
+			steps=self.solve(time=interval, max_steps=max_steps)
+			if steps==1:
+				break
+			
+			param_cur+=delta_param
+			self.set_param(param,param_cur)
 
 	#Create movie of solution
 	def animate(self,  analytic_func=None, index=1):
@@ -935,6 +894,10 @@ class Galaxy(object):
 		grid_prims=[getattr(self, field) for field in self.out_fields]
 		grid_prims[2]=grid_prims[2]/grid_prims[7]
 
+		self._cons_update()
+		self.cons_check()
+		self.ninterval+=1
+
 		#Saving the state of the grid within list
 		#self.saved.append((self.total_time, np.transpose(grid_prims)))
 		self.saved=np.append(self.saved,[np.transpose(grid_prims)],0)
@@ -967,6 +930,10 @@ class Galaxy(object):
 			if not self.isot:
 				self._update_temp()
 			self._update_ghosts()
+
+		self.time_cur+=self.delta_t
+		self.total_time+=self.delta_t
+		self.num_steps+=1
 
 	#Substeps
 	def _sub_step(self, gamma, zeta):
