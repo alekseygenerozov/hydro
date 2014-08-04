@@ -914,6 +914,23 @@ class Galaxy(object):
 		t_handle=file(self.outdir+'/times', 'a')
 		np.savetxt(t_handle, [self.time_stamps[-1]])
 
+	#Reverts grid to earlier state. Previous gi
+	def revert(self, index):
+		self.log_rho=np.log(self.saved[index,:,1])
+		self.vel=self.saved[index,:,2]*self.saved[index,:,7]
+		self.s=self.saved[index,:,6]
+		if not self.isot:
+			self._update_temp()
+
+		index=index%self.length
+		self.saved=self.saved[:index+1]
+		self.time_stamps=self.time_stamps[:index+1]
+		self.fdiff=self.fdiff[:index]
+		#Overwriting previous saved files
+		np.savetxt(self.outdir+'/save', self.saved.reshape((-1, len(self.out_fields))))
+		np.savetxt(self.outdir+'/cons', self.fdiff.reshape((-1, 2*len(self.cons_fields)+1)))
+		np.savetxt(self.outdir+'/times',self.time_stamps)
+
 	#Clear all of the info in the saved list
 	def clear_saved(self):
 		self.saved=np.empty([0, self.length, len(self.out_fields)])
