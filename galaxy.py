@@ -7,6 +7,7 @@ from scipy.misc import derivative
 import copy
 import warnings
 import pickle
+import dill
 import sys
 import subprocess
 
@@ -864,11 +865,11 @@ class Galaxy(object):
 		np.savez(self.outdir+'/cons', a=self.fdiff)
 		log=open(self.outdir+'/log', 'w')
 		log.write(self.log)
-		pickle.dump(self.non_standard, open(self.outdir+'/non_standard.p','wb'))
+		dill.dump(self.non_standard, open(self.outdir+'/non_standard.p','wb'))
 
 	def backup(self):
 		bash_command('mkdir -p '+self.outdir)
-		pickle.dump(self, open(self.outdir+'/grid.p', 'wb' ) )
+		dill.dump(self, open(self.outdir+'/grid.p', 'wb' ) )
 
 	#Lower level evolution method
 	def _evolve(self):
