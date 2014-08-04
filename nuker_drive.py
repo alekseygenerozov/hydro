@@ -75,6 +75,10 @@ def main():
 			time=init[i]['time']*gal.tcross
 		except:
 			time=None
+			
+		galaxy.bash_command('cp '+args.init[0]+' '+gal.outdir)
+		galaxy.bash_command('cp '+init[i]['save']+'/save.npz '+gal.outdir+'/init.npz')
+
 		gal.solve(time)
 		gal.backup()
 
