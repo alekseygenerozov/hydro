@@ -826,10 +826,12 @@ class Galaxy(object):
 		pbar=progress.ProgressBar(maxval=self.time_target, fd=sys.stdout).start()
 		self.check=False
 
+		print time
 		self.cons_check()
 		#While we have not yet reached the target time
 		while (self.time_cur<self.time_target):
 			if not time and self.check:
+				print 'Conservation check satisfied!'
 				break
 
 			if (self.tinterval>0 and (self.time_cur/self.tinterval)>=self.ninterval) or (self.tinterval<=0 and self.num_steps%self.sinterval==0):
@@ -857,7 +859,7 @@ class Galaxy(object):
 		:param int max_steps: Maximum number of steps for solver to take
 		'''
 		param_cur=getattr(self, param)
-	
+		print target, param_cur
 		interval=time/float(n)
 		delta_param=(target-param_cur)/float(n)
 		while not np.allclose(param_cur, target):
