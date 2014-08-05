@@ -863,13 +863,13 @@ class Galaxy(object):
 		interval=time/float(n)
 		delta_param=(target-param_cur)/float(n)
 		while not np.allclose(param_cur, target):
+			param_cur+=delta_param
+			self.set_param(param,param_cur)
+
 			steps=self.solve(time=interval, max_steps=max_steps)
 			if steps==1:
 				break
 			
-			param_cur+=delta_param
-			self.set_param(param,param_cur)
-
 	#Create movie of solution
 	def animate(self,  analytic_func=None, index=1):
 		if analytic_func:
