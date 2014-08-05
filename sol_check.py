@@ -46,7 +46,7 @@ def check(outdir, tol=40.):
 	try:
 		cons1=re.findall(refloat,pdiffs[0])[0]
 		cons2=re.findall(refloat,pdiffs[-1])[0]
-		if float(cons1)<tol and float(cons2)<tol:
+		if abs(float(cons1))<tol and abs(float(cons2))<tol:
 			check=True
 	except:
 		pass

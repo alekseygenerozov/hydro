@@ -808,6 +808,11 @@ class Galaxy(object):
 		dill.dump(self, open(self.outdir+'/grid.p', 'wb' ) )
 
 	def solve(self, time=None, max_steps=np.inf):
+		'''Solve hydro equations for galaxy
+
+		:param float time: Time to run solver for. If none run for 20 tcross, but break if certain level of conservation has been reached.
+		:param int max_steps: Maximum number of steps for solver to take
+		'''
 		#Initialize the number of steps and the progress
 		self.output_prep()
 		self.time_cur=0
