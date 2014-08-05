@@ -921,6 +921,10 @@ class Galaxy(object):
 		t_handle=file(self.outdir+'/times', 'a')
 		np.savetxt(t_handle, [self.time_stamps[-1]])
 
+		if np.any(np.isnan(grid_prims)):
+		    sys.exit(3)
+
+
 	#Reverts grid to earlier state. Previous gi
 	def revert(self, index):
 		self.log_rho=np.log(self.saved[index,:,1])
