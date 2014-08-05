@@ -1035,6 +1035,9 @@ class Galaxy(object):
 		'''Integrated x-ray luminosity at each grid radius'''
 		return np.cumsum(4.*np.pi*self.cooling*self.delta*self.radii**2)
 
+	def x_ray_lum_interp(self, r):
+		return interp1d(self.radii, self.x_ray_lum)(r)
+
 class NukerGalaxy(Galaxy):
 	'''Sub-classing galaxy above to represent Nuker parameterized galaxies'''
 	def __init__(self, gname, gdata=None, init={}):
@@ -1173,6 +1176,9 @@ class NukerGalaxy(Galaxy):
 		rb=fsolve(f, G*self.params['M']/self.cs[-1]**2)
 
 		return rb
+
+	def get_prop(self,field,r):
+		return getattr(self, field)(r)
 
 	@property
 	def rs_analytic(self):
