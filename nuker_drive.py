@@ -78,6 +78,7 @@ def main():
 			
 		galaxy.bash_command('cp '+args.init[0]+' '+gal.outdir)
 		galaxy.bash_command('cp '+init[i]['save']+'/save.npz '+gal.outdir+'/init.npz')
+		galaxy.bash_command('cp '+init[i]['config']+' '+gal.outdir+'/config')
 
 		gal.solve(time)
 		gal.backup()
