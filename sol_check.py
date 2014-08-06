@@ -90,18 +90,34 @@ def compare(dir1, dir2):
 	refloat=r'[+-]?\d+\.?\d*[eE]?[+-]?\d*'
 	try:
 		f1=open(dir1+'/check', 'r')
-		f2=open(dir1+'/check', 'r')
+		exists1=True
 	except:
-		return ''
+		exists1=False
+	try:
+		f2=open(dir2+'/check', 'r')
+		exists2=True
+	except:
+		exists2=False
 
-	nan1=bash_command('grep -l nan '+dir1+'/check')
-	nan2=bash_command('grep -l nan '+dir2+'/check')
+	if not exists1:
+		print 'dir1 doesnt exist'
+		nan1=True
+	else:
+		nan1=bash_command('grep -l nan '+dir1+'/check')
+	if not exists2:
+		print 'dir2 doesnt exist'
+		nan2=True
+	else:
+		nan2=bash_command('grep -l nan '+dir2+'/check')
 
 	if nan1 and nan2:
+		print 'both files have nans'
 		return ''
 	elif nan1:
+		print 'file1 has a nan'
 		return dir2
 	elif nan2:
+		print 'file2 has a nan'
 		return dir1
 	else:
 		maxdiff1=max_diff(dir1)
