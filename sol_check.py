@@ -120,13 +120,14 @@ def sol_compare(loc1, loc2, index=1):
 	plt.show()
 
 #Check solution as code is running
-def sol_check(loc, index=2, size=70):
+def sol_check(loc, index=2, size=70, init=False):
 	saved=np.genfromtxt(loc+'/save')
 	fig,ax=plt.subplots()
 	ax.set_xscale('log')
 	if index!=2:
 		ax.set_yscale('log')
-	plt.plot(saved[0:size,0], saved[0:size,index])
+	if init:
+		plt.plot(saved[0:size,0], saved[0:size,index])
 	plt.plot(saved[-size:,0], saved[-size:,index])
 	plt.show()
 	
