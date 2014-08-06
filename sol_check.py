@@ -1,5 +1,5 @@
 import sys
-import hydro_experiment as hydro
+
 import parker
 import astropy.constants as const
 import numpy as np
@@ -12,6 +12,8 @@ from scipy.optimize import fsolve
 
 import re
 
+import subprocess
+
 
 #Constants
 G=const.G.cgs.value
@@ -22,7 +24,10 @@ h=const.h.cgs.value
 pc=const.pc.cgs.value
 c=const.c.cgs.value
 
-# galaxies=nuker.nuker_params()
+def bash_command(cmd):
+	'''Run command from the bash shell'''
+	process=subprocess.Popen(['/bin/bash', '-c',cmd],  stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+	return process.communicate()[0]
 
 # g1_2=nuker.Galaxy('NGC4551', galaxies, cgs=False, eta=1.) 
 def M_enc_simp(r):
@@ -40,6 +45,11 @@ def check(outdir, tol=40.):
 		f=open(outdir+'/check', 'r')
 	except:
 		return False
+
+	if bash_command('grep -l nan '+outdir+'/check'):
+		print 'nan detected'
+		return False
+
 	checkf=f.read()
 	
 	pdiffs=re.findall(re.compile('pdiff='+refloat), checkf)
@@ -52,6 +62,62 @@ def check(outdir, tol=40.):
 		pass
 	
 	return check
+
+def max_diff(outdir):
+	check=False
+	refloat=r'[+-]?\d+\.?\d*[eE]?[+-]?\d*'
+	try:
+		f=open(outdir+'/check', 'r')
+	except:
+		return None
+
+	if bash_command('grep -l nan '+outdir+'/check'):
+		#print 'nan detected'
+		return np.nan
+
+	checkf=f.read()
+	pdiffs=re.findall(re.compile('pdiff='+refloat), checkf)
+	max_diff=0.
+	for i in range(4):
+		pdiff=abs(float(re.findall(refloat,pdiffs[i])[0]))
+		#print pdiff
+		max_diff=max(pdiff, max_diff)
+
+	return max_diff
+
+def compare(dir1, dir2):
+	check=False
+	refloat=r'[+-]?\d+\.?\d*[eE]?[+-]?\d*'
+	try:
+		f1=open(dir1+'/check', 'r')
+		f2=open(dir1+'/check', 'r')
+	except:
+		return ''
+
+	nan1=bash_command('grep -l nan '+dir1+'/check')
+	nan2=bash_command('grep -l nan '+dir2+'/check')
+
+	if nan1 and nan2:
+		return ''
+	elif nan1:
+		return dir2
+	elif nan2:
+		return dir1
+	else:
+		maxdiff1=max_diff(dir1)
+		maxdiff2=max_diff(dir2)
+		if maxdiff1<maxdiff2:
+			return dir1
+		else:
+			return dir2
+
+def sol_compare(loc1, loc2, index=1):
+	save1=np.load(loc1+'/save.npz')['a']
+	save2=np.load(loc2+'/save.npz')['a']
+
+	plt.loglog(save1[-1,:,0], abs(save1[-1,:,index]))
+	plt.loglog(save2[-1,:,0], abs(save2[-1,:,index]))
+	plt.show()
 
 #Check solution as code is running
 def sol_check(loc, index=2, size=70):
