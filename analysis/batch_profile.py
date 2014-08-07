@@ -24,34 +24,10 @@ h=const.h.cgs.value
 pc=const.pc.cgs.value
 c=const.c.cgs.value
 
-def check(outdir, tol=40.):
-	check=False
-	refloat=r'[+-]?\d+\.?\d*[eE]?[+-]?\d*'
-	try:
-		f=open(outdir+'/check', 'r')
-	except:
-		return False
-	checkf=f.read()
-	
-	pdiffs=re.findall(re.compile('pdiff='+refloat), checkf)
-	try:
-		cons1=re.findall(refloat,pdiffs[0])[0]
-		cons2=re.findall(refloat,pdiffs[-1])[0]
-		if float(cons1)<tol and float(cons2)<tol:
-			check=True
-	except:
-		pass
-	
-	return check 
 
 
-dirs=galaxy.bash_command('echo NGC*')
-galaxies=shlex.split(dirs)
-gnames=np.copy(galaxies)
-gal_dict=galaxy.nuker_params()
+
 fig,ax=plt.subplots(3, sharex=True, figsize=(10, 24))
-
-
 ax[0].set_ylabel(r'$\rho$ [g cm$^{-3}$]')
 ax[1].set_ylabel(r'T [K]')
 ax[2].set_ylabel('Cumulative x-ray luminosity [ergs/s]')
@@ -65,9 +41,10 @@ selection=['NGC3115', 'NGC1172', 'NGC4478']
 
 cols=mpl.rcParams['axes.color_cycle']
 for i,name in enumerate(selection):
+	base_d='/Users/aleksey/Second_Year_Project/hydro/batch_collected/'+name
 	for j,vw in enumerate(vws):
-		d=name+'/vw_'+str(vw)
-		if not check(d):
+		d=base_d+'/vw_'+str(vw)
+		if not sc.check(d):
 			continue
 		try:
 			saved=np.load(d+'/save.npz')['a']

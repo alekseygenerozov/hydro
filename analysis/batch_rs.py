@@ -53,7 +53,7 @@ dens_slope_cusp=[]
 dens_slope_core=[]
 idx=0
 for name in gal_dict.keys():
-	base_d='/Users/aleksey/Second_Year_Project/hydro/batch/'+name
+	base_d='/Users/aleksey/Second_Year_Project/hydro/batch_collected/'+name
 	gal_data='/Users/aleksey/Second_Year_Project/hydro/gal_data/'+name
 	for j,vw in enumerate(vws):
 		d=base_d+'/vw_'+str(vw)
@@ -107,58 +107,6 @@ for name in gal_dict.keys():
 		idx+=1
 
 
-for name in gal_dict.keys():
-	base_d='/Users/aleksey/Second_Year_Project/hydro/batch_A2052_unique/'+name
-	gal_data='/Users/aleksey/Second_Year_Project/hydro/gal_data/'+name
-	for j,vw in enumerate(vws):
-		d=base_d+'/vw_'+str(vw)
-		try:
-			saved=np.load(d+'/save.npz')['a']
-		except:
-			continue
-		if not sc.check(d):
-			continue
-
-		gal=galaxy.NukerGalaxy.from_dir(name, d)
-
-		try:
-			rsoi=np.genfromtxt(gal_data+'/rsoi')
-			sigma=np.genfromtxt(gal_data+'/sigma')
-		except:
-			continue
-		sigma_interp=interp1d(sigma[:,0], sigma[:,1])
-
-		rho_interp=interp1d(np.log(gal.radii), np.log(gal.rho))
-		dens_slope=np.abs(derivative(rho_interp, np.log(gal.rs), dx=gal.delta_log[0]))
-		dens_slopes.append(dens_slope)
-
-
-		x=gal.rs/pc/rsoi
-		vw_eff=(sigma_interp(gal.rs)**2.+(vw*1.E5)**2.)**0.5
-		eta=vw*1.E5/sigma_interp(rsoi*pc)
-
-		M_enc_rs=(sigma_interp(gal.rs)**2*gal.rs/G)-gal.params['M']
-		omega=M_enc_rs/gal.params['M']
-
-		predicted=glaw(eta)
-		residual=(predicted-x)/predicted
-		predicted2=glaw(eta, omega=omega, dens_slope=dens_slope, gamma=gal.params['gamma'])
-		residual2=(predicted2-x)/predicted2
-
-		if gal.params['type']=='Core':
-			symbol='<'
-			eta_core.append(eta)
-			x_core.append(x)
-			dens_slope_core.append(dens_slope)
-		else:
-			symbol='s'
-			eta_cusp.append(eta)
-			x_cusp.append(x)
-			dens_slope_cusp.append(dens_slope)
-
-		idx+=1
-		ax[0].loglog(eta, x, symbol, color=cols[j], markersize=10)
-		ax[1].plot(idx, residual2, symbol, color=cols[j], markersize=10)
 
 pow_cusp, coeff_cusp=np.polyfit(np.log(eta_cusp),np.log(x_cusp),1)
 pow_core, coeff_core=np.polyfit(np.log(eta_core),np.log(x_core),1)
