@@ -81,6 +81,8 @@ for name in gal_dict.keys():
 		x=gal.rs/pc/rsoi
 		vw_eff=(sigma_interp(gal.rs)**2.+(vw*1.E5)**2.)**0.5
 		eta=vw*1.E5/sigma_interp(rsoi*pc)
+		if j==0 and idx%2==0:
+			ax[0].text(eta, x, name)
 
 		M_enc_rs=(sigma_interp(gal.rs)**2*gal.rs/G)-gal.params['M']
 		omega=M_enc_rs/gal.params['M']
@@ -128,4 +130,4 @@ ax[1].tick_params(\
     top='off',         # ticks along the top edge are off
     labelbottom='off')
 
-plt.savefig('rs.eps')
+plt.savefig('rs.pdf')

@@ -56,11 +56,15 @@ mass_core=[[],[],[]]
 mdot=[[],[],[]]
 mdot_approx=[[],[],[]]
 mdot_bondi=[[],[],[]]
+gammas=[]
+names=[]
 
 for idx,name in enumerate(gal_dict.keys()):
+	names.append(name)
 	base_d='/Users/aleksey/Second_Year_Project/hydro/batch_collected/'+name
 	gal_data='/Users/aleksey/Second_Year_Project/hydro/gal_data/'+name
-	# if not (sc.check(base_d+'/vw_200.0') and sc.check(base_d+'/vw_500.0') and sc.check(base_d+'/vw_1000.0')):
+
+	# if not ((sc.check(base_d+'/vw_200.0') and sc.check(base_d+'/vw_500.0') and sc.check(base_d+'/vw_1000.0'))):
 	# 	continue
 	for j,vw in enumerate(vws):
 		d=base_d+'/vw_'+str(vw)
@@ -72,6 +76,9 @@ for idx,name in enumerate(gal_dict.keys()):
 			continue
 
 		gal=galaxy.NukerGalaxy.from_dir(name, d)
+		if j==0:
+			gammas.append(gal.params['gamma'])
+
 		if gal.params['type']=='Cusp':
 			eddr[j].append(gal.eddr)
 			mass[j].append(gal.params['M']/galaxy.M_sun)
@@ -86,6 +93,8 @@ for idx,name in enumerate(gal_dict.keys()):
 		except:
 			mdot_bondi[j].append(np.nan)
 
+		if j==2:
+			print gal.name,gal.params['gamma'],gal.params['type'],mdot[2][-1]/mdot[1][-1]
 
 mass_fit=[1.E6, 1.E9]
 
@@ -105,6 +114,8 @@ for j,vw in enumerate(vws):
 	#ax3.plot(range(0,len(mdot[j])), [np.abs((mdot[j,i]-mdot_bondi[j,i])/mdot[j,i]) for i in range(0, len(mdot[j]))],'s',color=cols[j])
 	#ax3[1].plot(range(0,len(mdot[j])), np.abs((mdot[j]-mdot_approx[j])/mdot[j]),'s',color=cols[j])
 ax1[1].hist(eddr_core[2], color=cols[2], bins=np.logspace(-9, -1, 16), histtype='step', linestyle='dashed')
+
+
 
 
 fig1.savefig('mdot_hist.pdf')

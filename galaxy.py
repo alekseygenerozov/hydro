@@ -147,7 +147,6 @@ def nuker_params(skip=False):
 def get_slope(r1, r2, f1, f2):
 	return np.log(f2/f1)/np.log(r2/r1)
 
-
 def extend_to_ss(dat):
 	'''Extend inner grid boundary to be supersonic'''
 	slope=np.empty(5)
@@ -528,6 +527,22 @@ class Galaxy(object):
 				check.write('____________________________________\n\n')
 		check.close()
 
+	def cons_plot(self, dict1={}, dict2={}):
+		if len(self.fdiff)==0:
+			self._cons_update()
+
+		fig1,ax1=plt.subplots(3, sharex=True, figsize=(10,24))
+		plt.title(self.name)
+		for i in range(3):
+			ax1[i].set_xscale('log')
+			ax1[i].set_yscale('log')
+		ax1[2].set_xlabel('Radius [cm]')
+
+		for i in range(1,4):
+			ax1[i-1].loglog(self.fdiff[-1,:,0],self.fdiff[-1,:,i], **dict1)
+			ax1[i-1].loglog(self.fdiff[-1,:,0],self.fdiff[-1,:,i+3], **dict2)
+		plt.close()
+		return fig1
 
 	#Adding ghost zones onto the edges of the grid (moving the start of the grid)
 	def _add_ghosts(self):
