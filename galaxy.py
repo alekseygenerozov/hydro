@@ -42,27 +42,57 @@ c=const.c.cgs.value
 pc=const.pc.cgs.value
 th=4.35*10**17
 year=3.15569E7
-#params=dict(Ib=17.16, alpha=1.26, beta=1.75, rb=343.3, gamma=0, Uv=7.)
+
+
+def pow_extrap(r, r1, r2, field1, field2):
+	'''Power law extrapolation given radius of interest, and input radii and fields'''
+	slope=np.log(field2/field1)/np.log(r2/r1)
+
+	return field1*np.exp(slope*np.log(r/r1))
 
 def extrap1d(interpolator):
-    xs = interpolator.x
-    ys = interpolator.y
+	'''Modify interpolation function to allow for extrapolation--constant extrapolation beyond bondaries'''
+	xs = interpolator.x
+	ys = interpolator.y
 
-    def pointwise(x):
-        if x < xs[0]:
-            return ys[0]
-        elif x > xs[-1]:
-            return ys[-1]
-        else:
-            return interpolator(x)
+	def pointwise(x):
+		if x < xs[0]:
+			return ys[0]
+		elif x > xs[-1]:
+			return ys[-1]
+		else:
+			return interpolator(x)
 
-    def ufunclike(xs):
-    	try:
-        	return np.array(map(pointwise, xs))
-        except TypeError:
-        	return pointwise(xs)
+	def ufunclike(xs):
+		try:
+			return np.array(map(pointwise, xs))
+		except TypeError:
+			return pointwise(xs)
 
-    return ufunclike
+	return ufunclike
+
+def extrap1d_pow(interpolator):
+	'''Modify interpolation function to allow for extrapolation--power law extrapolation beyond boundaries'''
+	xs = interpolator.x
+	ys = interpolator.y
+
+	#This will not work if we have less than 2 interpolation x values. Also, this is somewhat different from the extrapolation used for updating 
+	#the boundaries of the grid, where I go three zones on either side of the edge non-ghost zones in order to compute the power law slope.
+	def pointwise(x):
+		if x < xs[0]:
+			return pow_extrap(x, xs[0], xs[1], ys[0], ys[1])
+		elif x > xs[-1]:
+			return pow_extrap(x, xs[-1], xs[-2], ys[-1], ys[-2])
+		else:
+			return interpolator(x)
+
+	def ufunclike(xs):
+		try:
+			return np.array(map(pointwise, xs))
+		except TypeError:
+			return pointwise(xs)
+
+	return ufunclike
 
 def lazyprop(fn):
 	attr_name = '_lazy_' + fn.__name__
@@ -75,7 +105,7 @@ def lazyprop(fn):
 
 class StepsError(Exception):
 	pass
-    
+	
 def bash_command(cmd):
 	'''Run command from the bash shell'''
 	process=subprocess.Popen(['/bin/bash', '-c',cmd],  stdin=subprocess.PIPE, stdout=subprocess.PIPE)
@@ -828,7 +858,7 @@ class Galaxy(object):
 		:param float time: Time to run solver for. If none run for 20 tcross, but break if certain level of conservation has been reached.
 		:param int max_steps: Maximum number of steps for solver to take
 		'''
-		#Initialize the number of steps and the progress
+		# the number of steps and the progress
 		self.output_prep()
 		self.time_cur=0
 		self.ninterval=0
@@ -937,7 +967,7 @@ class Galaxy(object):
 		np.savetxt(t_handle, [self.time_stamps[-1]])
 
 		if np.any(np.isnan(grid_prims)):
-		    sys.exit(3)
+			sys.exit(3)
 
 
 	#Reverts grid to earlier state. Previous gi

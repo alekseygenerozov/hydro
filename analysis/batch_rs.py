@@ -8,7 +8,7 @@ import shlex
 import numpy as np
  
 import matplotlib.pylab as plt
-import pickle
+import dill
 
 from scipy.interpolate import interp1d
 import brewer2mpl
@@ -57,14 +57,10 @@ for name in gal_dict.keys():
 	gal_data='/Users/aleksey/Second_Year_Project/hydro/gal_data/'+name
 	for j,vw in enumerate(vws):
 		d=base_d+'/vw_'+str(vw)
-		try:
-			saved=np.load(d+'/save.npz')['a']
-		except:
-			continue
 		if not sc.check(d):
 			continue
 
-		gal=galaxy.NukerGalaxy.from_dir(name, d)
+		gal=dill.load(open(d+'/grid.p', 'rb'))
 		
 		try:
 			rsoi=np.genfromtxt(gal_data+'/rsoi')
@@ -77,12 +73,9 @@ for name in gal_dict.keys():
 		dens_slope=np.abs(derivative(rho_interp, np.log(gal.rs), dx=gal.delta_log[0]))
 		dens_slopes.append(dens_slope)
 
-
 		x=gal.rs/pc/rsoi
 		vw_eff=(sigma_interp(gal.rs)**2.+(vw*1.E5)**2.)**0.5
 		eta=vw*1.E5/sigma_interp(rsoi*pc)
-		if j==0 and idx%2==0:
-			ax[0].text(eta, x, name)
 
 		M_enc_rs=(sigma_interp(gal.rs)**2*gal.rs/G)-gal.params['M']
 		omega=M_enc_rs/gal.params['M']
