@@ -365,8 +365,8 @@ class Galaxy(object):
 		eta=-2.
 
 		a=mdotw/(4.*np.pi)/((r2**(eta+3)-r1**(eta+3))/(eta+3))
-		if r*pc<r2 and r*pc>r1:
-			return a*(r*pc)**(eta)*pc**3
+		if r<r2 and r>r1:
+			return a*(r)**(eta)
 		else:
 			return 0.
 
@@ -385,31 +385,24 @@ class Galaxy(object):
 		return self.phi_bh(r)+self.phi_s(r)
 
 	@lazyprop
-	def rho_s_interp(self,r):
-		rho_stars_rad=np.logspace(self.rmin_star, self.rmax_star,100)
-		rho_stars=[self.rho_stars(r) for r in rho_s_rad]
-
-		return interp1d(rho_stars_rad, rho_stars)
-
-	@lazyprop
 	def q_grid(self):
-		return np.array([self.q(r) for r in self.radii/pc])/pc**3
+		return np.array([self.q(r) for r in self.radii])
 
 	@lazyprop
 	def M_enc_grid(self):
-		return np.array(map(self.M_enc, self.radii/pc))
+		return np.array(map(self.M_enc, self.radii))
 
 	@lazyprop
 	def sigma_grid(self):
-		return np.array([self.sigma(r/pc) for r in self.radii])
+		return np.array([self.sigma(r) for r in self.radii])
 
 	@lazyprop
 	def phi_s_grid(self):
-		return np.array(map(self.phi_s, self.radii/pc))/pc
+		return np.array(map(self.phi_s, self.radii))
 
 	@lazyprop
 	def  phi_bh_grid(self): 
-		return np.array(map(self.phi_bh, self.radii/pc))/pc
+		return np.array(map(self.phi_bh, self.radii))
 
 	@property
 	def phi_grid(self):
@@ -1074,15 +1067,13 @@ class Galaxy(object):
 
 class NukerGalaxy(Galaxy):
 	'''Sub-classing galaxy above to represent Nuker parameterized galaxies'''
-	def __init__(self, gname, gdata=None, init={}):
+	def __init__(self, gname, nuk_dir='table', init={}):
 		Galaxy.__init__(self, init=init)
-		if not gdata:
-			gdata=nuker_params()
-		try:
-			self.params=gdata[gname]
-		except KeyError:
-			print 'Error! '+gname+' is not in catalog!'
-			raise
+		nuk_simple=dill.load(open(nuk_dir+'/'+name+'.p', 'rb'))
+
+		self.params=nuk_simple.params
+		self.nuk_grids=nuk_simple.grids
+		self.nuk_grids[:,0]=self.nuk_grid[:,0]
 
 		names=['Name', 'Type','M', r'$\alpha$', r'$\beta$', r'$\gamma$', r'$I_b$', r'$r_b$', 'Uv']
 		
@@ -1096,9 +1087,6 @@ class NukerGalaxy(Galaxy):
 
 		self.name=gname
 		self.eta=1.
-		self.rmin_star=1.E-3
-		self.rmax_star=1.E5
-
 		self.rg=G*self.params['M']/c**2
 
 
@@ -1109,7 +1097,7 @@ class NukerGalaxy(Galaxy):
 		if rescale=='auto':
 			a=96.5
 			tmp=cls(name, gdata=gdata)
-			rescale=tmp.rinf*pc/init_array[0,0]/a
+			rescale=tmp.rinf/init_array[0,0]/a
 			print rescale
 
 		init_array[:,0]=rescale*init_array[:,0]
@@ -1133,41 +1121,27 @@ class NukerGalaxy(Galaxy):
 
 	def rho_stars(self,r):
 		'''Stellar density
-		:param r: radius in parsecs
+		:param r: radius
 		'''
-		if r<self.rmin_star or r>self.rmax_star:
-			return 0.
-		else:
-			return M_sun*self.params['Uv']*inverse_abel(nuker_prime, r, **self.params)
-
-	@lazyprop
-	def _rho_stars_interp(self):
-		_rho_stars_rad=np.logspace(np.log10(self.rmin_star), np.log10(self.rmax_star),1000)
-		_rho_stars_grid=[self.rho_stars(r) for r in _rho_stars_rad]
-		return interp1d(_rho_stars_rad,_rho_stars_grid)
+		return interp1d(self.nuk_grids['radii'], self.nuk_grids['rho_stars'])(r)
 
 	def M_enc(self,r):
 		'''Mass enclosed within radius r
-		:param r: radius in parsecs
+		:param r: radius 
 		'''
-		if r<self.rmin_star:
-			return 0.
-		elif r>self.rmax_star:
-			return self.M_enc(self.rmax_star)
-		else:
-			return integrate.quad(lambda r1:4.*np.pi*r1**2*self._rho_stars_interp(r1), self.rmin_star, r)[0]
+		return interp1d(self.nuk_grids['radii'], self.nuk_grids['phi'])(r)-self.phi_bh(r)
 
 	def sigma(self, r):
 		'''Velocity dispersion of galaxy
 		:param r: radius in parsecs
 		'''
-		return (c**2*self.rg/pc/r*(self.M_enc(r)+self.params['M'])/self.params['M'])**0.5
+		return (c**2*self.rg/r*(self.M_enc(r)+self.params['M'])/self.params['M'])**0.5
 
 	def phi_s(self,r):
 		'''Potential from the stars
 		:param r: radius in parsecs
 		'''
-		return (-G*self.M_enc(r)/r)+4.*G*self.params['Uv']*M_sun*integrate.quad(lambda r1:nuker_prime(r1, **self.params)*(r1**2-r**2)**0.5, r, self.rmax_star)[0]
+		return interp1d(self.nuk_grids['radii'], self.nuk_grids['phi'])(r)-self.phi_bh(r)
 
 	def phi_bh(self,r):
 		'''Potential from the black hole
@@ -1219,7 +1193,7 @@ class NukerGalaxy(Galaxy):
 		'''Analytic formula for the stagnation radius'''
 		A=(4.*self.gamma-(1+self.params['gamma'])*(self.gamma-1.))/(4.*(self.gamma-1.))
 		eta=self.vw_extra/self.sigma(self.rinf)
-		omega=self.M_enc(self.rs/pc)/self.params['M']
+		omega=self.M_enc(self.rs)/self.params['M']
 
 		lrho_interp=interp1d(np.log(self.radii),self.log_rho)
 		dens_slope=np.abs(derivative(lrho_interp, np.log(self.rs), dx=self.delta_log[0]))
@@ -1229,7 +1203,7 @@ class NukerGalaxy(Galaxy):
 	@property 
 	def rs_residual(self):
 		'''Residual of the stagnation radius from the analytic result'''
-		return (self.rs_analytic-(self.rs/pc/self.rinf))/self.rs_analytic
+		return (self.rs_analytic-(self.rs/self.rinf))/self.rs_analytic
 
 	def rho_func(self, r):
 		try:
