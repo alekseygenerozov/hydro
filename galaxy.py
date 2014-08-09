@@ -382,7 +382,7 @@ class Galaxy(object):
 	def phi(self,r):
 		'''Total potential
 		'''
-		return self.phi_bh(r)+self.phi_s(r)
+		return self.phi_bh(r)+self.eps*self.phi_s(r)
 
 	@lazyprop
 	def rho_s_interp(self,r):
