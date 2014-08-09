@@ -840,8 +840,6 @@ class Galaxy(object):
 			
 	#Method to write solution info to file
 	def write_sol(self):
-		self.cons_check()
-
 		np.savez(self.outdir+'/save', a=self.saved, b=self.time_stamps)
 		np.savez(self.outdir+'/cons', a=self.fdiff)
 		log=open(self.outdir+'/log', 'w')
@@ -871,8 +869,7 @@ class Galaxy(object):
 		pbar=progress.ProgressBar(maxval=self.time_target, fd=sys.stdout).start()
 		self.check=False
 
-		print time
-		self.cons_check()
+
 		#While we have not yet reached the target time
 		while (self.time_cur<self.time_target):
 			if not time and self.check:
@@ -945,33 +942,22 @@ class Galaxy(object):
 		sol_ani.save('sol_'+self.out_fields[index]+'.mp4', dpi=100)
 		plt.clf()
 
-	#Save the state of the grid
 	def save(self):
+		'''Write state of grid to file'''
 		grid_prims=[getattr(self, field) for field in self.out_fields]
 		grid_prims[2]=grid_prims[2]/grid_prims[7]
+		self.saved=np.append(self.saved,[np.transpose(grid_prims)],0)
 
 		self._cons_update()
 		self.cons_check()
 		self.ninterval+=1
-
-		#Saving the state of the grid within list
-		#self.saved.append((self.total_time, np.transpose(grid_prims)))
-		self.saved=np.append(self.saved,[np.transpose(grid_prims)],0)
-		self.time_stamps.append(self.total_time)
-		#Dump to file
-		save_handle=file(self.outdir+'/save','a')
-		np.savetxt(save_handle, self.saved[-1])
-		cons_handle=file(self.outdir+'/cons','a')
-		np.savetxt(cons_handle, self.fdiff[-1])
-		t_handle=file(self.outdir+'/times', 'a')
-		np.savetxt(t_handle, [self.time_stamps[-1]])
+		self.write_sol()
 
 		if np.any(np.isnan(grid_prims)):
 			sys.exit(3)
 
-
-	#Reverts grid to earlier state. Previous gi
 	def revert(self, index):
+		'''Revert grid to an earlier state'''
 		self.log_rho=np.log(self.saved[index,:,1])
 		self.vel=self.saved[index,:,2]*self.saved[index,:,7]
 		self.s=self.saved[index,:,6]
@@ -981,11 +967,10 @@ class Galaxy(object):
 		index=index%self.length
 		self.saved=self.saved[:index+1]
 		self.time_stamps=self.time_stamps[:index+1]
-		self.fdiff=self.fdiff[:index]
+		self.fdiff=self.fdiff[:index+1]
 		#Overwriting previous saved files
-		np.savetxt(self.outdir+'/save', self.saved.reshape((-1, len(self.out_fields))))
-		np.savetxt(self.outdir+'/cons', self.fdiff.reshape((-1, 2*len(self.cons_fields)+1)))
-		np.savetxt(self.outdir+'/times',self.time_stamps)
+		self.write_sol()
+
 
 	#Clear all of the info in the saved list
 	def clear_saved(self):
