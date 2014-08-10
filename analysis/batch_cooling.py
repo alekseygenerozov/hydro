@@ -40,10 +40,14 @@ for name in gal_dict.keys():
 	gal_data='/Users/aleksey/Second_Year_Project/hydro/gal_data/'+name
 	for j,vw in enumerate(vws):
 		d=base_d+'/vw_'+str(vw)
-		if sc.check(d):
+		if not sc.check(d):
+			print d, 'did not pass cons_check'
 			continue
-
-		dill.load(open('grid.p','rb'))
+		try:
+			gal=dill.load(open(d+'/grid.p','rb'))
+		except:
+			continue
+		print name, vw
 
 		heating=gal.q_grid*(0.5*gal.vel**2+0.5*(vw*1.E5)**2+0.5*gal.sigma_grid**2)
 		cooling=gal.cooling

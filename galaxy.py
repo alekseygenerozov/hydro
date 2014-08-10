@@ -32,6 +32,9 @@ import ipyani
 
 import os.path
 
+import collections
+import functools
+
 #Constants
 G=const.G.cgs.value
 M_sun=const.M_sun.cgs.value
@@ -93,6 +96,45 @@ def extrap1d_pow(interpolator):
 			return pointwise(xs)
 
 	return ufunclike
+
+	import collections
+	import functools
+
+class memoize(object):
+	def __init__(self, func):
+	#print "Init"
+		self.func = func
+
+	def __call__(self, *args):
+	#print "Call"
+		if not self.func in self.cache:
+			self.cache[self.func] = {}
+		try:
+			return self.cache[self.func][args]
+		except KeyError:
+			value = self.func(*args)
+			self.cache[self.func][args] = value
+			return value
+		except TypeError:
+			# uncachable -- for instance, passing a list as an argument.
+			# Better to not cache than to blow up entirely.
+			return self.func(*args)
+
+	def __repr__(self):
+		"""Return the function's docstring."""
+		return self.func.__doc__
+
+	def __get__(self, obj, objtype):
+		"""Support instance methods."""
+		#print "Get", obj, objtype
+		fn = functools.partial(self.__call__, obj)
+		try:
+			self.cache = obj.cache
+		except:
+			obj.cache = {}
+			self.cache = obj.cache
+		#print self.cache
+		return fn
 
 def lazyprop(fn):
 	attr_name = '_lazy_' + fn.__name__
@@ -391,7 +433,7 @@ class Galaxy(object):
 
 		return interp1d(rho_stars_rad, rho_stars)
 
-	@lazyprop
+	@property
 	def q_grid(self):
 		return np.array([self.q(r) for r in self.radii/pc])/pc**3
 
@@ -1131,6 +1173,7 @@ class NukerGalaxy(Galaxy):
 
 		return cls(name, init=init, gdata=gdata)
 
+	@memoize
 	def rho_stars(self,r):
 		'''Stellar density
 		:param r: radius in parsecs
@@ -1146,6 +1189,7 @@ class NukerGalaxy(Galaxy):
 		_rho_stars_grid=[self.rho_stars(r) for r in _rho_stars_rad]
 		return interp1d(_rho_stars_rad,_rho_stars_grid)
 
+	@memoize
 	def M_enc(self,r):
 		'''Mass enclosed within radius r
 		:param r: radius in parsecs
@@ -1157,12 +1201,14 @@ class NukerGalaxy(Galaxy):
 		else:
 			return integrate.quad(lambda r1:4.*np.pi*r1**2*self._rho_stars_interp(r1), self.rmin_star, r)[0]
 
+	@memoize
 	def sigma(self, r):
 		'''Velocity dispersion of galaxy
 		:param r: radius in parsecs
 		'''
 		return (c**2*self.rg/pc/r*(self.M_enc(r)+self.params['M'])/self.params['M'])**0.5
 
+	@memoize
 	def phi_s(self,r):
 		'''Potential from the stars
 		:param r: radius in parsecs

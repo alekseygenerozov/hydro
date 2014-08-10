@@ -85,7 +85,7 @@ for name in gal_dict.keys():
 		predicted2=glaw(eta, omega=omega, dens_slope=dens_slope, gamma=gal.params['gamma'])
 		residual2=(predicted2-x)/predicted2
 
-		if gal.params['type']=='Core':
+		if gal.params['gamma']<0.2:
 			symbol='<'
 			eta_core.append(eta)
 			x_core.append(x)
