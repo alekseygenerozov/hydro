@@ -847,7 +847,7 @@ class Galaxy(object):
 		elif param=='outdir':
 			self.outdir=value
 			bash_command('mkdir -p '+value)
-			bash_command('mv '+old+'/log '+old+'/cons '+old+'/save '+old+'/params '+value)
+			bash_command('mv '+old+'/log '+old+'/cons.npz '+old+'/save.npz '+old+'/params '+value)
 		elif param=='isot':
 			if value==True:
 				self.isot_on()
