@@ -402,8 +402,8 @@ class Galaxy(object):
 		eta=-2.
 
 		a=mdotw/(4.*np.pi)/((r2**(eta+3)-r1**(eta+3))/(eta+3))
-		if r*pc<r2 and r*pc>r1:
-			return a*(r*pc)**(eta)*pc**3
+		if r<r2 and r>r1:
+			return a*(r)**(eta)
 		else:
 			return 0.
 
@@ -423,23 +423,23 @@ class Galaxy(object):
 
 	@property
 	def q_grid(self):
-		return np.array([self.q(r) for r in self.radii/pc])/pc**3
+		return np.array([self.q(r) for r in self.radii])
 
 	@property
 	def M_enc_grid(self):
-		return np.array(map(self.M_enc, self.radii/pc))
+		return np.array(map(self.M_enc, self.radii))
 
 	@property
 	def sigma_grid(self):
-		return np.array([self.sigma(r/pc) for r in self.radii])
+		return np.array([self.sigma(r) for r in self.radii])
 
 	@property
 	def phi_s_grid(self):
-		return np.array(map(self.phi_s, self.radii/pc))/pc
+		return np.array(map(self.phi_s, self.radii))
 
 	@property
 	def  phi_bh_grid(self): 
-		return np.array(map(self.phi_bh, self.radii/pc))/pc
+		return np.array(map(self.phi_bh, self.radii))
 
 	@property
 	def phi_grid(self):
@@ -1169,42 +1169,45 @@ class NukerGalaxy(Galaxy):
 	@memoize
 	def rho_stars(self,r):
 		'''Stellar density
-		:param r: radius in parsecs
+		:param r: radius 
 		'''
-		if r<self.rmin_star or r>self.rmax_star:
+		rpc=r/pc
+		if rpc<self.rmin_star or rpc>self.rmax_star:
 			return 0.
 		else:
-			return M_sun*self.params['Uv']*inverse_abel(nuker_prime, r, **self.params)
+			return M_sun*self.params['Uv']*inverse_abel(nuker_prime, rpc, **self.params)/pc**3
 
 	@memoize
 	def M_enc(self,r):
 		'''Mass enclosed within radius r
-		:param r: radius in parsecs
+		:param r: radius 
 		'''
-		if r<self.rmin_star:
+		rpc=r/pc
+		if rpc<self.rmin_star:
 			return 0.
-		elif r>self.rmax_star:
-			return self.M_enc(self.rmax_star)
+		elif rpc>self.rmax_star:
+			return self.M_enc(self.rmax_star*pc)
 		else:
-			return integrate.quad(lambda r1:4.*np.pi*r1**2*self.rho_stars(r1), self.rmin_star, r)[0]
+			return integrate.quad(lambda r1:4.*np.pi*r1**2*self.rho_stars(r1*pc)*pc**3, self.rmin_star, rpc)[0]
 
 	@memoize
 	def sigma(self, r):
 		'''Velocity dispersion of galaxy
-		:param r: radius in parsecs
+		:param r: radius 
 		'''
-		return (G*(self.M_enc(r)+self.params['M'])/(r*pc))**0.5
+		return (G*(self.M_enc(r)+self.params['M'])/(r))**0.5
 
 	@memoize
 	def phi_s(self,r):
 		'''Potential from the stars
-		:param r: radius in parsecs
+		:param r: radius 
 		'''
-		return (-G*self.M_enc(r)/r)+4.*G*self.params['Uv']*M_sun*integrate.quad(lambda r1:nuker_prime(r1, **self.params)*(r1**2-r**2)**0.5, r, self.rmax_star)[0]
+		rpc=r/pc
+		return (-G*self.M_enc(r)/r)+4.*G*self.params['Uv']*M_sun*integrate.quad(lambda r1:nuker_prime(r1, **self.params)*(r1**2-rpc**2)**0.5, rpc, self.rmax_star)[0]/pc
 
 	def phi_bh(self,r):
 		'''Potential from the black hole
-		:param r: radius in parsecs
+		:param r: radius 
 		'''
 		return -G*self.params['M']/r
 
@@ -1229,7 +1232,7 @@ class NukerGalaxy(Galaxy):
 			return self.params['M']-self.M_enc(r)
 
 		jac=lambda r: -4.*np.pi*r**2*self.rho_stars(r)
-		return fsolve(mdiff, 0.9*(self.params['M']/(1.E6*M_sun))**0.4, fprime=jac)[0]
+		return fsolve(mdiff, 0.9*pc*(self.params['M']/(1.E6*M_sun))**0.4, fprime=jac)[0]
 
 	@property
 	def rinf(self):
@@ -1256,7 +1259,7 @@ class NukerGalaxy(Galaxy):
 		'''Analytic formula for the stagnation radius'''
 		A=(4.*self.gamma-(1+self.params['gamma'])*(self.gamma-1.))/(4.*(self.gamma-1.))
 		eta=self.vw_extra/self.sigma(self.rinf)
-		omega=self.M_enc(self.rs/pc)/self.params['M']
+		omega=self.M_enc(self.rs)/self.params['M']
 
 		lrho_interp=interp1d(np.log(self.radii),self.log_rho)
 		dens_slope=np.abs(derivative(lrho_interp, np.log(self.rs), dx=self.delta_log[0]))
@@ -1266,7 +1269,7 @@ class NukerGalaxy(Galaxy):
 	@property 
 	def rs_residual(self):
 		'''Residual of the stagnation radius from the analytic result'''
-		return (self.rs_analytic-(self.rs/pc/self.rinf))/self.rs_analytic
+		return (self.rs_analytic-(self.rs/self.rinf))/self.rs_analytic
 
 	def rho_func(self, r):
 		try:
