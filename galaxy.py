@@ -872,7 +872,6 @@ class Galaxy(object):
 		if param!='outdir':
 			self.non_standard[param]=value
 
-		new=getattr(self, param)
 		self.log=self.log+param+' old:'+str(old)+' new:'+str(value)+' time:'+str(self.total_time)+'\n'
 			
 	#Method to write solution info to file
@@ -1194,7 +1193,7 @@ class NukerGalaxy(Galaxy):
 		'''Velocity dispersion of galaxy
 		:param r: radius in parsecs
 		'''
-		return (c**2*self.rg/pc/r*(self.M_enc(r)+self.params['M'])/self.params['M'])**0.5
+		return (G*(self.M_enc(r)+self.params['M'])/(r*pc))**0.5
 
 	@memoize
 	def phi_s(self,r):
