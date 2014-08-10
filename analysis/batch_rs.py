@@ -67,15 +67,15 @@ for name in gal_dict.keys():
 			sigma=np.genfromtxt(gal_data+'/sigma')
 		except:
 			continue
-		sigma_interp=interp1d(sigma[:,0], sigma[:,1])
+		# sigma_interp=interp1d(sigma[:,0], sigma[:,1])
 
 		rho_interp=interp1d(np.log(gal.radii), np.log(gal.rho))
 		dens_slope=np.abs(derivative(rho_interp, np.log(gal.rs), dx=gal.delta_log[0]))
 		dens_slopes.append(dens_slope)
 
-		x=gal.rs/pc/rsoi
-		vw_eff=(sigma_interp(gal.rs)**2.+(vw*1.E5)**2.)**0.5
-		eta=vw*1.E5/sigma_interp(rsoi*pc)
+		x=gal.rs/gal.rinf
+		vw_eff=(gal.sigma_inf**2.+(vw*1.E5)**2.)**0.5
+		eta=vw*1.E5/gal.sigma_inf
 
 		M_enc_rs=(sigma_interp(gal.rs)**2*gal.rs/G)-gal.params['M']
 		omega=M_enc_rs/gal.params['M']

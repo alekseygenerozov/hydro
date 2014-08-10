@@ -103,13 +103,14 @@ class memoize(object):
 
 	def __call__(self, *args):
 	#print "Call"
-		if not self.func in self.cache:
-			self.cache[self.func] = {}
+		name=self.func.__name__
+		if not name in self.cache:
+			self.cache[name] = {}
 		try:
-			return self.cache[self.func][args]
+			return self.cache[name][args[1:]]
 		except KeyError:
 			value = self.func(*args)
-			self.cache[self.func][args] = value
+			self.cache[name][args[1:]] = value
 			return value
 		except TypeError:
 			# uncachable -- for instance, passing a list as an argument.
@@ -856,7 +857,7 @@ class Galaxy(object):
 				self.isot_off()
 			else:
 				print 'Warning! Invalid value for the passed for parameter isot'
-		elif re.findall(pat, param)[0]:
+		elif re.findall(pat, param):
 			param=param[7:-1]
 			try:
 				old=self.params[param]
@@ -1178,6 +1179,16 @@ class NukerGalaxy(Galaxy):
 			return M_sun*self.params['Uv']*inverse_abel(nuker_prime, rpc, **self.params)/pc**3
 
 	@memoize
+	def _get_rho_stars_interp(self):
+		_rho_stars_rad=np.logspace(np.log10(self.rmin_star), np.log10(self.rmax_star),1000)*pc
+		_rho_stars_grid=[self.rho_stars(r) for r in _rho_stars_rad]
+		return interp1d(_rho_stars_rad,_rho_stars_grid)
+
+	@property
+	def _rho_stars_interp(self):
+		return self._get_rho_stars_interp()
+
+	@memoize
 	def M_enc(self,r):
 		'''Mass enclosed within radius r
 		:param r: radius 
@@ -1188,7 +1199,7 @@ class NukerGalaxy(Galaxy):
 		elif rpc>self.rmax_star:
 			return self.M_enc(self.rmax_star*pc)
 		else:
-			return integrate.quad(lambda r1:4.*np.pi*r1**2*self.rho_stars(r1*pc)*pc**3, self.rmin_star, rpc)[0]
+			return integrate.quad(lambda r1:4.*np.pi*r1**2*self._rho_stars_interp(r1*pc)*pc**3, self.rmin_star, rpc)[0]
 
 	@memoize
 	def sigma(self, r):
