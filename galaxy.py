@@ -336,7 +336,6 @@ class Galaxy(object):
 
 		self.saved=np.empty([0, self.length, len(self.out_fields)])
 		self.fdiff=np.empty([0, self.length-1, 2*len(self.cons_fields)+1])
-		# self.output_prep()
 		self.non_standard={}
 		self.time_stamps=[]
 
@@ -549,14 +548,6 @@ class Galaxy(object):
 
 	def _update_temp(self):
 		self.temp=(np.exp(self.log_rho)*np.exp(self.mu*mp*self.s/kb))**(2./3.)
-	
-	def output_prep(self):
-		bash_command('mkdir -p '+self.outdir)
-
-		save=open(self.outdir+'/save', 'a')
-		save.close()
-		times=open(self.outdir+'/times', 'a')
-		times.close()
 
 	#Update array of conseerved quantities	
 	def _cons_update(self):
@@ -899,7 +890,6 @@ class Galaxy(object):
 		:param int max_steps: Maximum number of steps for solver to take
 		'''
 		# the number of steps and the progress
-		self.output_prep()
 		self.time_cur=0
 		self.ninterval=0
 		self.num_steps=0
