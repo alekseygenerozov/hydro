@@ -425,30 +425,23 @@ class Galaxy(object):
 		'''
 		return self.phi_bh(r)+self.eps*self.phi_s(r)
 
-	@lazyprop
-	def rho_s_interp(self,r):
-		rho_stars_rad=np.logspace(self.rmin_star, self.rmax_star,100)
-		rho_stars=[self.rho_stars(r) for r in rho_s_rad]
-
-		return interp1d(rho_stars_rad, rho_stars)
-
 	@property
 	def q_grid(self):
 		return np.array([self.q(r) for r in self.radii/pc])/pc**3
 
-	@lazyprop
+	@property
 	def M_enc_grid(self):
 		return np.array(map(self.M_enc, self.radii/pc))
 
-	@lazyprop
+	@property
 	def sigma_grid(self):
 		return np.array([self.sigma(r/pc) for r in self.radii])
 
-	@lazyprop
+	@property
 	def phi_s_grid(self):
 		return np.array(map(self.phi_s, self.radii/pc))/pc
 
-	@lazyprop
+	@property
 	def  phi_bh_grid(self): 
 		return np.array(map(self.phi_bh, self.radii/pc))/pc
 
@@ -1173,12 +1166,6 @@ class NukerGalaxy(Galaxy):
 		else:
 			return M_sun*self.params['Uv']*inverse_abel(nuker_prime, r, **self.params)
 
-	@lazyprop
-	def _rho_stars_interp(self):
-		_rho_stars_rad=np.logspace(np.log10(self.rmin_star), np.log10(self.rmax_star),1000)
-		_rho_stars_grid=[self.rho_stars(r) for r in _rho_stars_rad]
-		return interp1d(_rho_stars_rad,_rho_stars_grid)
-
 	@memoize
 	def M_enc(self,r):
 		'''Mass enclosed within radius r
@@ -1189,7 +1176,7 @@ class NukerGalaxy(Galaxy):
 		elif r>self.rmax_star:
 			return self.M_enc(self.rmax_star)
 		else:
-			return integrate.quad(lambda r1:4.*np.pi*r1**2*self._rho_stars_interp(r1), self.rmin_star, r)[0]
+			return integrate.quad(lambda r1:4.*np.pi*r1**2*self.rho_stars(r1), self.rmin_star, r)[0]
 
 	@memoize
 	def sigma(self, r):
@@ -1215,18 +1202,18 @@ class NukerGalaxy(Galaxy):
 		'''Source term representing mass loss from stellar winds'''
 		return self.eta*self.rho_stars(r)/th
 
-	@lazyprop
+	@property
 	def sigma_200(self):
 		'''Reverse engineering the velocity dispersion from Mbh-sigma relationship and BH mass--using the relationship in WM04'''
 		return ((self.params['M'])/(1.48E8*M_sun))**(1./4.65)
 
-	@lazyprop
+	@property
 	def r_Ia(self):
 		return 4.*(self.sigma_200)**-0.5
 
 	##Getting the radius of influence: where the enclosed mass begins to equal the mass of the central BH. 
-	@lazyprop
-	def rinf(self):
+	@memoize
+	def _get_rinf(self):
 		'''Get radius of influence for galaxy'''
 		def mdiff(r):
 			return self.params['M']-self.M_enc(r)
@@ -1234,7 +1221,11 @@ class NukerGalaxy(Galaxy):
 		jac=lambda r: -4.*np.pi*r**2*self.rho_stars(r)
 		return fsolve(mdiff, 0.9*(self.params['M']/(1.E6*M_sun))**0.4, fprime=jac)[0]
 
-	@lazyprop
+	@property
+	def rinf(self):
+		return self._get_rinf()
+
+	@property
 	def sigma_inf(self):
 		'''Velocity dispersion at the radius of influence.'''
 		return self.sigma(self.rinf)
