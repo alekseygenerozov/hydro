@@ -31,8 +31,7 @@ import progressbar as progress
 import ipyani
 
 import os.path
-
-import collections
+import re
 import functools
 
 #Constants
@@ -96,9 +95,6 @@ def extrap1d_pow(interpolator):
 			return pointwise(xs)
 
 	return ufunclike
-
-	import collections
-	import functools
 
 class memoize(object):
 	def __init__(self, func):
@@ -838,7 +834,12 @@ class Galaxy(object):
 		:param param: parameter to reset
 		:param value: value to reset it to
 		'''
-		old=getattr(self,param)
+		pat=re.compile('params\[\w+\]')
+		try:
+			old=getattr(self,param)
+		except AttributeError:
+			old=''
+
 		if param=='gamma' or param=='mu':
 			setattr(self,param,value)
 			self.s=(kb/(self.mu*mp))*np.log(1./np.exp(self.log_rho)*(self.temp)**(3./2.))
@@ -855,6 +856,16 @@ class Galaxy(object):
 				self.isot_off()
 			else:
 				print 'Warning! Invalid value for the passed for parameter isot'
+		elif re.findall(pat, param)[0]:
+			param=param[7:-1]
+			try:
+				old=self.params[param]
+				self.params[param]=value
+			except KeyError:
+				print 'This Nuker parameter does not exist'
+				return
+			#Clear cached values if the Nuker parameters have been reset
+			self.cache={}
 		else:
 			setattr(self,param,value)
 
