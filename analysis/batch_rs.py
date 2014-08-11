@@ -61,13 +61,6 @@ for name in gal_dict.keys():
 			continue
 
 		gal=dill.load(open(d+'/grid.p', 'rb'))
-		
-		try:
-			rsoi=np.genfromtxt(gal_data+'/rsoi')
-			sigma=np.genfromtxt(gal_data+'/sigma')
-		except:
-			continue
-		# sigma_interp=interp1d(sigma[:,0], sigma[:,1])
 
 		rho_interp=interp1d(np.log(gal.radii), np.log(gal.rho))
 		dens_slope=np.abs(derivative(rho_interp, np.log(gal.rs), dx=gal.delta_log[0]))
@@ -76,14 +69,6 @@ for name in gal_dict.keys():
 		x=gal.rs/gal.rinf
 		vw_eff=(gal.sigma_inf**2.+(vw*1.E5)**2.)**0.5
 		eta=vw*1.E5/gal.sigma_inf
-
-		M_enc_rs=(sigma_interp(gal.rs)**2*gal.rs/G)-gal.params['M']
-		omega=M_enc_rs/gal.params['M']
-
-		predicted=glaw(eta)
-		residual=(predicted-x)/predicted
-		predicted2=glaw(eta, omega=omega, dens_slope=dens_slope, gamma=gal.params['gamma'])
-		residual2=(predicted2-x)/predicted2
 
 		if gal.params['gamma']<0.2:
 			symbol='<'
@@ -98,7 +83,7 @@ for name in gal_dict.keys():
 
 		ax[0].loglog(eta, x, symbol, color=cols[j], markersize=10)
 		# etas=[1.,10.]
-		ax[1].plot(idx, residual2, symbol, color=cols[j], markersize=10)
+		ax[1].plot(idx, gal.rs_residual, symbol, color=cols[j], markersize=10)
 		idx+=1
 
 
