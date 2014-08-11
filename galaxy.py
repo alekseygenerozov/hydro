@@ -97,6 +97,8 @@ def extrap1d_pow(interpolator):
 	return ufunclike
 
 class memoize(object):
+	'''Memoization intended for class methods.'''
+	#Exclude first argument which is just info on the object instance, and is not persistent through pickling. 
 	def __init__(self, func):
 	#print "Init"
 		self.func = func
