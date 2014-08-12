@@ -53,7 +53,7 @@ def main():
 		gal.solve()
 		gal.backup()
 
-		galaxy.bash_command('cp '+init[i]['pickle']+' init.p')
+		galaxy.bash_command('cp '+init[i]['pickle']+' '+gal.outdir+'/init.p')
 
 
 if __name__ == '__main__':

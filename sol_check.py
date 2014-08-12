@@ -135,33 +135,32 @@ def sol_compare(loc1, loc2, index=1):
 	plt.loglog(save2[-1,:,0], abs(save2[-1,:,index]))
 	plt.show()
 
-#Check solution as code is running
-def sol_check(loc, index=2, size=70, init=False):
-	saved=np.genfromtxt(loc+'/save')
-	fig,ax=plt.subplots()
-	ax.set_xscale('log')
-	if index!=2:
-		ax.set_yscale('log')
-	if init:
-		plt.plot(saved[0:size,0], saved[0:size,index])
-	plt.plot(saved[-size:,0], saved[-size:,index])
+
+def sol_plot(loc, init=False, dict1={}, dict2={}, index=-1):
+	fig,ax=plt.subplots(3, sharex=True, figsize=(10,24))
+	saved=np.load(loc+'/save.npz')['a']
+
+	for j in range(1,4):
+		ax[j-1].loglog(saved[index,:,0], abs(saved[index,:,j]), **dict1)
+		if init:
+			ax[j-1].loglog(saved[0,:,0], abs(saved[0,:,j]), **dict2)
 	plt.show()
 	
-#Check solution as code is running
-def cons_check(loc, index=2, logy=False, ylim=None,size=70):
-	saved=np.genfromtxt(loc+'/cons')
-	fig,ax=plt.subplots()
-	ax.set_xscale('log')
-	if logy:
-		ax.set_yscale('log')
-	if ylim:
-		ax.set_ylim(ylim)
+# #Check solution as code is running
+# def cons_check(loc, index=2, logy=False, ylim=None,size=70):
+# 	saved=np.genfromtxt(loc+'/cons')
+# 	fig,ax=plt.subplots()
+# 	ax.set_xscale('log')
+# 	if logy:
+# 		ax.set_yscale('log')
+# 	if ylim:
+# 		ax.set_ylim(ylim)
 	
-	plt.plot(saved[-(size-1):,0], saved[-(size-1):,index])
-	plt.plot(saved[-(size-1):,0], saved[-(size-1):,index+3])
+# 	plt.plot(saved[-(size-1):,0], saved[-(size-1):,index])
+# 	plt.plot(saved[-(size-1):,0], saved[-(size-1):,index+3])
 
-	return fig
-	#plt.show()    
+# 	return fig
+# 	#plt.show()    
 
 #Analytic expression for Bernoulli parameter.
 def be(r, M_bh=10.**7.11*M_sun, M_enc0=7.95E6*M_sun, rho0=1.E-21, r_s=5.E17, vw=1.E8, beta=1.8, sigma=False, shell=False):

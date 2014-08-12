@@ -599,6 +599,15 @@ class Galaxy(object):
 		plt.close()
 		return fig1
 
+	def sol_plot(self, init=False, dict1={}, dict2={}, index=-1):
+		fig,ax=plt.subplots()
+
+		for k in range(1,4):
+			ax.loglog(self.saved[index,:,0], self.saved[index,:,j], **dict1)
+			if init:
+				ax.loglog(self.saved[0,:,0], self.saved[0,:,j], **dict2)
+		plt.show()
+		
 	#Adding ghost zones onto the edges of the grid (moving the start of the grid)
 	def _add_ghosts(self):
 		self.start=self._num_ghosts
@@ -851,7 +860,7 @@ class Galaxy(object):
 		elif param=='outdir':
 			self.outdir=value
 			bash_command('mkdir -p '+value)
-			bash_command('mv '+old+'/log '+old+'/cons.npz '+old+'/save.npz '+old+'/params '+value)
+			#bash_command('mv '+old+'/log '+old+'/cons.npz '+old+'/save.npz '+old+'/params '+value)
 		elif param=='isot':
 			if value==True:
 				self.isot_on()
@@ -984,6 +993,7 @@ class Galaxy(object):
 		'''Write state of grid to file'''
 		grid_prims=[getattr(self, field) for field in self.out_fields]
 		grid_prims[2]=grid_prims[2]/grid_prims[7]
+		self.time_stamps.append(self.time_total)
 		self.saved=np.append(self.saved,[np.transpose(grid_prims)],0)
 
 		self._cons_update()

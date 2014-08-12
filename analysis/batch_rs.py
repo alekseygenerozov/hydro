@@ -62,10 +62,6 @@ for name in gal_dict.keys():
 
 		gal=dill.load(open(d+'/grid.p', 'rb'))
 
-		rho_interp=interp1d(np.log(gal.radii), np.log(gal.rho))
-		dens_slope=np.abs(derivative(rho_interp, np.log(gal.rs), dx=gal.delta_log[0]))
-		dens_slopes.append(dens_slope)
-
 		x=gal.rs/gal.rinf
 		vw_eff=(gal.sigma_inf**2.+(vw*1.E5)**2.)**0.5
 		eta=vw*1.E5/gal.sigma_inf
@@ -85,6 +81,7 @@ for name in gal_dict.keys():
 		# etas=[1.,10.]
 		ax[1].plot(idx, gal.rs_residual, symbol, color=cols[j], markersize=10)
 		idx+=1
+
 
 
 
