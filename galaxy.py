@@ -1157,7 +1157,7 @@ class NukerGalaxy(Galaxy):
 		if rescale=='auto':
 			a=96.5
 			tmp=cls(name, gdata=gdata)
-			rescale=tmp.rinf*pc/init_array[0,0]/a
+			rescale=tmp.rinf/init_array[0,0]/a
 			print rescale
 
 		init_array[:,0]=rescale*init_array[:,0]
