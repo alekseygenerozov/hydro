@@ -26,6 +26,7 @@ import astropy.units as u
 from latex_exp import latex_exp
 
 import tde_jet
+import gal_properties
 
 import progressbar as progress
 import ipyani
@@ -1096,15 +1097,21 @@ class Galaxy(object):
 		(4./3.)*np.pi*self.rs**2*self.rho_interp(self.rs)*(G*self.params['M']/self.rs)**0.5
 
 	@property
-	def eddr(self, eta=0.1):
-		'''Compute the Eddington ratio
-
-		:param float eta: The assumed radiarive efficiency
+	def eddr(self):
+		'''Compute the Eddington ratio assuming a 10 percent radiative efficiency
 		'''
-		l_edd=4.*np.pi*G*self.params['M']*c/(0.4)
-		mdot_edd=l_edd/(eta*c**2)
+		return self.mdot/gal_properties.mdot_edd(self.params['M'], efficiency=0.1)
 
-		return self.mdot/mdot_edd
+	@property
+	def xray(self):
+		'''Simple prescription for x-ray luminosity, If we are below a particular edd. ratio<0.03  Lx~(mdot)^2 c^2; otherwise Lx~0.1 mdot c^2'''
+		l_0=0.03*gal_properties.l_edd(self.params['M'])
+		if self.eddr<0.03:
+			xray=(self.eddr/0.03)**2*l_0
+		else:
+			xray=(gal.eddr/0.03)*l_0
+
+		return xray
 
 	@property	
 	def cooling(self):
@@ -1241,11 +1248,11 @@ class NukerGalaxy(Galaxy):
 	@property
 	def sigma_200(self):
 		'''Reverse engineering the velocity dispersion from Mbh-sigma relationship and BH mass--using the relationship in WM04'''
-		return ((self.params['M'])/(1.48E8*M_sun))**(1./4.65)
+		return gal_properties.sigma_200(self.params['M'])
 
 	@property
 	def r_Ia(self):
-		return 4.*(self.sigma_200)**-0.5
+		return gal_properties.r_Ia(self.params['M'])
 
 	##Getting the radius of influence: where the enclosed mass begins to equal the mass of the central BH. 
 	@memoize

@@ -91,6 +91,23 @@ def test_init_array_log2():
 	assert np.allclose(gal.vel, np.ones(gal.length))
 	assert np.allclose(gal.temp, np.ones(gal.length))
 
+def test_init_array_rescale_auto():
+	gal=galaxy.NukerGalaxy.from_dir('NGC4551','data/log_grid', rescale='auto')
+	gal_dict=galaxy.nuker_params()
+
+	assert gal.params==gal_dict['NGC4551']
+
+	assert gal._logr==True
+	assert np.allclose(abs(gal.rinf/gal.radii[0]-96.5)/96.5, 0.)
+	#assert np.allclose(gal.radii,np.logspace(1.,100.,gal.length, base=e))
+	assert gal.length==100
+
+	assert np.allclose(gal.rho,np.ones(gal.length))
+	assert np.allclose(gal.log_rho,np.zeros(gal.length))
+	assert np.allclose(gal.vel, np.ones(gal.length))
+	assert np.allclose(gal.temp, np.ones(gal.length))
+
+
 
 
 
