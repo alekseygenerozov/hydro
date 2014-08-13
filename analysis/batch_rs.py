@@ -39,10 +39,6 @@ vws=[200., 500., 1000.]
 # selection=['NGC3115', 'NGC1172', 'NGC4478']
 cols=brewer2mpl.get_map('Set2', 'qualitative', 3).mpl_colors
 
-def glaw(eta, omega=1., dens_slope=1, ad_index=5./3., gamma=1.):
-	A=(4.*ad_index-(1+gamma)*(ad_index-1.))/(4.*(ad_index-1.))
-	return 1./(dens_slope*eta**2)*((0.5)*(2*A-dens_slope)*(1+omega)-(2.-gamma)/4.)
-
 dens_slopes=[]
 
 eta_core=[]
