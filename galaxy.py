@@ -993,7 +993,7 @@ class Galaxy(object):
 		'''Write state of grid to file'''
 		grid_prims=[getattr(self, field) for field in self.out_fields]
 		grid_prims[2]=grid_prims[2]/grid_prims[7]
-		self.time_stamps.append(self.time_total)
+		self.time_stamps.append(self.total_time)
 		self.saved=np.append(self.saved,[np.transpose(grid_prims)],0)
 
 		self._cons_update()
