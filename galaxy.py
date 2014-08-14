@@ -1030,7 +1030,7 @@ class Galaxy(object):
 	#Clear all of the info in the saved list
 	def clear_saved(self):
 		self.saved=np.empty([0, self.length, len(self.out_fields)])
-		self.fdiff=np.empty([0, self.length-1, 7])
+		self.fdiff=np.empty([0, self.length-1,  2*len(self.cons_fields)+1])
 		self.time_stamps=[]
 		self.save_pt=0
 		self.total_time=0
