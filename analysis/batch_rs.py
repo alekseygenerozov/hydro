@@ -53,10 +53,12 @@ for name in gal_dict.keys():
 	gal_data='/Users/aleksey/Second_Year_Project/hydro/gal_data/'+name
 	for j,vw in enumerate(vws):
 		d=base_d+'/vw_'+str(vw)
-		if not sc.check(d):
+		try:
+			gal=dill.load(open(d+'/grid.p', 'rb'))
+		except:
 			continue
-
-		gal=dill.load(open(d+'/grid.p', 'rb'))
+		if not gal.check_partial:
+			continue
 
 		x=gal.rs/gal.rinf
 		vw_eff=(gal.sigma_inf**2.+(vw*1.E5)**2.)**0.5
@@ -66,12 +68,12 @@ for name in gal_dict.keys():
 			symbol='<'
 			eta_core.append(eta)
 			x_core.append(x)
-			dens_slope_core.append(dens_slope)
+			#dens_slope_core.append(dens_slope)
 		else:
 			symbol='s'
 			eta_cusp.append(eta)
 			x_cusp.append(x)
-			dens_slope_cusp.append(dens_slope)
+			#dens_slope_cusp.append(dens_slope)
 
 		ax[0].loglog(eta, x, symbol, color=cols[j], markersize=10)
 		# etas=[1.,10.]

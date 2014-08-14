@@ -453,13 +453,16 @@ class Galaxy(object):
 	def grad_phi_grid(self):
 		return G*(self.params['M']+self.eps*self.M_enc_grid)/self.radii**2
 
-	@property 
-	def vw(self):
+	def vw(self, r):
 		if not self.sigma_heating:
-			return np.array(self.length*[self.vw_extra])
+			return self.vw_extra
 		else:
-			return (self.sigma_grid**2+(self.vw_extra)**2)**0.5
+			return (self.sigma(r)**2+(self.vw_extra)**2)**0.5
 
+	@property 
+	def vw_grid(self):
+		[self.vw(r) for r in self.radii]
+		
 	@property
 	def rho(self):
 		return np.exp(self.log_rho)
@@ -473,6 +476,9 @@ class Galaxy(object):
 	def temp_interp(self, r):
 		return interp1d(self.radii, self.temp)(r)
 
+	def pres_interp(self,r):
+		return interp1d(self.radii, self.pres)(r)
+
 	def cs_interp(self, r):
 		return interp1d(self.radii, self.cs)(r)
 
@@ -481,6 +487,12 @@ class Galaxy(object):
 
 	def phi_interp(self, r):
 		return interp1d(self.radii, self.phi_grid)(r)
+
+	def sigma_interp(self,r):
+		return interp1d(self.radii, self.sigma_grid)(r)
+
+	def q_interp(self, r):
+		return interp1d(self.radii, self.q_grid)(r)
 
 	@property 
 	def r2vel(self):
@@ -505,9 +517,12 @@ class Galaxy(object):
 	def alpha_max(self):
 		return np.max([np.abs(self.vel+self.cs), np.abs(self.vel-self.cs)],axis=0)
 
+	def sp_heating(self, r):
+		return (0.5*self.vel_interp(r)**2+0.5*self.vw(r)**2-(self.gamma)/(self.gamma-1)*(self.pres_interp(r)/self.rho_interp(r)))
+
 	@property 
-	def sp_heating(self):
-		return (0.5*self.vel**2+0.5*self.vw**2-(self.gamma)/(self.gamma-1)*(self.pres/self.rho))
+	def sp_heating_grid(self):
+		return [self.sp_heating(r) for r in self.radii]
 
 	@property 
 	def u(self):
@@ -521,29 +536,41 @@ class Galaxy(object):
 	def fen(self):
 		return self.rho*self.radii**2*self.vel*self.bernoulli
 
-	@property 
-	def src_rho(self):
-		return self.q_grid*self.radii**2
+	def src_rho(self, r):
+		return self.q_interp(r)*r**2
 
 	@property 
-	def src_en(self):
-		return self.radii**2.*self.q_grid*(self.vw**2/2.+self.phi_grid)
+	def src_rho_grid(self):
+		return [self.src_rho(r) for r in self.radii]
 
-	@property
-	def src_v(self):
+	def src_en(self, r):
+		return r**2.*self.q_interp(r)*(0.5*(self.sigma_interp(r)**2.+self.vw_extra**2.)+self.phi_interp(r))
+
+	@property 
+	def src_en_grid(self):
+		return [self.src_en(r) for r in self.radii]
+
+	def src_v(self, r):
 		with warnings.catch_warnings():
 			warnings.simplefilter("ignore")
-			return -(self.q_grid*self.vel/self.rho)+(self.q_grid*self.sp_heating/(self.rho*self.vel))
+			return -(self.q_interp(r)*self.vel_interp(r)/self.rho_interp(r))+(self.q_interp(r)*self.sp_heating(r)/(self.rho_interp(r)*self.vel_interp(r)))
 
 	@property
-	def src_s(self):
+	def src_v_grid(self):
+		return [self.src_v(r) for r in self.radii]
+
+	def src_s(self, r):
 		if self.isot:
 			src_s=0.
 		else:
 			with warnings.catch_warnings():
 				warnings.simplefilter("ignore")
-				src_s=self.q_grid*self.sp_heating/(self.rho*self.vel*self.temp)
+				src_s=self.q_interp(r)*self.sp_heating(r)/(self.rho_interp(r)*self.vel_interp(r)*self.temp_interp(r))
 		return src_s
+
+	@property
+	def src_s_grid(self):
+		return [self.src_s(r) for r in self.radii]
 
 	def _update_temp(self):
 		self.temp=(np.exp(self.log_rho)*np.exp(self.mu*mp*self.s/kb))**(2./3.)
@@ -553,41 +580,76 @@ class Galaxy(object):
 		#differences in fluxes and source terms
 		fdiff=np.empty([2*len(self.cons_fields)+1, self.length-1])
 		fdiff[0]=self.radii[1:]
-		for i in range(3):
+		for i in range(len(self.cons_fields)+1):
 			flux=getattr(self, self.cons_fields[i])
 			#get differences in fluxes for all of the cells.
 			fdiff[i+1]=np.diff(flux)
 			#get the source terms for all of the cells.
-			fdiff[i+4]=(getattr(self, self.src_fields[i])*self.delta)[1:]
+			fdiff[i+4]=(getattr(self, self.src_fields[i]+'_grid')*self.delta)[1:]
 			
 		self.fdiff=np.append(self.fdiff,[np.transpose(fdiff)],0)
 
-	#Check how well conservation holds on grid as a whole.
-	def cons_check(self, write=True, tol=40.):
-		'''Check level of conservation at end of run'''
-		self.check=True
-		check=file(self.outdir+'/check', 'w')
+	@property
+	def rs_outside(self):
+		return (np.where(self.radii>self.rs))[0][0]
 
+	@property
+	def rs_inside(self):
+		return (np.where(self.radii<self.rs))[0][-1]
+
+	def src_integral_outside(self, src_field):
+		if src_field not in self.src_fields:
+			print 'Not a source field'
+			return 
+		src=getattr(self, src_field)
+		return 4.*np.pi*integrate.quad(lambda r:src(r), self.radii[self.rs_outside], self.radii[self.end])[0]
+
+	def src_integral_inside(self, src_field):
+		if src_field not in self.src_fields:
+			print 'Not a source field'
+			return 
+		src=getattr(self, src_field)
+		return 4.*np.pi*integrate.quad(lambda r:src(r), self.radii[self.start], self.radii[self.rs_inside])[0]
+
+	#Check how well conservation holds on grid as a whole.
+	def cons_check(self, write=True, tol=40., skip=True):
+		'''Check level of conservation'''
+		self.check=True
+		self.check_partial=True
+
+		check_str=''
+		#self._cons_update()
 		for i in range(len(self.cons_fields)):
+			if (i==1 or i==2) and skip:
+				continue
 			flux=4.*np.pi*getattr(self, self.cons_fields[i])
-			fdiff=flux[self.end]-flux[self.start]
-			src=4.*np.pi*getattr(self, self.src_fields[i])*self.delta
-			integral=np.sum(src[self.start:self.end+1])
+			fdiff1=flux[self.rs_inside]-flux[self.start]
+			fdiff2=flux[self.end]-flux[self.rs_outside]
+
+			integral1=self.src_integral_inside(self.src_fields[i])
+			integral2=self.src_integral_outside(self.src_fields[i])
 			with warnings.catch_warnings():
-				pdiff=(fdiff-integral)*100./integral
+				pdiff1=(fdiff1-integral1)*100./integral1
+				pdiff2=(fdiff2-integral2)*100./integral2
+				pdiff=max(abs(pdiff1), abs(pdiff2))
 			if (abs(pdiff)>tol) or np.isnan(pdiff):
 				self.check=False
+			if ((abs(pdiff)>tol) or np.isnan(pdiff)) and (i==0 or i==3):
+				self.check_partial=False
 
-			if write:
-				check.write(self.cons_fields[i]+'\n')
-				pre=['flux1=','flux2=','diff=','src=','pdiff=']
-				vals=[flux[self.start],flux[self.end],fdiff,integral,pdiff]
-				for j in range(len(vals)):
-					check.write(pre[j])
-					s='{0:4.3e}'.format(vals[j])
-					check.write(s+'\n')
-				check.write('____________________________________\n\n')
-		check.close()
+			check_str=check_str+self.cons_fields[i]+'\n'
+			pre=['diff1=','diff2=','src1=','src2=','pdiff1=','pdiff2=']
+			vals=[fdiff1,fdiff2,integral1,integral2,pdiff1,pdiff2]
+			for j in range(len(vals)):
+				check_str=check_str+pre[j]
+				s='{0:4.3e}'.format(vals[j])
+				check_str=check_str+s+'\n'
+			check_str=check_str+'____________________________________\n\n'
+
+		if write:
+			checkf=open(self.outdir+'/check','w')
+			checkf.write(check_str)
+		return check_str
 
 	def cons_plot(self, dict1={}, dict2={}):
 		if len(self.fdiff)==0:
@@ -832,7 +894,7 @@ class Galaxy(object):
 
 
 		#return self.q(rad, **self.params_delta)*(0.5*self.vw**2+0.5*vel**2-self.gamma*cs**2/(self.gamma-1))/(rho*temp)-vel*def s_dr#+art_visc*lap_s
-		return self.q_grid[i]*self.sp_heating[i]/(rho*temp)-vel*ds_dr+art_visc
+		return self.q_grid[i]*self.sp_heating_grid[i]/(rho*temp)-vel*ds_dr+art_visc
 
 	def isot_off(self):
 		'''Switch off isothermal evolution'''
@@ -904,6 +966,13 @@ class Galaxy(object):
 	def backup(self):
 		bash_command('mkdir -p '+self.outdir)
 		dill.dump(self, open(self.outdir+'/grid.p', 'wb' ) )
+
+	def grid(self):
+		self.q_grid
+		self.M_enc_grid
+		self.phi_grid
+		self.sigma_grid
+		self.rinf
 
 	def solve(self, time=None, max_steps=np.inf):
 		'''Solve hydro equations for galaxy

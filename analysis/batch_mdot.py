@@ -16,6 +16,7 @@ import brewer2mpl
 import sol_check as sc
 
 from scipy.misc import derivative
+import time
 
 #Constants
 G=const.G.cgs.value
@@ -47,8 +48,8 @@ gal_dict=galaxy.nuker_params()
 cols=brewer2mpl.get_map('Set2', 'qualitative', 3).mpl_colors
 vws=[200., 500., 1000.]
 
-eddr=[[],[],[]]
-mass=[[],[],[]]
+eddr_cusp=[[],[],[]]
+mass_cusp=[[],[],[]]
 
 eddr_core=[[],[],[]]
 mass_core=[[],[],[]]
@@ -68,21 +69,31 @@ for idx,name in enumerate(gal_dict.keys()):
 	# 	continue
 	for j,vw in enumerate(vws):
 		d=base_d+'/vw_'+str(vw)
-		if not sc.check(d):
+		try:
+			gal=dill.load(open(d+'/grid.p', 'rb'))
+		except:
+			print 'could not open pickle'
+			continue
+		if not gal.check_partial:
 			continue
 
-		gal=dill.load(open(d+'/grid.p', 'rb'))
 		if j==0:
 			gammas.append(gal.params['gamma'])
 
+		eddr=gal.eddr
+		mass=gal.params['M']/galaxy.M_sun
 		if gal.params['gamma']>0.2:
-			eddr[j].append(gal.eddr)
-			mass[j].append(gal.params['M']/galaxy.M_sun)
+			eddr_cusp[j].append(eddr)
+			mass_cusp[j].append(mass)
+			marker='s'
+			#ax2.loglog(mass[j], eddr[j], 's', color=cols[j], markersize=10)
 		else:
 			eddr_core[j].append(gal.eddr)
 			mass_core[j].append(gal.params['M']/galaxy.M_sun)
-			if j==1:
-				ax2.text(mass_core[j][-1], eddr_core[j][-1], gal.name, fontsize=12)
+			marker='<'
+			# if j==1:
+			# 	ax2.text(mass_core[j][-1], eddr_core[j][-1], gal.name, fontsize=12)
+		ax2.loglog(mass, eddr, marker, color=cols[j], markersize=10)
 
 		mdot[j].append(gal.mdot)
 		mdot_approx[j].append(gal.mdot_approx)
@@ -91,27 +102,28 @@ for idx,name in enumerate(gal_dict.keys()):
 		except:
 			mdot_bondi[j].append(np.nan)
 
-		if j==2:
-			print gal.name,gal.params['gamma'],gal.params['type'],mdot[2][-1]/mdot[1][-1]
+		# if j==2:
+		# 	print gal.name,gal.params['gamma'],gal.params['type'],mdot[2][-1]/mdot[1][-1]
 
 mass_fit=[1.E6, 1.E9]
+print eddr
 
-for j,vw in enumerate(vws):
-	mdot[j]=np.array(mdot[j])
-	mdot_bondi[j]=np.array(mdot_bondi[j])
+# for j,vw in enumerate(vws):
+# 	mdot[j]=np.array(mdot[j])
+# 	mdot_bondi[j]=np.array(mdot_bondi[j])
 
-	pow_cusp, coeff_cusp=np.polyfit(np.log(mass[j]),np.log(eddr[j]),1)
-	print np.abs((mdot[j]-mdot_bondi[j])/mdot[j])
+# 	#pow_cusp, coeff_cusp=np.polyfit(np.log(mass[j]),np.log(eddr[j]),1)
+# 	print np.abs((mdot[j]-mdot_bondi[j])/mdot[j])
 
-	ax1[0].hist(eddr[j], color=cols[j], bins=np.logspace(-9, -1, 16), alpha=0.5)
-	ax2.loglog(mass_fit, [np.exp(coeff_cusp)*m**pow_cusp for m in mass_fit], color=cols[j])
-	ax2.loglog(mass[j], eddr[j], 's', color=cols[j], markersize=10)
-	ax2.loglog(mass_core[j], eddr_core[j], '<', color=cols[j], markersize=10)
+# 	ax1[0].hist(eddr[j], color=cols[j], bins=np.logspace(-9, -1, 16), alpha=0.5)
+# 	ax2.loglog(mass_fit, [np.exp(coeff_cusp)*m**pow_cusp for m in mass_fit], color=cols[j])
+# 	ax2.loglog(mass[j], eddr[j], 's', color=cols[j], markersize=10)
+# 	ax2.loglog(mass_core[j], eddr_core[j], '<', color=cols[j], markersize=10)
 
 
-	#ax3.plot(range(0,len(mdot[j])), [np.abs((mdot[j,i]-mdot_bondi[j,i])/mdot[j,i]) for i in range(0, len(mdot[j]))],'s',color=cols[j])
-	#ax3[1].plot(range(0,len(mdot[j])), np.abs((mdot[j]-mdot_approx[j])/mdot[j]),'s',color=cols[j])
-ax1[1].hist(eddr_core[2], color=cols[2], bins=np.logspace(-9, -1, 16), histtype='step', linestyle='dashed')
+# 	#ax3.plot(range(0,len(mdot[j])), [np.abs((mdot[j,i]-mdot_bondi[j,i])/mdot[j,i]) for i in range(0, len(mdot[j]))],'s',color=cols[j])
+# 	#ax3[1].plot(range(0,len(mdot[j])), np.abs((mdot[j]-mdot_approx[j])/mdot[j]),'s',color=cols[j])
+# ax1[1].hist(eddr_core[2], color=cols[2], bins=np.logspace(-9, -1, 16), histtype='step', linestyle='dashed')
 
 
 
