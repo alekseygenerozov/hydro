@@ -8,7 +8,7 @@ import shlex
 import numpy as np
  
 import matplotlib.pylab as plt
-import pickle
+import dill
 
 from scipy.interpolate import interp1d
 import brewer2mpl
@@ -68,23 +68,21 @@ for idx,name in enumerate(gal_dict.keys()):
 	# 	continue
 	for j,vw in enumerate(vws):
 		d=base_d+'/vw_'+str(vw)
-		try:
-			saved=np.load(d+'/save.npz')['a']
-		except:
-			continue
 		if not sc.check(d):
 			continue
 
-		gal=galaxy.NukerGalaxy.from_dir(name, d)
+		gal=dill.load(open(d+'/grid.p', 'rb'))
 		if j==0:
 			gammas.append(gal.params['gamma'])
 
-		if gal.params['type']=='Cusp':
+		if gal.params['gamma']>0.2:
 			eddr[j].append(gal.eddr)
 			mass[j].append(gal.params['M']/galaxy.M_sun)
 		else:
 			eddr_core[j].append(gal.eddr)
 			mass_core[j].append(gal.params['M']/galaxy.M_sun)
+			if j==1:
+				ax2.text(mass_core[j][-1], eddr_core[j][-1], gal.name, fontsize=12)
 
 		mdot[j].append(gal.mdot)
 		mdot_approx[j].append(gal.mdot_approx)

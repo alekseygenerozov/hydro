@@ -476,6 +476,12 @@ class Galaxy(object):
 	def cs_interp(self, r):
 		return interp1d(self.radii, self.cs)(r)
 
+	def M_enc_interp(self, r):
+		return interp1d(self.radii, self.M_enc_grid)(r)
+
+	def phi_interp(self, r):
+		return interp1d(self.radii, self.phi_grid)(r)
+
 	@property 
 	def r2vel(self):
 		return self.radii**2*self.vel
@@ -1082,11 +1088,15 @@ class Galaxy(object):
 
 	#Get accretion rate  for galaxy by integrating source from stagnation radius
 	@property
-	def mdot(self):
+	def mdot_from_v(self):
 		'''Mass accretion rate based on stagnation radius 
 		'''
 		mdot=4.*np.pi*self.radii[self.start]**2*self.rho[self.start]*abs(self.vel[self.start])
 		return mdot
+
+	@property
+	def mdot(self):
+		return self.eta*self.M_enc_interp(self.rs)/th
 
 	@property
 	def mdot_bondi(self):
