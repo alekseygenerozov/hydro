@@ -461,11 +461,74 @@ class Galaxy(object):
 
 	@property 
 	def vw_grid(self):
-		[self.vw(r) for r in self.radii]
+		return np.array([self.vw(r) for r in self.radii])
 		
 	@property
 	def rho(self):
 		return np.exp(self.log_rho)
+
+	@property 
+	def r2vel(self):
+		return self.radii**2*self.vel
+
+	@property 
+	def frho(self):
+		return self.radii**2*self.vel*self.rho
+
+	@property
+	def pres(self):
+		return (kb*self.temp*self.rho)/(self.mu*mp)
+
+	@property
+	def cs(self):
+		if not self.isot:
+			return np.sqrt(self.gamma*kb*self.temp/(self.mu*mp))
+		else:                                                                                                     
+			return np.sqrt(kb*self.temp/(self.mu*mp))
+
+	@property 
+	def alpha_max(self):
+		return np.max([np.abs(self.vel+self.cs), np.abs(self.vel-self.cs)],axis=0)
+
+	@property 
+	def sp_heating(self):
+		return (0.5*self.vel**2+0.5*self.vw_grid**2-(self.gamma)/(self.gamma-1)*(self.pres/self.rho))
+
+	@property 
+	def u(self):
+		return self.pres/(self.rho*(self.gamma-1.))
+
+	@property 
+	def bernoulli(self):
+		return 0.5*self.vel**2+(self.pres/self.rho)+self.u+self.phi_grid
+
+	@property 
+	def fen(self):
+		return self.rho*self.radii**2*self.vel*self.bernoulli
+
+	@property 
+	def src_rho(self):
+		return self.q_grid*self.radii**2
+
+	@property 
+	def src_en(self):
+		return self.radii**2.*self.q_grid*(self.vw_grid**2/2.+self.phi_grid)
+
+	@property
+	def src_v(self):
+		with warnings.catch_warnings():
+			warnings.simplefilter("ignore")
+			return -(self.q_grid*self.vel/self.rho)+(self.q_grid*self.sp_heating/(self.rho*self.vel))
+
+	@property
+	def src_s(self):
+		if self.isot:
+			src_s=0.
+		else:
+			with warnings.catch_warnings():
+				warnings.simplefilter("ignore")
+				src_s=self.q_grid*self.sp_heating/(self.rho*self.vel*self.temp)
+		return src_s
 
 	def rho_interp(self, r):
 		return interp1d(self.radii, self.rho)(r)
@@ -494,83 +557,17 @@ class Galaxy(object):
 	def q_interp(self, r):
 		return interp1d(self.radii, self.q_grid)(r)
 
-	@property 
-	def r2vel(self):
-		return self.radii**2*self.vel
+	def src_rho_interp(self, r):
+		return interp1d(self.radii, self.src_rho)(r)
 
-	@property 
-	def frho(self):
-		return self.radii**2*self.vel*self.rho
+	def src_s_interp(self, r):
+		return interp1d(self.radii, self.src_s)(r)
 
-	@property
-	def pres(self):
-		return (kb*self.temp*self.rho)/(self.mu*mp)
+	def src_v_interp(self, r):
+		return interp1d(self.radii, self.src_v)(r)
 
-	@property
-	def cs(self):
-		if not self.isot:
-			return np.sqrt(self.gamma*kb*self.temp/(self.mu*mp))
-		else:                                                                                                     
-			return np.sqrt(kb*self.temp/(self.mu*mp))
-
-	@property 
-	def alpha_max(self):
-		return np.max([np.abs(self.vel+self.cs), np.abs(self.vel-self.cs)],axis=0)
-
-	def sp_heating(self, r):
-		return (0.5*self.vel_interp(r)**2+0.5*self.vw(r)**2-(self.gamma)/(self.gamma-1)*(self.pres_interp(r)/self.rho_interp(r)))
-
-	@property 
-	def sp_heating_grid(self):
-		return [self.sp_heating(r) for r in self.radii]
-
-	@property 
-	def u(self):
-		return self.pres/(self.rho*(self.gamma-1.))
-
-	@property 
-	def bernoulli(self):
-		return 0.5*self.vel**2+(self.pres/self.rho)+self.u+self.phi_grid
-
-	@property 
-	def fen(self):
-		return self.rho*self.radii**2*self.vel*self.bernoulli
-
-	def src_rho(self, r):
-		return self.q_interp(r)*r**2
-
-	@property 
-	def src_rho_grid(self):
-		return [self.src_rho(r) for r in self.radii]
-
-	def src_en(self, r):
-		return r**2.*self.q_interp(r)*(0.5*(self.sigma_interp(r)**2.+self.vw_extra**2.)+self.phi_interp(r))
-
-	@property 
-	def src_en_grid(self):
-		return [self.src_en(r) for r in self.radii]
-
-	def src_v(self, r):
-		with warnings.catch_warnings():
-			warnings.simplefilter("ignore")
-			return -(self.q_interp(r)*self.vel_interp(r)/self.rho_interp(r))+(self.q_interp(r)*self.sp_heating(r)/(self.rho_interp(r)*self.vel_interp(r)))
-
-	@property
-	def src_v_grid(self):
-		return [self.src_v(r) for r in self.radii]
-
-	def src_s(self, r):
-		if self.isot:
-			src_s=0.
-		else:
-			with warnings.catch_warnings():
-				warnings.simplefilter("ignore")
-				src_s=self.q_interp(r)*self.sp_heating(r)/(self.rho_interp(r)*self.vel_interp(r)*self.temp_interp(r))
-		return src_s
-
-	@property
-	def src_s_grid(self):
-		return [self.src_s(r) for r in self.radii]
+	def src_en_interp(self, r):
+		return interp1d(self.radii, self.src_en)(r)	
 
 	def _update_temp(self):
 		self.temp=(np.exp(self.log_rho)*np.exp(self.mu*mp*self.s/kb))**(2./3.)
@@ -585,7 +582,7 @@ class Galaxy(object):
 			#get differences in fluxes for all of the cells.
 			fdiff[i+1]=np.diff(flux)
 			#get the source terms for all of the cells.
-			fdiff[i+4]=(getattr(self, self.src_fields[i]+'_grid')*self.delta)[1:]
+			fdiff[i+4]=(getattr(self, self.src_fields[i])*self.delta)[1:]
 			
 		self.fdiff=np.append(self.fdiff,[np.transpose(fdiff)],0)
 
@@ -601,18 +598,18 @@ class Galaxy(object):
 		if src_field not in self.src_fields:
 			print 'Not a source field'
 			return 
-		src=getattr(self, src_field)
+		src=getattr(self, src_field+'_interp')
 		return 4.*np.pi*integrate.quad(lambda r:src(r), self.radii[self.rs_outside], self.radii[self.end])[0]
 
 	def src_integral_inside(self, src_field):
 		if src_field not in self.src_fields:
 			print 'Not a source field'
 			return 
-		src=getattr(self, src_field)
+		src=getattr(self, src_field+'_interp')
 		return 4.*np.pi*integrate.quad(lambda r:src(r), self.radii[self.start], self.radii[self.rs_inside])[0]
 
 	#Check how well conservation holds on grid as a whole.
-	def cons_check(self, write=True, tol=40., skip=True):
+	def cons_check(self, write=True, tol=40., skip=False):
 		'''Check level of conservation'''
 		self.check=True
 		self.check_partial=True
@@ -893,8 +890,7 @@ class Galaxy(object):
 			art_visc=art_visc*(self.delta[i]/np.mean(self.delta))
 
 
-		#return self.q(rad, **self.params_delta)*(0.5*self.vw**2+0.5*vel**2-self.gamma*cs**2/(self.gamma-1))/(rho*temp)-vel*def s_dr#+art_visc*lap_s
-		return self.q_grid[i]*self.sp_heating_grid[i]/(rho*temp)-vel*ds_dr+art_visc
+		return self.q_grid[i]*self.sp_heating[i]/(rho*temp)-vel*ds_dr+art_visc
 
 	def isot_off(self):
 		'''Switch off isothermal evolution'''
@@ -908,6 +904,17 @@ class Galaxy(object):
 		'''Switch on isothermal evolution'''
 		self.isot=True
 		self.fields=['log_rho', 'vel']
+
+	def get_param(self, param):
+		pat=re.compile('params\[\w+\]')
+		if re.findall(pat, param):
+			param=param[7:-1]
+			return self.params[param]
+		else:
+			try:
+				return getattr(self, param)
+			except AttributeError:
+				return None
 
 	def set_param(self, param, value):
 		'''Reset parameter
@@ -1182,7 +1189,7 @@ class Galaxy(object):
 		return self.mdot/gal_properties.mdot_edd(self.params['M'], efficiency=0.1)
 
 	@property
-	def xray(self):
+	def bh_xray(self):
 		'''Simple prescription for x-ray luminosity, If we are below a particular edd. ratio<0.03  Lx~(mdot)^2 c^2; otherwise Lx~0.1 mdot c^2'''
 		l_0=0.03*gal_properties.l_edd(self.params['M'])
 		if self.eddr<0.03:
