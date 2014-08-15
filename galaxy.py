@@ -1,7 +1,7 @@
 import numpy as np
 from scipy import integrate
 from scipy.interpolate import interp1d
-from scipy.optimize import fsolve
+from scipy.optimize import fsolve, brentq
 from scipy.misc import derivative
 
 import copy
@@ -96,6 +96,10 @@ def extrap1d_pow(interpolator):
 			return pointwise(xs)
 
 	return ufunclike
+
+def zero_crossings(a):
+	'''Identify zero crossings of an array'''
+	return np.where(np.diff(np.sign(a)))[0]
 
 class memoize(object):
 	'''Memoization intended for class methods.'''
@@ -1153,12 +1157,11 @@ class Galaxy(object):
 	@property
 	def rs(self):
 		'''Find stagnation point in the flow'''
-		guess=self.radii[0]*1.1
-		self.interp_vel=interp1d(self.radii, self.vel)
-		try:
-			return fsolve(self.interp_vel, guess)[0]
-		except:
-			return None
+		crossings=zero_crossings(self.vel)
+		zeros=[]
+		for cross in crossings:
+			zeros.append(brentq(self.vel_interp, self.radii[cross], self.radii[cross+1]))
+		return zeros
 
 	#Get accretion rate  for galaxy by integrating source from stagnation radius
 	@property
@@ -1371,19 +1374,27 @@ class NukerGalaxy(Galaxy):
 	@property
 	def rs_analytic(self):
 		'''Analytic formula for the stagnation radius'''
-		A=(4.*self.gamma-(1+self.params['gamma'])*(self.gamma-1.))/(4.*(self.gamma-1.))
-		eta=self.vw_extra/self.sigma(self.rinf)
-		omega=self.M_enc(self.rs)/self.params['M']
+		if len(gal.rs)!=1:
+			print 'There is not one stagnation radius!'
+			return 
+		else:
+			A=(4.*self.gamma-(1+self.params['gamma'])*(self.gamma-1.))/(4.*(self.gamma-1.))
+			eta=self.vw_extra/self.sigma(self.rinf)
+			omega=self.M_enc(self.rs[0])/self.params['M']
 
-		lrho_interp=interp1d(np.log(self.radii),self.log_rho)
-		dens_slope=np.abs(derivative(lrho_interp, np.log(self.rs), dx=self.delta_log[0]))
+			lrho_interp=interp1d(np.log(self.radii),self.log_rho)
+			dens_slope=np.abs(derivative(lrho_interp, np.log(self.rs[0]), dx=self.delta_log[0]))
 
-		return 1./(dens_slope*eta**2)*((0.5)*(2*A-dens_slope)*(1+omega)-(2.-self.params['gamma'])/4.)
+			return 1./(dens_slope*eta**2)*((0.5)*(2*A-dens_slope)*(1+omega)-(2.-self.params['gamma'])/4.)
 
 	@property 
 	def rs_residual(self):
 		'''Residual of the stagnation radius from the analytic result'''
-		return (self.rs_analytic-(self.rs/self.rinf))/self.rs_analytic
+		if len(gal.rs)!=1:
+			print 'There is not one stagnation radius!'
+			return 
+		else:
+			return (self.rs_analytic-(self.rs[0]/self.rinf))/self.rs_analytic
 
 	def rho_func(self, r):
 		try:
