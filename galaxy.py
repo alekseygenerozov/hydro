@@ -453,15 +453,15 @@ class Galaxy(object):
 	def grad_phi_grid(self):
 		return G*(self.params['M']+self.eps*self.M_enc_grid)/self.radii**2
 
-	def vw(self, r):
+	def vw_func(self, r):
 		if not self.sigma_heating:
 			return self.vw_extra
 		else:
 			return (self.sigma(r)**2+(self.vw_extra)**2)**0.5
 
 	@property 
-	def vw_grid(self):
-		return np.array([self.vw(r) for r in self.radii])
+	def vw(self):
+		return np.array([self.vw_func(r) for r in self.radii])
 		
 	@property
 	def rho(self):
@@ -492,7 +492,7 @@ class Galaxy(object):
 
 	@property 
 	def sp_heating(self):
-		return (0.5*self.vel**2+0.5*self.vw_grid**2-(self.gamma)/(self.gamma-1)*(self.pres/self.rho))
+		return (0.5*self.vel**2+0.5*self.vw**2-(self.gamma)/(self.gamma-1)*(self.pres/self.rho))
 
 	@property 
 	def u(self):
@@ -512,7 +512,7 @@ class Galaxy(object):
 
 	@property 
 	def src_en(self):
-		return self.radii**2.*self.q_grid*(self.vw_grid**2/2.+self.phi_grid)
+		return self.radii**2.*self.q_grid*(self.vw**2/2.+self.phi_grid)
 
 	@property
 	def src_v(self):
