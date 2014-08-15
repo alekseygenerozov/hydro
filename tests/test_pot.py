@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import galaxy
+from .. import galaxy
 import matplotlib.pyplot as plt
 import numpy as np
 

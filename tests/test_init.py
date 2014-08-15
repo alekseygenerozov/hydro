@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import galaxy
+from .. import galaxy
 import sys
 import numpy as np
 
