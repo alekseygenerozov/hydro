@@ -598,82 +598,53 @@ class Galaxy(object):
 		if src_field not in self.src_fields:
 			print 'Not a source field'
 			return 
-		src=getattr(self, src_field+'_interp')
-		return 4.*np.pi*integrate.quad(lambda r:src(r), self.radii[self.rs_outside], self.radii[self.end])[0]
-
+		src=getattr(self, src_field)
+		return 4.*np.pi*np.trapz(src[self.rs_outside:self.end+1], x=self.radii[self.rs_outside:self.end+1])
+	
 	def src_integral_inside(self, src_field):
 		if src_field not in self.src_fields:
 			print 'Not a source field'
 			return 
-		src=getattr(self, src_field+'_interp')
-		return 4.*np.pi*integrate.quad(lambda r:src(r), self.radii[self.start], self.radii[self.rs_inside])[0]
+		src=getattr(self, src_field)
+		return 4.*np.pi*np.trapz(src[self.start:self.rs_inside+1], x=self.radii[self.start:self.rs_inside+1])
 
-
-	#Check how well conservation holds on grid as a whole.
-	def cons_check(self, write=True, tol=40.):
-		'''Check level of conservation at end of run'''
+	def cons_check(self, write=True, tol=40., skip=False):
+		'''Check level of conservation'''
 		self.check=True
-		check=file(self.outdir+'/check', 'w')
+		self.check_partial=True
 
+		check_str=''
 		for i in range(len(self.cons_fields)):
+			if (i==1 or i==2) and skip:
+				continue
 			flux=4.*np.pi*getattr(self, self.cons_fields[i])
-			fdiff=flux[self.end]-flux[self.start]
-			src=4.*np.pi*getattr(self, self.src_fields[i])*self.delta
-			integral=np.sum(src[self.start:self.end+1])
+			fdiff1=flux[self.rs_inside]-flux[self.start]
+			fdiff2=flux[self.end]-flux[self.rs_outside]
+
+			integral1=self.src_integral_inside(self.src_fields[i])
+			integral2=self.src_integral_outside(self.src_fields[i])
 			with warnings.catch_warnings():
-				pdiff=(fdiff-integral)*100./integral
+				pdiff1=(fdiff1-integral1)*100./integral1
+				pdiff2=(fdiff2-integral2)*100./integral2
+				pdiff=max(abs(pdiff1), abs(pdiff2))
 			if (abs(pdiff)>tol) or np.isnan(pdiff):
 				self.check=False
+			if ((abs(pdiff)>tol) or np.isnan(pdiff)) and (i==0 or i==3):
+				self.check_partial=False
 
-			if write:
-				check.write(self.cons_fields[i]+'\n')
-				pre=['flux1=','flux2=','diff=','src=','pdiff=']
-				vals=[flux[self.start],flux[self.end],fdiff,integral,pdiff]
-				for j in range(len(vals)):
-					check.write(pre[j])
-					s='{0:4.3e}'.format(vals[j])
-					check.write(s+'\n')
-				check.write('____________________________________\n\n')
-		check.close()
-	# #Check how well conservation holds on grid as a whole.
-	# def cons_check(self, write=True, tol=40., skip=False):
-	# 	'''Check level of conservation'''
-	# 	self.check=True
-	# 	self.check_partial=True
+			check_str=check_str+self.cons_fields[i]+'\n'
+			pre=['diff1=','diff2=','src1=','src2=','pdiff1=','pdiff2=']
+			vals=[fdiff1,fdiff2,integral1,integral2,pdiff1,pdiff2]
+			for j in range(len(vals)):
+				check_str=check_str+pre[j]
+				s='{0:4.3e}'.format(vals[j])
+				check_str=check_str+s+'\n'
+			check_str=check_str+'____________________________________\n\n'
 
-	# 	check_str=''
-	# 	#self._cons_update()
-	# 	for i in range(len(self.cons_fields)):
-	# 		if (i==1 or i==2) and skip:
-	# 			continue
-	# 		flux=4.*np.pi*getattr(self, self.cons_fields[i])
-	# 		fdiff1=flux[self.rs_inside]-flux[self.start]
-	# 		fdiff2=flux[self.end]-flux[self.rs_outside]
-
-	# 		integral1=self.src_integral_inside(self.src_fields[i])
-	# 		integral2=self.src_integral_outside(self.src_fields[i])
-	# 		with warnings.catch_warnings():
-	# 			pdiff1=(fdiff1-integral1)*100./integral1
-	# 			pdiff2=(fdiff2-integral2)*100./integral2
-	# 			pdiff=max(abs(pdiff1), abs(pdiff2))
-	# 		if (abs(pdiff)>tol) or np.isnan(pdiff):
-	# 			self.check=False
-	# 		if ((abs(pdiff)>tol) or np.isnan(pdiff)) and (i==0 or i==3):
-	# 			self.check_partial=False
-
-	# 		check_str=check_str+self.cons_fields[i]+'\n'
-	# 		pre=['diff1=','diff2=','src1=','src2=','pdiff1=','pdiff2=']
-	# 		vals=[fdiff1,fdiff2,integral1,integral2,pdiff1,pdiff2]
-	# 		for j in range(len(vals)):
-	# 			check_str=check_str+pre[j]
-	# 			s='{0:4.3e}'.format(vals[j])
-	# 			check_str=check_str+s+'\n'
-	# 		check_str=check_str+'____________________________________\n\n'
-
-	# 	if write:
-	# 		checkf=open(self.outdir+'/check','w')
-	# 		checkf.write(check_str)
-	# 	return check_str
+		if write:
+			checkf=open(self.outdir+'/check','w')
+			checkf.write(check_str)
+		return check_str
 
 	def cons_plot(self, dict1={}, dict2={}):
 		if len(self.fdiff)==0:
