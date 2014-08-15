@@ -151,7 +151,17 @@ def lazyprop(fn):
 
 class StepsError(Exception):
 	pass
-	
+
+def _check_format(vals):
+	check_str=''
+	pre=['diff1=','diff2=','src1=','src2=','pdiff1=','pdiff2=']
+	for j in range(len(vals)):
+		check_str=check_str+pre[j]
+		s='{0:4.3e}'.format(vals[j])
+		check_str=check_str+s+'\n'
+	check_str=check_str+'____________________________________\n\n'
+	return check_str
+
 def bash_command(cmd):
 	'''Run command from the bash shell'''
 	process=subprocess.Popen(['/bin/bash', '-c',cmd],  stdin=subprocess.PIPE, stdout=subprocess.PIPE)
@@ -309,6 +319,7 @@ class Galaxy(object):
 		self.sigma_heating=True
 		self.eps=1.
 
+		self.tol=40.
 		self.out_fields=['radii', 'rho', 'vel', 'temp', 'frho', 'bernoulli', 's', 'cs', 'q_grid', 'M_enc_grid', 'phi_grid', 'sigma_grid','vw']
 		self.cons_fields=['frho', 'bernoulli', 's', 'fen']
 		self.src_fields=['src_rho', 'src_v', 'src_s', 'src_en']
@@ -591,60 +602,61 @@ class Galaxy(object):
 		self.fdiff=np.append(self.fdiff,[np.transpose(fdiff)],0)
 
 	@property
-	def rs_outside(self):
-		return (np.where(self.radii>self.rs))[0][0]
+	def stag_unique(self):
+		if len(self.rs)==1:
+			return True
+		else:
+			return False
 
 	@property
+	def rs_outside(self):
+		if self.stag_unique:
+			return (np.where(self.radii>self.rs))[0][0]
+	@property
 	def rs_inside(self):
-		return (np.where(self.radii<self.rs))[0][-1]
+		if self.stag_unique:
+			return (np.where(self.radii<self.rs))[0][-1]
 
 	def src_integral_outside(self, src_field):
-		if src_field not in self.src_fields:
-			print 'Not a source field'
-			return 
-		src=getattr(self, src_field)
-		return 4.*np.pi*np.trapz(src[self.rs_outside:self.end+1], x=self.radii[self.rs_outside:self.end+1])
+		if self.stag_unique and src_field in self.src_fields:
+			src=getattr(self, src_field)
+			return 4.*np.pi*np.trapz(src[self.rs_outside:self.end+1], x=self.radii[self.rs_outside:self.end+1])
 	
 	def src_integral_inside(self, src_field):
-		if src_field not in self.src_fields:
-			print 'Not a source field'
-			return 
-		src=getattr(self, src_field)
-		return 4.*np.pi*np.trapz(src[self.start:self.rs_inside+1], x=self.radii[self.start:self.rs_inside+1])
+		if self.stag_unique and src_field in self.src_fields:
+			src=getattr(self, src_field)
+			return 4.*np.pi*np.trapz(src[self.start:self.rs_inside+1], x=self.radii[self.start:self.rs_inside+1])
 
-	def cons_check(self, write=True, tol=40., skip=False):
+	def fdiff_inside(self, cons_field):
+		if self.stag_unique and  cons_field in self.cons_fields:
+			flux=4.*np.pi*getattr(self, cons_field)
+			return flux[self.rs_inside]-flux[self.start]	
+
+	def fdiff_outside(self, cons_field):
+		if self.stag_unique and cons_field in self.cons_fields:
+			flux=4.*np.pi*getattr(self, cons_field)
+			return flux[self.end]-flux[self.rs_outside]	
+
+	def cons_check(self, write=True):
 		'''Check level of conservation'''
 		self.check=True
 		self.check_partial=True
-
 		check_str=''
 		for i in range(len(self.cons_fields)):
-			if (i==1 or i==2) and skip:
-				continue
-			flux=4.*np.pi*getattr(self, self.cons_fields[i])
-			fdiff1=flux[self.rs_inside]-flux[self.start]
-			fdiff2=flux[self.end]-flux[self.rs_outside]
-
-			integral1=self.src_integral_inside(self.src_fields[i])
-			integral2=self.src_integral_outside(self.src_fields[i])
+			fdiff=np.array([self.fdiff_inside(self.cons_fields[i]), self.fdiff_outside(self.cons_fields[i])])
+			integral=np.array([self.src_integral_inside(self.src_fields[i]),self.src_integral_outside(self.src_fields[i])])
 			with warnings.catch_warnings():
-				pdiff1=(fdiff1-integral1)*100./integral1
-				pdiff2=(fdiff2-integral2)*100./integral2
-				pdiff=max(abs(pdiff1), abs(pdiff2))
-			if (abs(pdiff)>tol) or np.isnan(pdiff):
+				pdiff=(fdiff-integral)*100./integral
+				pdiff_max=np.max(pdiff)
+			if (abs(pdiff_max)>self.tol) or np.isnan(pdiff_max):
 				self.check=False
-			if ((abs(pdiff)>tol) or np.isnan(pdiff)) and (i==0 or i==3):
-				self.check_partial=False
-
+				if i==0 or i==3:
+					self.check_partial=False
+			
+			vals=[fdiff[0],fdiff[1],integral[0],integral[1],pdiff[0],pdiff[1]]
 			check_str=check_str+self.cons_fields[i]+'\n'
-			pre=['diff1=','diff2=','src1=','src2=','pdiff1=','pdiff2=']
-			vals=[fdiff1,fdiff2,integral1,integral2,pdiff1,pdiff2]
-			for j in range(len(vals)):
-				check_str=check_str+pre[j]
-				s='{0:4.3e}'.format(vals[j])
-				check_str=check_str+s+'\n'
-			check_str=check_str+'____________________________________\n\n'
-
+			check_str=check_str+_check_format(vals)
+			
 		if write:
 			checkf=open(self.outdir+'/check','w')
 			checkf.write(check_str)
@@ -1374,10 +1386,7 @@ class NukerGalaxy(Galaxy):
 	@property
 	def rs_analytic(self):
 		'''Analytic formula for the stagnation radius'''
-		if len(gal.rs)!=1:
-			print 'There is not one stagnation radius!'
-			return 
-		else:
+		if self.stag_unique:
 			A=(4.*self.gamma-(1+self.params['gamma'])*(self.gamma-1.))/(4.*(self.gamma-1.))
 			eta=self.vw_extra/self.sigma(self.rinf)
 			omega=self.M_enc(self.rs[0])/self.params['M']
@@ -1390,10 +1399,7 @@ class NukerGalaxy(Galaxy):
 	@property 
 	def rs_residual(self):
 		'''Residual of the stagnation radius from the analytic result'''
-		if len(gal.rs)!=1:
-			print 'There is not one stagnation radius!'
-			return 
-		else:
+		if self.stag_unique:
 			return (self.rs_analytic-(self.rs[0]/self.rinf))/self.rs_analytic
 
 	def rho_func(self, r):
