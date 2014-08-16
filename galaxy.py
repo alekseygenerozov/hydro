@@ -617,6 +617,16 @@ class Galaxy(object):
 		if self.stag_unique:
 			return (np.where(self.radii<self.rs))[0][-1]
 
+	def src_integral(self, src_field, i1, i2):
+		if src_field in self.src_fields:
+			src=getattr(self, src_field)
+			return 4.*np.pi*np.trapz(src[i1:i2+1], x=self.radii[i1:i2+1])
+
+	def fdiff_seg(self, cons_field, i1, i2):
+		if cons_field in self.cons_fields:
+			flux=4.*np.pi*getattr(self, cons_field)
+			return flux[i2]-flux[i1]
+
 	def src_integral_outside(self, src_field):
 		if self.stag_unique and src_field in self.src_fields:
 			src=getattr(self, src_field)
@@ -642,27 +652,32 @@ class Galaxy(object):
 		self.check=True
 		self.check_partial=True
 		check_str=''
-		for i in range(len(self.cons_fields)):
-			fdiff=np.array([self.fdiff_inside(self.cons_fields[i]), self.fdiff_outside(self.cons_fields[i])])
-			integral=np.array([self.src_integral_inside(self.src_fields[i]),self.src_integral_outside(self.src_fields[i])])
-			with warnings.catch_warnings():
-				pdiff=(fdiff-integral)*100./integral
-				pdiff_max=np.max(pdiff)
-			if (abs(pdiff_max)>self.tol) or np.isnan(pdiff_max):
-				self.check=False
-				if i==0 or i==3:
-					self.check_partial=False
-			
-			vals=[fdiff[0],fdiff[1],integral[0],integral[1],pdiff[0],pdiff[1]]
-			check_str=check_str+self.cons_fields[i]+'\n'
-			check_str=check_str+_check_format(vals)
+		if not hasattr(self, 'tol'):
+			self.tol=40.
+		if self.stag_unique:
+			for i in range(len(self.cons_fields)):
+				fdiff=np.array([self.fdiff_inside(self.cons_fields[i]), self.fdiff_outside(self.cons_fields[i])])
+				integral=np.array([self.src_integral_inside(self.src_fields[i]),self.src_integral_outside(self.src_fields[i])])
+				with warnings.catch_warnings():
+					pdiff=(fdiff-integral)*100./integral
+					pdiff_max=np.max(pdiff)
+				if (abs(pdiff_max)>self.tol) or np.isnan(pdiff_max):
+					self.check=False
+					if i==0 or i==3:
+						self.check_partial=False
+				
+				vals=[fdiff[0],fdiff[1],integral[0],integral[1],pdiff[0],pdiff[1]]
+				check_str=check_str+self.cons_fields[i]+'\n'
+				check_str=check_str+_check_format(vals)
+		else:
+			check_str='Stagnation point is not well defined'
 			
 		if write:
 			checkf=open(self.outdir+'/check','w')
 			checkf.write(check_str)
 		return check_str
 
-	def cons_plot(self, dict1={}, dict2={}):
+	def cons_plot_rhr(self, dict1={}, dict2={}):
 		if len(self.fdiff)==0:
 			self._cons_update()
 
@@ -679,13 +694,24 @@ class Galaxy(object):
 		plt.close()
 		return fig1
 
+	def cons_plot(self, dict1={}, dict2={}):
+		'''Plot integrated source vs. flux difference for pairs of grid points'''
+		fig1,ax1=plt.subplots(4, sharex=True, figsize=(10,32))
+		for i in range(4):
+			src=[self.src_integral(self.src_fields[i], j, j+1) for j in range(self.length-1)]
+			fdiff=[self.fdiff_seg(self.cons_fields[i], j, j+1) for j in range(self.length-1)]
+			ax1[i].loglog(self.radii[1:],src)
+			ax1[i].loglog(self.radii[1:],fdiff)
+
+		plt.close()
+
 	def sol_plot(self, init=False, dict1={}, dict2={}, index=-1):
-		fig,ax=plt.subplots()
+		fig1,ax1=plt.subplots(3, sharex=True, figsize=(10,24))
 
 		for k in range(1,4):
-			ax.loglog(self.saved[index,:,0], self.saved[index,:,j], **dict1)
+			ax1[k-1].loglog(self.saved[index,:,0], self.saved[index,:,k], **dict1)
 			if init:
-				ax.loglog(self.saved[0,:,0], self.saved[0,:,j], **dict2)
+				ax1[k-1].loglog(self.saved[0,:,0], self.saved[0,:,k], **dict2)
 		plt.show()
 		
 	#Adding ghost zones onto the edges of the grid (moving the start of the grid)
