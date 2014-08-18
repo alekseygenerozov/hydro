@@ -702,17 +702,20 @@ class Galaxy(object):
 			fdiff=[self.fdiff_seg(self.cons_fields[i], j, j+1) for j in range(self.length-1)]
 			ax1[i].loglog(self.radii[1:],src)
 			ax1[i].loglog(self.radii[1:],fdiff)
-
 		plt.close()
+		return fig1
+		
 
 	def sol_plot(self, init=False, dict1={}, dict2={}, index=-1):
 		fig1,ax1=plt.subplots(3, sharex=True, figsize=(10,24))
 
 		for k in range(1,4):
-			ax1[k-1].loglog(self.saved[index,:,0], self.saved[index,:,k], **dict1)
+			ax1[k-1].loglog(self.saved[index,:,0], abs(self.saved[index,:,k]), **dict1)
 			if init:
-				ax1[k-1].loglog(self.saved[0,:,0], self.saved[0,:,k], **dict2)
-		plt.show()
+				ax1[k-1].loglog(self.saved[0,:,0], abs(self.saved[0,:,k]), **dict2)
+		plt.close()
+		return fig1
+
 		
 	#Adding ghost zones onto the edges of the grid (moving the start of the grid)
 	def _add_ghosts(self):

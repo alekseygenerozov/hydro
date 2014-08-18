@@ -97,12 +97,15 @@ def main():
         description='Code for generating movies')
     parser.add_argument('loc', nargs=1,
         help='Name of directory containing saved data.')
+    parser.add_argument('-i', '--interval', nargs=1, type=int, default=1)
+
     #Read input file
     args=parser.parse_args()
     loc=args.loc[0]
+    interval=args.interval[0]
+    print interval
 
-
-    movie_save(loc)
+    movie_save(loc, interval=interval)
 
 
 if __name__ == '__main__':
