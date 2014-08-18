@@ -9,7 +9,7 @@ class CaseConfigParser(SafeConfigParser):
 def params_parse(conf_file):
 	config = CaseConfigParser()
 	params_dict={}
-	param_names=['Re', 'Re_s', 'visc_scheme', 'bdry', 'sinterval', 'tinterval', 'eps', 'sigma_heating', 'isot']
+	param_names=['Re', 'Re_s', 'visc_scheme', 'bdry', 'sinterval', 'tinterval', 'eps', 'sigma_heating', 'isot','eta']
 
 	try:
 		f=open(conf_file,'r')
