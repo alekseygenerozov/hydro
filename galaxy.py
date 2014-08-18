@@ -660,7 +660,7 @@ class Galaxy(object):
 				integral=np.array([self.src_integral_inside(self.src_fields[i]),self.src_integral_outside(self.src_fields[i])])
 				with warnings.catch_warnings():
 					pdiff=(fdiff-integral)*100./integral
-					pdiff_max=np.max(pdiff)
+					pdiff_max=np.max(np.abs(pdiff))
 				if (abs(pdiff_max)>self.tol) or np.isnan(pdiff_max):
 					self.check=False
 					if i==0 or i==3:
