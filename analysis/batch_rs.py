@@ -59,6 +59,10 @@ for name in gal_dict.keys():
 			continue
 		if not gal.check_partial:
 			continue
+		if not gal.stag_unique:
+			continue
+
+		print gal.name, gal.vw_extra
 
 		x=gal.rs/gal.rinf
 		vw_eff=(gal.sigma_inf**2.+(vw*1.E5)**2.)**0.5

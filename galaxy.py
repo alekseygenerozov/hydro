@@ -1399,7 +1399,7 @@ class NukerGalaxy(Galaxy):
 	@property
 	def sigma_inf(self):
 		'''Velocity dispersion at the radius of influence.'''
-		return self.sigma(self.rinf)
+		return self.sigma_interp(self.rinf)
 
 	@property
 	def rb(self):
@@ -1417,8 +1417,8 @@ class NukerGalaxy(Galaxy):
 		'''Analytic formula for the stagnation radius'''
 		if self.stag_unique:
 			A=(4.*self.gamma-(1+self.params['gamma'])*(self.gamma-1.))/(4.*(self.gamma-1.))
-			eta=self.vw_extra/self.sigma(self.rinf)
-			omega=self.M_enc(self.rs[0])/self.params['M']
+			eta=self.vw_extra/self.sigma_inf
+			omega=self.M_enc_interp(self.rs[0])/self.params['M']
 
 			lrho_interp=interp1d(np.log(self.radii),self.log_rho)
 			dens_slope=np.abs(derivative(lrho_interp, np.log(self.rs[0]), dx=self.delta_log[0]))

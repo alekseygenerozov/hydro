@@ -76,6 +76,8 @@ for idx,name in enumerate(gal_dict.keys()):
 			continue
 		if not gal.check_partial:
 			continue
+		if not gal.stag_unique:
+			continue
 
 		if j==0:
 			gammas.append(gal.params['gamma'])
@@ -95,12 +97,12 @@ for idx,name in enumerate(gal_dict.keys()):
 			# 	ax2.text(mass_core[j][-1], eddr_core[j][-1], gal.name, fontsize=12)
 		ax2.loglog(mass, eddr, marker, color=cols[j], markersize=10)
 
-		mdot[j].append(gal.mdot)
-		mdot_approx[j].append(gal.mdot_approx)
-		try:
-			mdot_bondi[j].append(gal.mdot_bondi)
-		except:
-			mdot_bondi[j].append(np.nan)
+		# mdot[j].append(gal.mdot)
+		# mdot_approx[j].append(gal.mdot_approx)
+		# try:
+		# 	mdot_bondi[j].append(gal.mdot_bondi)
+		# except:
+		# 	mdot_bondi[j].append(np.nan)
 
 		# if j==2:
 		# 	print gal.name,gal.params['gamma'],gal.params['type'],mdot[2][-1]/mdot[1][-1]
@@ -108,22 +110,7 @@ for idx,name in enumerate(gal_dict.keys()):
 mass_fit=[1.E6, 1.E9]
 print eddr
 
-# for j,vw in enumerate(vws):
-# 	mdot[j]=np.array(mdot[j])
-# 	mdot_bondi[j]=np.array(mdot_bondi[j])
 
-# 	#pow_cusp, coeff_cusp=np.polyfit(np.log(mass[j]),np.log(eddr[j]),1)
-# 	print np.abs((mdot[j]-mdot_bondi[j])/mdot[j])
-
-# 	ax1[0].hist(eddr[j], color=cols[j], bins=np.logspace(-9, -1, 16), alpha=0.5)
-# 	ax2.loglog(mass_fit, [np.exp(coeff_cusp)*m**pow_cusp for m in mass_fit], color=cols[j])
-# 	ax2.loglog(mass[j], eddr[j], 's', color=cols[j], markersize=10)
-# 	ax2.loglog(mass_core[j], eddr_core[j], '<', color=cols[j], markersize=10)
-
-
-# 	#ax3.plot(range(0,len(mdot[j])), [np.abs((mdot[j,i]-mdot_bondi[j,i])/mdot[j,i]) for i in range(0, len(mdot[j]))],'s',color=cols[j])
-# 	#ax3[1].plot(range(0,len(mdot[j])), np.abs((mdot[j]-mdot_approx[j])/mdot[j]),'s',color=cols[j])
-# ax1[1].hist(eddr_core[2], color=cols[2], bins=np.logspace(-9, -1, 16), histtype='step', linestyle='dashed')
 
 
 
