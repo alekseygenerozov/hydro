@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 
 import galaxy
-import parker
-import sol_check as sc
 
 import astropy.constants as const
 import numpy as np
@@ -13,9 +11,6 @@ from math import e
 
 from astropy.io import ascii
 from astropy.table import Column
-
-from ConfigParser import SafeConfigParser
-import ast
 
 #Constants
 G=const.G.cgs.value
