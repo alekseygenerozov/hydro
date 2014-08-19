@@ -1166,6 +1166,9 @@ class Galaxy(object):
 			if not self.isot:
 				self._update_temp()
 			self._update_ghosts()
+		grid_prims=[getattr(self, field) for field in self.out_fields]
+		if np.any(np.isnan(grid_prims)):
+			sys.exit(3)
 
 		self.time_cur+=self.delta_t
 		self.total_time+=self.delta_t
