@@ -29,7 +29,6 @@ import tde_jet
 import gal_properties
 
 import progressbar as progress
-import ipyani
 
 import os.path
 import re

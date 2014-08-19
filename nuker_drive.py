@@ -9,8 +9,6 @@ import numpy as np
 
 import argparse
 from params_parse import params_parse
-
-import ipyani
 from math import e
 
 from astropy.io import ascii
