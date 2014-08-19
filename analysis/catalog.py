@@ -119,11 +119,11 @@ class Catalog(object):
 	def rs(self):
 		fig,ax=plt.subplots(2, sharex=False, figsize=(10, 16))
 		ax[1].tick_params(\
-		    axis='x',          # changes apply to the x-axis
-		    which='both',      # both major and minor ticks are affected
-		    bottom='off',      # ticks along the bottom edge are off
-		    top='off',         # ticks along the top edge are off
-		    labelbottom='off')
+			axis='x',          # changes apply to the x-axis
+			which='both',      # both major and minor ticks are affected
+			bottom='off',      # ticks along the bottom edge are off
+			top='off',         # ticks along the top edge are off
+			labelbottom='off')
 
 		ax[0].set_xlabel(r'$v_w/\sigma$')
 		ax[0].set_ylabel(r'$r_{\rm stag}/r_{\rm soi}$')
@@ -172,6 +172,8 @@ class Catalog(object):
 				col=self.cols[1]
 			elif (gal.rs/gal.r_Ia<1 and gal.vw_extra==2.E7):
 				col=self.cols[0]
+			elif (gal.vw_extra==2.E7):
+				col='b'
 			elif gal.vw_extra==5.E7:
 				col='k'
 			else: 

@@ -18,8 +18,13 @@ def params_parse(conf_file):
 		return {}
 	for name in param_names:
 		try:
-			params_dict[name]=ast.literal_eval(config.get('params',name))
+			val=config.get('params',name)
 		except:
-			pass
+			continue
+
+		try:
+			params_dict[name]=ast.literal_eval(val)
+		except:
+			params_dict[name]=val
 
 	return params_dict
