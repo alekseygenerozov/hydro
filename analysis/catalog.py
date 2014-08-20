@@ -52,7 +52,6 @@ class Catalog(object):
 		for idx,name in enumerate(gal_dict.keys()):
 			for j,vw in enumerate(vws):
 				d=base_d+'/'+name+'/vw_'+str(vw)
-				#print d
 				try:
 					gal=dill.load(open(d+'/grid.p', 'rb'))
 				except:
@@ -151,7 +150,7 @@ class Catalog(object):
 				ax[0].loglog(eta, x, symbol, label=gal.name, color=self.cols[self.gal_vws[idx]], markersize=10)
 				ax[1].plot(idx, gal.rs_residual, symbol, label=gal.name, color=self.cols[self.gal_vws[idx]], markersize=10)
 		datacursor(formatter='{label}'.format)
-		return fig,ax
+		return fig
 
 	def cooling(self):
 		fig,ax=plt.subplots(1, sharex=True, figsize=(10, 8))
