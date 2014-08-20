@@ -45,8 +45,8 @@ class Catalog(object):
 		self.gals_full=[]
 		self.gal_vws_full=[]
 		self.index_full={}
+		self.dirs=[]
 		
-
 		for idx,name in enumerate(gal_dict.keys()):
 			for j,vw in enumerate(vws):
 				d=base_d+'/'+name+'/vw_'+str(vw)
@@ -54,10 +54,11 @@ class Catalog(object):
 				try:
 					gal=dill.load(open(d+'/grid.p', 'rb'))
 				except:
-					#print 'unable to open pickle'
 					continue
-				# gal.cons_check(write=False)
+
 				if not gal.check_partial and gal.name not in force_include:
+					if gal.vw_extra==2.E7:
+						print gal.name
 					continue
 				if gal.vw_extra!=vw*1.E5:
 					continue
@@ -68,13 +69,19 @@ class Catalog(object):
 				self.gals_full.append(gal)
 				self.gal_vws_full.append(j)
 				self.index_full[(gal.name,vw)]=len(self.gals_full)-1
+				self.dirs.append(d)
+
 
 		self.gals_full=np.array(self.gals_full)
 		self.gal_vws_full=np.array(self.gal_vws_full)
 		self.index_full=np.array(self.index_full)
 		self.filt=np.array(range(len(self.gals_full)))
 
+		self.restore_saved()
 
+	def restore_saved(self):
+		[gal.restore_saved(self.dirs[idx]) for idx,gal in enumerate(self.gals)]
+			
 	def select_subset(self, param, val, compare=operator.eq):
 		'''Select a subset of the galaxy catalog based on some condition
 
@@ -293,6 +300,17 @@ class Catalog(object):
 				ax.loglog(gal.radii, gal.q_grid, label=gal.name)
 
 		return fig, ax
+
+	def mdot_convergence(self):
+		fig,ax=plt.subplots()
+		for idx, gal in enumerate(self.gals):
+			mdot_series=gal.mdot_convergence()
+			plt.title(gal.name+','+str(gal.vw_extra/1.E5)) 
+			ax.semilogy(gal.time_stamps, mdot_series[0])
+			ax.semilogy(gal.time_stamps, mdot_series[1])
+			fig.savefig(gal.name+'_'+str(gal.vw_extra/1.E5)+'_mdot_series.pdf')
+			plt.cla()
+
 
 
 		

@@ -382,6 +382,11 @@ class Galaxy(object):
 
 		return cls(init=init)
 
+	def restore_saved(self, loc):
+		'''Restored saved data to galaxy'''
+		saved=np.load(loc+'/save.npz')
+		self.saved=saved['a']
+		self.time_stamps=saved['b']
 
 	def _init_grid(self):
 		#Initializing the radial grid
@@ -1213,6 +1218,23 @@ class Galaxy(object):
 		'''
 		mdot=4.*np.pi*self.radii[self.start]**2*self.rho[self.start]*abs(self.vel[self.start])
 		return mdot
+
+	def mdot_convergence(self):
+		'''Check for convergence of mdot'''
+		mdots=[]
+		zeros=[]
+		for s in self.saved:
+		    vel_interp=interp1d(self.radii, s[:,2])
+		    crossings=zero_crossings(s[:,2])
+		    cross=crossings[0]
+		    zero=brentq(vel_interp, self.radii[cross], self.radii[cross+1])
+		    zeros.append(zero)
+		    mdots.append(self.eta*self.M_enc_interp(zero)/th)
+		return [mdots, abs(4.*np.pi*self.saved[:,4,4])]
+
+
+
+
 
 	@property
 	def mdot(self):
