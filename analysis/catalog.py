@@ -1,6 +1,8 @@
 import re
 from .. import galaxy
 from .. import gal_properties
+
+from bash_command import bash_command as bc
 import numpy as np
  
 import matplotlib.pylab as plt
@@ -303,18 +305,21 @@ class Catalog(object):
 		return fig, ax
 
 	def convergence(self):
-		fig,ax=plt.subplots(2, figsize=(10, 8))
+		bc('mkdir -p series/')
 		for idx, gal in enumerate(self.gals):
-			mdot_series=gal.mdot_convergence()
-			en_series=gal.en_convergence()
-			plt.title(gal.name+','+str(gal.vw_extra/1.E5)) 
-			ax[0].semilogy(gal.time_stamps, mdot_series[0])
-			ax[0].semilogy(gal.time_stamps, mdot_series[1])
-			ax[1].plot(gal.time_stamps, en_series[0])
-			ax[1].plot(gal.time_stamps, en_series[1])
-			fig.savefig(gal.name+'_'+str(gal.vw_extra/1.E5)+'_series.pdf')
-			plt.clf()
-
-
+			fig,ax=plt.subplots(nrows=2, ncols=2, figsize=(10,8))
+			series=[gal.convergence('frho'),gal.convergence('fen')]
+			fig.suptitle(gal.name+','+str(gal.vw_extra/1.E5)) 
+			
+			ax[0,0].set_yscale('log')
+			ax[0,1].set_yscale('log')
+			for j in range(2):
+				ax[j,0].plot(gal.time_stamps, series[j][0])
+				ax[j,0].plot(gal.time_stamps, series[j][1])
+				ax[j,1].plot(gal.time_stamps, series[j][2])
+				ax[j,1].plot(gal.time_stamps, series[j][3])
+			
+			plt.savefig('series/'+gal.name+'_'+str(gal.vw_extra/1.E5)+'_series.pdf')
+			plt.close()
 
 		

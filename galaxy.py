@@ -654,8 +654,11 @@ class Galaxy(object):
 	def _pdiff(self, i):
 		fdiff=np.array([self.fdiff_inside(self.cons_fields[i]), self.fdiff_outside(self.cons_fields[i])])
 		integral=np.array([self.src_integral_inside(self.src_fields[i]),self.src_integral_outside(self.src_fields[i])])
-		with warnings.catch_warnings():
-			pdiff=(fdiff-integral)*100./integral
+		if not np.any(fdiff):
+			pdiff=[None,None]
+		else:
+			with warnings.catch_warnings():
+				pdiff=(fdiff-integral)*100./integral
 		return [fdiff, integral, pdiff]
 
 	def cons_check(self, write=True):
@@ -1226,29 +1229,35 @@ class Galaxy(object):
 		mdot=4.*np.pi*self.radii[self.start]**2*self.rho[self.start]*abs(self.vel[self.start])
 		return mdot
 
-	def mdot_convergence(self):
-		'''Check for convergence of mdot'''
-		mdot_sol=[]
-		mdot_src=[]
-		for i in range(len(self.saved)):
-			self.reset(i)
-			fdiff,integral,pdiff=self._pdiff(0)
-			mdot_src.append(fdiff[0])
-			mdot_sol.append(integral[0])
-					
-		return [mdot_src, mdot_sol]
+	@property
+	def cons_indices(self):
+		cons_indices={}
+		for idx, field in enumerate(self.cons_fields):
+			cons_indices[field]=idx
+		return cons_indices
 		
-	def en_convergence(self):
-		'''Check for convergence of energy'''
-		mdot_sol=[]
-		mdot_src=[]
+	def cons_index(self,cons_field):
+		try:
+			return self.cons_indices[cons_field]
+		except KeyError:
+			return None
+	
+	def convergence(self, cons_field):
+		'''Check for convergence of conserved quantity'''
+		cons_idx=self.cons_index(cons_field)
+		if cons_idx==None:
+			return
+		sol,src,sol_out,src_out=[],[],[],[]
+
 		for i in range(len(self.saved)):
 			self.reset(i)
-			fdiff,integral,pdiff=self._pdiff(3)
-			mdot_src.append(fdiff[0])
-			mdot_sol.append(integral[0])
+			fdiff,integral,pdiff=self._pdiff(cons_idx)
+			src.append(fdiff[0])
+			sol.append(integral[0])
+			src_out.append(fdiff[1])
+			sol_out.append(integral[1])
 					
-		return [mdot_src, mdot_sol]
+		return [src, sol, src_out, sol_out]
 		
 	@property
 	def mdot(self):
