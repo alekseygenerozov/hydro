@@ -651,6 +651,13 @@ class Galaxy(object):
 			flux=4.*np.pi*getattr(self, cons_field)
 			return flux[self.end]-flux[self.rs_outside]	
 
+	def _pdiff(self, i):
+		fdiff=np.array([self.fdiff_inside(self.cons_fields[i]), self.fdiff_outside(self.cons_fields[i])])
+		integral=np.array([self.src_integral_inside(self.src_fields[i]),self.src_integral_outside(self.src_fields[i])])
+		with warnings.catch_warnings():
+			pdiff=(fdiff-integral)*100./integral
+		return [fdiff, integral, pdiff]
+
 	def cons_check(self, write=True):
 		'''Check level of conservation'''
 		self.check=True
@@ -660,11 +667,8 @@ class Galaxy(object):
 			self.tol=40.
 		if self.stag_unique:
 			for i in range(len(self.cons_fields)):
-				fdiff=np.array([self.fdiff_inside(self.cons_fields[i]), self.fdiff_outside(self.cons_fields[i])])
-				integral=np.array([self.src_integral_inside(self.src_fields[i]),self.src_integral_outside(self.src_fields[i])])
-				with warnings.catch_warnings():
-					pdiff=(fdiff-integral)*100./integral
-					pdiff_max=np.max(np.abs(pdiff))
+				fdiff,integral,pdiff=self._pdiff(i)
+				pdiff_max=np.max(np.abs(pdiff))
 				if (abs(pdiff_max)>self.tol) or np.isnan(pdiff_max):
 					self.check=False
 					if i==0 or i==3:
@@ -1133,15 +1137,18 @@ class Galaxy(object):
 
 		if np.any(np.isnan(grid_prims)):
 			sys.exit(3)
-
-	def revert(self, index):
-		'''Revert grid to an earlier state'''
+			
+	def reset(self, index):
+		'''Reset density, temperature, and velocity of grid'''
 		self.log_rho=np.log(self.saved[index,:,1])
 		self.vel=self.saved[index,:,2]*self.saved[index,:,7]
+		self.temp=self.saved[index,:,3]
 		self.s=self.saved[index,:,6]
-		if not self.isot:
-			self._update_temp()
-
+		
+	def revert(self, index):
+		'''Revert grid, saved, fdiff array and output files to an earlier state.'''
+		self.reset(index)
+		
 		index=index%self.length
 		self.saved=self.saved[:index+1]
 		self.time_stamps=self.time_stamps[:index+1]
@@ -1221,21 +1228,28 @@ class Galaxy(object):
 
 	def mdot_convergence(self):
 		'''Check for convergence of mdot'''
-		mdots=[]
-		zeros=[]
-		for s in self.saved:
-		    vel_interp=interp1d(self.radii, s[:,2])
-		    crossings=zero_crossings(s[:,2])
-		    cross=crossings[0]
-		    zero=brentq(vel_interp, self.radii[cross], self.radii[cross+1])
-		    zeros.append(zero)
-		    mdots.append(self.eta*self.M_enc_interp(zero)/th)
-		return [mdots, abs(4.*np.pi*self.saved[:,4,4])]
-
-
-
-
-
+		mdot_sol=[]
+		mdot_src=[]
+		for i in range(len(self.saved)):
+			self.reset(i)
+			fdiff,integral,pdiff=self._pdiff(0)
+			mdot_src.append(fdiff[0])
+			mdot_sol.append(integral[0])
+					
+		return [mdot_src, mdot_sol]
+		
+	def en_convergence(self):
+		'''Check for convergence of energy'''
+		mdot_sol=[]
+		mdot_src=[]
+		for i in range(len(self.saved)):
+			self.reset(i)
+			fdiff,integral,pdiff=self._pdiff(3)
+			mdot_src.append(fdiff[0])
+			mdot_sol.append(integral[0])
+					
+		return [mdot_src, mdot_sol]
+		
 	@property
 	def mdot(self):
 		return self.eta*self.M_enc_interp(self.rs)/th

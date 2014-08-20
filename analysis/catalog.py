@@ -88,12 +88,13 @@ class Catalog(object):
 		:param string param: galaxy parameter to compare
 		:param val: value to compare the 
 		'''
-		params=np.array([gal.get_param(param) for gal in self.gals])
+		params=np.array([gal.get_param(param) for gal in self.gals_full])
 		val=np.array([val]).flatten()
-		self.filt=np.empty(0, dtype=int)
+		filt=np.empty(0, dtype=int)
 		for v in val:
-			self.filt=np.append(self.filt, np.where(compare(params,v))[0])
-		self.filt=np.array(self.filt).flatten()
+			filt=np.append(filt, np.where(compare(params,v))[0])
+		filt=filt.flatten()
+		self.filt=np.intersect1d(filt,self.filt)
 
 	def subset_off(self):
 		self.filt=range(len(self.gals_full))
@@ -301,15 +302,18 @@ class Catalog(object):
 
 		return fig, ax
 
-	def mdot_convergence(self):
-		fig,ax=plt.subplots()
+	def convergence(self):
+		fig,ax=plt.subplots(2, figsize=(10, 8))
 		for idx, gal in enumerate(self.gals):
 			mdot_series=gal.mdot_convergence()
+			en_series=gal.en_convergence()
 			plt.title(gal.name+','+str(gal.vw_extra/1.E5)) 
-			ax.semilogy(gal.time_stamps, mdot_series[0])
-			ax.semilogy(gal.time_stamps, mdot_series[1])
-			fig.savefig(gal.name+'_'+str(gal.vw_extra/1.E5)+'_mdot_series.pdf')
-			plt.cla()
+			ax[0].semilogy(gal.time_stamps, mdot_series[0])
+			ax[0].semilogy(gal.time_stamps, mdot_series[1])
+			ax[1].plot(gal.time_stamps, en_series[0])
+			ax[1].plot(gal.time_stamps, en_series[1])
+			fig.savefig(gal.name+'_'+str(gal.vw_extra/1.E5)+'_series.pdf')
+			plt.clf()
 
 
 
