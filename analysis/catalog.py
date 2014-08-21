@@ -34,7 +34,7 @@ th=4.35*10**17
 year=3.15569E7
 
 class Catalog(object):
-	def __init__(self, base_d, vws=[200., 500., 1000.],force_include=[]):
+	def __init__(self, base_d, vws=[200., 500., 1000.],bad_gals=False):
 		gal_dict=galaxy.nuker_params()
 		self.base_names=gal_dict.keys()
 		self.vws=vws
@@ -53,7 +53,7 @@ class Catalog(object):
 		self.gal_vws_full=[]
 		self.index_full={}
 		self.dirs=[]
-		
+
 		for idx,name in enumerate(gal_dict.keys()):
 			for j,vw in enumerate(vws):
 				d=base_d+'/'+name+'/vw_'+str(vw)
@@ -62,12 +62,16 @@ class Catalog(object):
 				except:
 					continue
 
-				if not gal.check_partial and gal.name not in force_include:
+				if not hasattr(gal, 'check_partial'):
+					gal.cons_check(write=False)
+
+				if (not bad_gals and not gal.check_partial) or (bad_gals and gal.check_partial):
 					continue
 				if gal.vw_extra!=vw*1.E5:
+					print gal.name
 					continue
 				if len(gal.rs)!=1:
-					print gal.name+' has more than 1 stagnation point'
+					print gal.name+' '+str(gal.vw_extra/1.E5)+' has more than 1 stagnation point'
 					continue
 
 				self.gals_full.append(gal)

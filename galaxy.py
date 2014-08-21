@@ -654,7 +654,7 @@ class Galaxy(object):
 	def _pdiff(self, i):
 		fdiff=np.array([self.fdiff_inside(self.cons_fields[i]), self.fdiff_outside(self.cons_fields[i])])
 		integral=np.array([self.src_integral_inside(self.src_fields[i]),self.src_integral_outside(self.src_fields[i])])
-		if not np.any(fdiff):
+		if fdiff[0]==None:
 			pdiff=[None,None]
 		else:
 			with warnings.catch_warnings():
@@ -675,11 +675,11 @@ class Galaxy(object):
 		check_str=''
 		if not hasattr(self, 'tol'):
 			self.tol=40.
-		if self.stag_unique:
+		try:
 			for i in range(len(self.cons_fields)):
 				fdiff,integral,pdiff=self._pdiff(i)
-				pdiff_max=np.max(np.abs(pdiff))
-				if (abs(pdiff_max)>self.tol) or np.isnan(pdiff_max):
+				pdiff_max=abs(np.max(np.abs(pdiff)))
+				if (pdiff_max>self.tol) or np.isnan(pdiff_max):
 					self.check=False
 					if i==0 or i==3:
 						self.check_partial=False
@@ -687,8 +687,12 @@ class Galaxy(object):
 				vals=[fdiff[0],fdiff[1],integral[0],integral[1],pdiff[0],pdiff[1]]
 				check_str=check_str+self.cons_fields[i]+'\n'
 				check_str=check_str+_check_format(vals)
-		else:
-			check_str='Stagnation point is not well defined'
+		except:
+			self.check=False
+			self.check_partial=False
+			check_str='Could not perform conservation check.'
+			if not self.stag_unique:
+				print 'Stagnation point is not uniquely defined.'
 			
 		if write:
 			checkf=open(self.outdir+'/check','w')
