@@ -58,8 +58,6 @@ class Catalog(object):
 					continue
 
 				if not gal.check_partial and gal.name not in force_include:
-					if gal.vw_extra==2.E7:
-						print gal.name
 					continue
 				if gal.vw_extra!=vw*1.E5:
 					continue
@@ -190,7 +188,7 @@ class Catalog(object):
 			xray=gal.bh_xray
 			#Stellar mass inferred from the BH mass
 			stellar_mass=gal.params['M']/M_sun/0.006
-			ax.scatter(stellar_mass, 1.E-4*xray,color=col)
+			ax.loglog([stellar_mass], [1.E-4*xray],'o',color=col, label=gal.name)
 
 		m1=1.E8
 		m2=1.E12
@@ -199,7 +197,7 @@ class Catalog(object):
 		ax.loglog([m1, m2], [lum1, lum2])
 		ax.loglog([m1, m2], [10.**38.25, 10.**38.25])
 
-		return fig,ax
+		return fig
 
 	def profiles(self):
 		fig,ax=plt.subplots(3, sharex=True, figsize=(10, 24))
