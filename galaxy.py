@@ -660,7 +660,14 @@ class Galaxy(object):
 			with warnings.catch_warnings():
 				pdiff=(fdiff-integral)*100./integral
 		return [fdiff, integral, pdiff]
-
+		
+	def pdiff_max(self):
+		pdiff_max=0.
+		for i in range(len(self.cons_fields)):
+			fdiff,integral,pdiff=self._pdiff(i)
+			pdiff_max=max([pdiff_max, max(np.abs(pdiff))])
+		return pdiff_max
+		
 	def cons_check(self, write=True):
 		'''Check level of conservation'''
 		self.check=True

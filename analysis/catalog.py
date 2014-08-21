@@ -38,9 +38,14 @@ class Catalog(object):
 		gal_dict=galaxy.nuker_params()
 		self.base_names=gal_dict.keys()
 		self.vws=vws
+		if len(vws)<3:
+			len_cols=3
+		elif len(vws)>8:
+			len_cols=8
+		else:
+			len_cols=len(vws)	
+		self.cols=brewer2mpl.get_map('Set2', 'qualitative', len_cols).mpl_colors
 
-
-		self.cols=brewer2mpl.get_map('Set2', 'qualitative', len(vws)).mpl_colors
 		self.cusp_symbol='s'
 		self.core_symbol='<'
 
@@ -73,8 +78,8 @@ class Catalog(object):
 
 		self.gals_full=np.array(self.gals_full)
 		self.gal_vws_full=np.array(self.gal_vws_full)
-		self.index_full=np.array(self.index_full)
 		self.filt=np.array(range(len(self.gals_full)))
+		print self.filt
 
 		self.restore_saved()
 
@@ -106,10 +111,6 @@ class Catalog(object):
 	def gal_vws(self):
 		return self.gal_vws_full[self.filt]
 
-	@property
-	def index(self):
-		return self.index_full[self.filt]
-
 	def mdot_mass(self):
 		fig,ax=plt.subplots()
 		for idx, gal in enumerate(self.gals):
@@ -135,6 +136,7 @@ class Catalog(object):
 		ax[0].set_xlabel(r'$v_w/\sigma$')
 		ax[0].set_ylabel(r'$r_{\rm stag}/r_{\rm soi}$')
 		ax[1].set_ylabel('Frational difference\n from  analytic prediction')
+		#ax[1].set_ylim(-0.1, 0.8)
 
 		for idx, gal in enumerate(self.gals):
 				x=gal.rs[0]/gal.rinf
