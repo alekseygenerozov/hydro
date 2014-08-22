@@ -1034,6 +1034,7 @@ class Galaxy(object):
 		log=open(self.outdir+'/log', 'w')
 		log.write(self.log)
 		dill.dump(self.non_standard, open(self.outdir+'/non_standard.p','wb'))
+		self.backup()
 
 	def backup(self):
 		bash_command('mkdir -p '+self.outdir)
@@ -1488,6 +1489,23 @@ class NukerGalaxy(Galaxy):
 		'''Residual of the stagnation radius from the analytic result'''
 		if self.stag_unique:
 			return (self.rs_analytic-(self.rs[0]/self.rinf))/self.rs_analytic
+
+	@property
+	def vw_rs(self):
+		if self.stag_unique:
+			return (self.sigma_interp(self.rs[0])**2+self.vw_extra**2)**0.5
+
+	@property
+	def temp_rs_analytic(self):
+		'''Analytic expression for the temperature at the stagnation radius'''
+		if self.stag_unique:
+			return ((self.gamma-1.)/self.gamma)*0.5*self.vw_rs**2*self.mu*mp/kb
+
+	@property
+	def temp_rs_residual(self):
+		'''Residual of the temperature at the stagnation radius compared to the analytic result'''
+		if self.stag_unique:
+			return (self.temp_rs_analytic-self.temp_interp(self.rs))/self.temp_rs_analytic
 
 	def rho_func(self, r):
 		try:
