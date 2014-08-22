@@ -1345,7 +1345,7 @@ class NukerGalaxy(Galaxy):
 
 
 	@classmethod
-	def from_dir(cls, name, loc, index=-1, rescale=1., gdata=None, length=None):
+	def from_dir(cls, name, loc, index=-1, rescale=1., gdata=None, length=None, params=False):
 		init={}
 		init_array=prepare_start(np.load(loc+'/save.npz')['a'][index])
 		if rescale=='auto':
@@ -1371,7 +1371,15 @@ class NukerGalaxy(Galaxy):
 		else:
 			init['length']=length
 
-		return cls(name, init=init, gdata=gdata)
+		gal=cls(name, init=init, gdata=gdata)
+		try:
+			params=dill.load(open(loc+'/non_standard.p','rb'))
+			[gal.set_param(param, params[param]) for param in params]
+		except:
+			pass 
+
+		return gal
+
 
 	@memoize
 	def rho_stars(self,r):
