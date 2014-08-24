@@ -647,6 +647,10 @@ class Galaxy(object):
 
 		return gal_properties.mdot_bondi(self.params['M'],cs_rb,rho_rb)
 
+	@property 
+	def chandra_mdot_ratio(self):
+		return self.chandra_mdot_bondi/self.mdot
+
 	def _update_temp(self):
 		self.temp=(np.exp(self.log_rho)*np.exp(self.mu*mp*self.s/kb))**(2./3.)
 
@@ -1348,11 +1352,16 @@ class Galaxy(object):
 
 	@property
 	def mdot(self):
-		return self.eta*self.M_enc_interp(self.rs)/th
+		if self.stag_unique:
+			return self.eta*self.M_enc_interp(self.rs[0])/th
 
 	@property
 	def mdot_bondi(self):
-		return gal_properties.mdot_bondi(self.params['M'], self.cs_interp(self.rb), self.rho_interp(self.rb))
+		return gal_properties.mdot_bondi(self.params['M'], self.cs_profile(self.rb), self.rho_profile(self.rb))
+
+	@property
+	def mdot_bondi_ratio(self):
+		return self.mdot_bondi/self.mdot
 
 	@property
 	def mdot_approx(self):
@@ -1547,7 +1556,7 @@ class NukerGalaxy(Galaxy):
 	def rb(self):
 		'''Bondi radius computed from G M/cs(rb)^2=rb'''
 		f=lambda r:G*self.params['M']/(self.cs_profile(r))**2-r
-		rb=fsolve(f, G*self.params['M']/self.cs[-1]**2)
+		rb=fsolve(f, G*self.params['M']/self.cs_profile(self.rinf)**2)
 
 		return rb
 

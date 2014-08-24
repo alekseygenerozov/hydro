@@ -20,7 +20,8 @@ import operator
 import astropy.constants as const
 from astropy.table import Table
 
-from collections import OrderedDict
+import warnings
+
 
 #Constants
 G=const.G.cgs.value
@@ -110,6 +111,10 @@ class Catalog(object):
 	@property
 	def gals(self):
 		return self.gals_full[self.filt]
+
+	@property
+	def names(self):
+		return [gal.name for gal in self.gals]
 
 	@property
 	def gal_vws(self):
@@ -294,6 +299,20 @@ class Catalog(object):
 
 		return eta_tab
 
+	def gen_table(self, fields):
+		cols={'name':[], 'vw_extra':[]}
+		for field in fields:
+			cols[field]=[]
+
+		for i, gal in enumerate(self.gals):
+			cols['name'].append(gal.name)
+			cols['vw_extra'].append(gal.vw_extra)
+			for j,field in enumerate(fields):
+				cols[field].append(gal.get_param(field))
+
+		return Table(cols)
+
+
 	def q_plot(self, scale_radius=True):
 		fig,ax=plt.subplots(1, figsize=(10, 8))
 		ax.set_xlabel(r'$r/r_{\rm inf}$')
@@ -326,11 +345,15 @@ class Catalog(object):
 			plt.close()
 
 	def chandra_compare(self):
-		fig, ax = plt.subplots(figsize=(10,8))
-		width = 0.35
-		for idx, gal in enumerate(self.gals):
-			rects1 = ax.bar(idx, (gal.mdot_bondi)/gal.mdot, width, color='b')
-			rects2 = ax.bar(idx+width, (gal.chandra_mdot_bondi)/gal.mdot, width, color='r')
-
-		plt.close()
+		fig, ax = plt.subplots(ncols=2, figsize=(10,5))
+		ax[0].set_xscale('log')
+		ax[1].set_xscale('log')
 		
+		ratio=np.array([gal.mdot_bondi_ratio for gal in self.gals])
+		ratio2=np.array([gal.chandra_mdot_ratio for gal in self.gals])
+		ax[0].hist(ratio, bins=np.logspace(-3,3,60), color='b', label=self.names)
+		ax[1].hist(ratio2, bins=np.logspace(-3,3,60), color='b', label=self.names)
+
+		return fig
+
+
