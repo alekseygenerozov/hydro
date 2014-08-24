@@ -42,6 +42,8 @@ mp=const.m_p.cgs.value
 h=const.h.cgs.value
 c=const.c.cgs.value
 pc=const.pc.cgs.value
+kpc=1.E3*pc
+eV=u.eV.to('erg')
 th=4.35*10**17
 year=3.15569E7
 
@@ -165,6 +167,13 @@ def bash_command(cmd):
 	'''Run command from the bash shell'''
 	process=subprocess.Popen(['/bin/bash', '-c',cmd],  stdin=subprocess.PIPE, stdout=subprocess.PIPE)
 	return process.communicate()[0]
+
+def temp_kev(temp):
+	'''Convert temperature (K) to keV'''
+	return kb*temp/eV/1.E3
+
+def kev_temp(en):
+	return en*eV*1.E3/kb
 
 def lambda_c(temp):
 	'''Power law approximation to cooling function for solar abundance plasma (taken from figure 34.1 of Draine)'''
@@ -587,6 +596,56 @@ class Galaxy(object):
 
 	def src_en_interp(self, r):
 		return interp1d(self.radii, self.src_en)(r)	
+
+	def rho_profile(self, r):
+		'''Calculate density at any radius from our profile--use power law extrapolations beyond the bpundary'''
+		return extrap1d_pow(interp1d(self.radii, self.rho))(r)
+
+	def temp_profile(self, r):
+		'''Calculate temperature at any radius from our profile--use power law extrapolations beyond the bpundary'''
+		return extrap1d_pow(interp1d(self.radii, self.temp))(r)
+
+	def cs_profile(self,r):
+		'''sound speed at any radius'''
+		return gal_properties.cs(self.temp_profile(r),mu=self.mu, gamma=self.gamma)
+
+	@property 
+	def chandra_obs(self):
+		'''"Observation" of rho/T Chandra resolution limit (~0.1 kpc at 17 Mpc--fixed for now)'''
+		r1,r2=0.1*kpc,0.2*kpc
+		rho1,rho2=self.rho_profile(r1),self.rho_profile(r2)
+		temp1,temp2=self.temp_profile(r1),self.temp_profile(r2)
+
+		return {'rad':[r1,r2],'rho':[rho1,rho2], 'temp':[temp1, temp2]}
+		
+	@property 
+	def chandra_rb(self):
+		'''Bondi radius which would be inferred for Chandra observation.'''
+		co=self.chandra_obs
+		temp1=co['temp'][0]
+		cs=gal_properties.cs(temp1,mu=self.mu,gamma=self.gamma)
+
+		return G*self.params['M']/cs**2.
+
+	@property
+	def chandra_extrap(self):
+		'''Extrapolating the quantities that would be observed by Chandra to rb'''
+		co=self.chandra_obs
+		r1,r2=co['rad']
+		rho1,rho2=co['rho']
+		temp1,temp2=co['temp']
+
+		temp_rb=temp1
+		rho_rb=pow_extrap(self.chandra_rb,r1,r2,rho1,rho2)
+		return rho_rb,temp_rb
+
+	@property
+	def chandra_mdot_bondi(self):
+		'''mdot_bondi which would be inferred from the Chandra observation'''
+		rho_rb, temp_rb=self.chandra_extrap
+		cs_rb=gal_properties.cs(temp_rb,mu=self.mu,gamma=self.gamma)
+
+		return gal_properties.mdot_bondi(self.params['M'],cs_rb,rho_rb)
 
 	def _update_temp(self):
 		self.temp=(np.exp(self.log_rho)*np.exp(self.mu*mp*self.s/kb))**(2./3.)
@@ -1270,14 +1329,30 @@ class Galaxy(object):
 			sol_out.append(integral[1])
 					
 		return [src, sol, src_out, sol_out]
+
+	def convergence_plot(self):
+		fig,ax=plt.subplots(nrows=2, ncols=2, figsize=(10,8))
+		series=[self.convergence('frho'),self.convergence('fen')]
+		fig.suptitle(self.name+','+str(self.vw_extra/1.E5)) 
 		
+		ax[0,0].set_yscale('log')
+		ax[0,1].set_yscale('log')
+		for j in range(2):
+			ax[j,0].plot(self.time_stamps, series[j][0])
+			ax[j,0].plot(self.time_stamps, series[j][1])
+			ax[j,1].plot(self.time_stamps, series[j][2])
+			ax[j,1].plot(self.time_stamps, series[j][3])
+		
+		# plt.close()
+		return fig
+
 	@property
 	def mdot(self):
 		return self.eta*self.M_enc_interp(self.rs)/th
 
 	@property
 	def mdot_bondi(self):
-		return 4.*np.pi*0.25*(G*self.params['M'])**2.*self.cs_interp(self.rb)**-3*self.rho_interp(self.rb)
+		return gal_properties.mdot_bondi(self.params['M'], self.cs_interp(self.rb), self.rho_interp(self.rb))
 
 	@property
 	def mdot_approx(self):
@@ -1471,7 +1546,7 @@ class NukerGalaxy(Galaxy):
 	@property
 	def rb(self):
 		'''Bondi radius computed from G M/cs(rb)^2=rb'''
-		f=lambda r:G*self.params['M']/(self.cs_interp(r))**2-r
+		f=lambda r:G*self.params['M']/(self.cs_profile(r))**2-r
 		rb=fsolve(f, G*self.params['M']/self.cs[-1]**2)
 
 		return rb
@@ -1515,15 +1590,6 @@ class NukerGalaxy(Galaxy):
 		if self.stag_unique:
 			return (self.temp_rs_analytic-self.temp_interp(self.rs))/self.temp_rs_analytic
 
-	def rho_func(self, r):
-		try:
-			return np.interp(r, self.radii, self.rho)
-		except:
-			if r<self.radii[0]:
-				return self._power_zones(r, 0, 3, 'rho')
-			else:
-				return self._power_zones(r, self.length-1, self.length-4, 'rho')
-
 	@property
 	def tde_table(self):
 		'''Get crossing radius for jet'''
@@ -1534,7 +1600,7 @@ class NukerGalaxy(Galaxy):
 		r=integrate.ode(jet.vj)
 
 		r.set_integrator('vode')
-		r.set_initial_value(0., t=jet.delta).set_f_params(self.rho_func)
+		r.set_initial_value(0., t=jet.delta).set_f_params(self.rho_profile)
 		time=0.
 		try:
 			while r.y<r.t:
@@ -1547,11 +1613,11 @@ class NukerGalaxy(Galaxy):
 			print inst
 			rc=np.nan
 
-		f=jet.rho(rc)/self.rho_func(rc)
+		f=jet.rho(rc)/self.rho_profile(rc)
 		gamma=jet.gamma_j*(1.+2.*jet.gamma_j*f**(-0.5))**(-0.5)   
 
 		rc_col=Column([rc/pc], name=r'$r_c$', format=latex_exp.latex_exp)
-		n_rc_col=Column([self.rho_func(rc)/(self.mu*mp)], name=r'$n_{rc}$',format=latex_exp.latex_exp)
+		n_rc_col=Column([self.rho_profile(rc)/(self.mu*mp)], name=r'$n_{rc}$',format=latex_exp.latex_exp)
 		gamma_rc_col=Column([gamma], name=r'$\Gamma_{rc}$',format=latex_exp.latex_exp)
 		t_rc_col=Column([time/year], name=r't$_{rc}$',format=latex_exp.latex_exp)
 		M_col=self.params_table['M']

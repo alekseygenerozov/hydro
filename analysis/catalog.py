@@ -325,4 +325,12 @@ class Catalog(object):
 			plt.savefig('series/'+gal.name+'_'+str(gal.vw_extra/1.E5)+'_series.pdf')
 			plt.close()
 
+	def chandra_compare(self):
+		fig, ax = plt.subplots(figsize=(10,8))
+		width = 0.35
+		for idx, gal in enumerate(self.gals):
+			rects1 = ax.bar(idx, (gal.mdot_bondi)/gal.mdot, width, color='b')
+			rects2 = ax.bar(idx+width, (gal.chandra_mdot_bondi)/gal.mdot, width, color='r')
+
+		plt.close()
 		

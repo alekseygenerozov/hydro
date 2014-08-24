@@ -30,4 +30,14 @@ def l_edd(M):
 def mdot_edd(M, efficiency=0.1):
 	return l_edd(M)/(efficiency*c**2)
 
+def rb(M, cs):
+	'''Bondi radius from the mass M and sound speed cs'''
+	return G*M/cs**2
+
+def mdot_bondi(M, cs, rho):
+	return 4.*np.pi*0.25*(G*M)**2.*cs**-3*rho
+
+def cs(temp, mu=1, gamma=5./3.):
+	return (gamma*kb*temp/(mu*mp))**0.5
+
 
