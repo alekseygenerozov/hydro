@@ -640,6 +640,27 @@ class Galaxy(object):
 		return rho_rb,temp_rb
 
 	@property
+	def chandra_plot(self):
+		'''Showing points on density profile that would be used for Chandra simulated observation'''
+		fig,ax=plt.subplots()
+		
+		co=self.chandra_obs
+		r1,r2=np.array(co['rad'])
+		rho1,rho2=np.array(co['rho'])
+		rbc=self.chandra_rb
+		rho_rbc=self.chandra_extrap[0]
+
+		ax.loglog([r1,r2],[rho1,rho2], 'rs')
+		ax.loglog(self.radii, self.rho)
+		ax.loglog(rbc, rho_rbc, 'g<')
+		ax.loglog(self.rb, self.rho_profile(self.rb), 'k<')
+		fig.suptitle(self.name+',{0},{1:3.2e},{2:3.2e}'.format(self.vw_extra/1.E5, self.chandra_mdot_ratio,self.mdot_bondi_ratio[0]))
+
+		plt.close()
+		return fig
+
+
+	@property
 	def chandra_mdot_bondi(self):
 		'''mdot_bondi which would be inferred from the Chandra observation'''
 		rho_rb, temp_rb=self.chandra_extrap
@@ -1347,7 +1368,7 @@ class Galaxy(object):
 			ax[j,1].plot(self.time_stamps, series[j][2])
 			ax[j,1].plot(self.time_stamps, series[j][3])
 		
-		# plt.close()
+		plt.close()
 		return fig
 
 	@property
