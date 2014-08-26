@@ -376,6 +376,14 @@ class Catalog(object):
 			plt.savefig('series/'+gal.name+'_'+str(gal.vw_extra/1.E5)+'_series.pdf')
 			plt.close()
 
+	def conduction(self):
+		bc('mkdir -p conduction/')
+		for idx, gal in enumerate(self.gals):
+			fig=gal.cond_plot
+
+			fig.savefig('conduction/'+gal.name+'_'+str(gal.vw_extra/1.E5)+'_conduction.pdf')
+			plt.close()
+
 	def chandra_compare(self):
 		fig, ax = plt.subplots(ncols=2, figsize=(10,5))
 		ax[0].set_xscale('log')

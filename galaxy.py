@@ -39,6 +39,7 @@ G=const.G.cgs.value
 M_sun=const.M_sun.cgs.value
 kb=const.k_B.cgs.value
 mp=const.m_p.cgs.value
+me=const.m_e.cgs.value
 h=const.h.cgs.value
 c=const.c.cgs.value
 pc=const.pc.cgs.value
@@ -543,6 +544,10 @@ class Galaxy(object):
 	def sp_heating(self):
 		return (0.5*self.vel**2+0.5*self.vw**2-(self.gamma)/(self.gamma-1)*(self.pres/self.rho))
 
+	@property
+	def heating_pos(self):
+		return self.q_grid*(self.vel**2+self.vw**2)
+
 	@property 
 	def u(self):
 		return self.pres/(self.rho*(self.gamma-1.))
@@ -578,6 +583,19 @@ class Galaxy(object):
 				warnings.simplefilter("ignore")
 				src_s=self.q_grid*self.sp_heating/(self.rho*self.vel*self.temp)
 		return src_s
+
+	@property
+	def spitzer(self):
+		'''Spitzer conductivity'''
+		kappa0=2*10.**-6.
+		kappa=kappa0*self.temp**(5./2.)
+		return kappa
+
+	@property
+	def shcherba(self):
+		'''Conductivity from Shcherbakov'''
+		kappa=0.1*kb*np.sqrt(kb*self.temp/me)*self.radii*(self.rho/(self.mu*mp))
+		return kappa
 
 	def rho_interp(self, r):
 		return interp1d(self.radii, self.rho)(r)
@@ -629,10 +647,6 @@ class Galaxy(object):
 	def cs_profile(self,r):
 		'''sound speed at any radius'''
 		return gal_properties.cs(self.temp_profile(r),mu=self.mu, gamma=self.gamma)
-
-	@property 
-	def chandra_mdot_ratio(self):
-		return self.chandra_mdot_bondi/self.mdot
 
 	def _update_temp(self):
 		self.temp=(np.exp(self.log_rho)*np.exp(self.mu*mp*self.s/kb))**(2./3.)
@@ -897,6 +911,14 @@ class Galaxy(object):
 			vel=frho/self.rho[i]/self.radii[i]**2
 			self.vel[i]=vel
 
+	#Evaluate terms of the form div(kappa*df/dr)-->Diffusion like terms (useful for something like the conductivity)
+	def get_diffusion(self, i, coeff, field):
+		dkappa_dr=self.get_spatial_deriv(i, coeff)
+		dfield_dr=self.get_spatial_deriv(i, field)
+		d2field_dr2=self.get_spatial_deriv(i, field, second=True)
+
+		kappa=getattr(self,coeff)[i]
+		return kappa*d2field_dr2+dkappa_dr*dfield_dr+(2./self.radii[i])*(kappa*dfield_dr)
 
 	#Getting derivatives for a given field (density, velocity, etc.). If second is set to be true then the discretized 2nd
 	#deriv is evaluated instead of the first
@@ -1443,6 +1465,36 @@ class Galaxy(object):
 		cs_rb=gal_properties.cs(temp_rb,mu=self.mu,gamma=self.gamma)
 
 		return gal_properties.mdot_bondi(self.params['M'],cs_rb,rho_rb)
+
+	@property 
+	def chandra_mdot_ratio(self):
+		return self.chandra_mdot_bondi/self.mdot
+
+	@property 
+	def cond_spitzer(self):
+		return [self.get_diffusion(i, 'spitzer', 'temp') for i in range(self.start, self.end)]
+
+	@property 
+	def cond_shcherba(self):
+		return [self.get_diffusion(i, 'shcherba', 'temp') for i in range(self.start, self.end)]
+
+	@property
+	def cond_spitzer_ratio(self):
+		return self.cond_spitzer/self.heating_pos[self.start:self.end]
+
+	@property 
+	def cond_shcherba_ratio(self):
+		return self.cond_shcherba/self.heating_pos[self.start:self.end]
+
+	@property
+	def cond_plot(self):
+		'''Plot condunctivity vs. heating rate.'''
+		fig,ax=plt.subplots()
+		ax.loglog(self.radii[self.start:self.end],abs(self.cond_spitzer_ratio))
+		ax.loglog(self.radii[self.start:self.end],abs(self.cond_shcherba_ratio))
+		plt.close()
+
+		return fig
 
 class NukerGalaxy(Galaxy):
 	'''Sub-classing galaxy above to represent Nuker parameterized galaxies'''
