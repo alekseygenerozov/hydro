@@ -533,6 +533,8 @@ class Galaxy(object):
 
 		return r_ss
 
+
+
 	@property 
 	def alpha_max(self):
 		return np.max([np.abs(self.vel+self.cs), np.abs(self.vel-self.cs)],axis=0)
@@ -627,14 +629,6 @@ class Galaxy(object):
 	def cs_profile(self,r):
 		'''sound speed at any radius'''
 		return gal_properties.cs(self.temp_profile(r),mu=self.mu, gamma=self.gamma)
-
-	@property
-	def chandra_mdot_bondi(self):
-		'''mdot_bondi which would be inferred from the Chandra observation'''
-		rho_rb, temp_rb=self.chandra_extrap
-		cs_rb=gal_properties.cs(temp_rb,mu=self.mu,gamma=self.gamma)
-
-		return gal_properties.mdot_bondi(self.params['M'],cs_rb,rho_rb)
 
 	@property 
 	def chandra_mdot_ratio(self):
@@ -1442,6 +1436,13 @@ class Galaxy(object):
 		plt.close()
 		return fig
 
+	@property
+	def chandra_mdot_bondi(self):
+		'''mdot_bondi which would be inferred from the Chandra observation'''
+		rho_rb, temp_rb=self.chandra_extrap
+		cs_rb=gal_properties.cs(temp_rb,mu=self.mu,gamma=self.gamma)
+
+		return gal_properties.mdot_bondi(self.params['M'],cs_rb,rho_rb)
 
 class NukerGalaxy(Galaxy):
 	'''Sub-classing galaxy above to represent Nuker parameterized galaxies'''
@@ -1694,10 +1695,26 @@ class NukerGalaxy(Galaxy):
 		return table.hstack([self.params_table, self.tde_table, Table([[self.rs/pc]], names=['$r_{s}$']), Table([[self.eddr]],\
 			names=[r'$\dot{M}/\dot{M_{\rm edd}}$'])])
 
+	@property 
+	def vsig(self):
+		vsig=ascii.read('vsig.csv', delimiter=',',names=['gal', 'vsig'])
+		vsig_idx=np.where(vsig['gal']==self.name)[0]
+		if vsig['vsig'][vsig_idx]:
+			return vsig['vsig'][vsig_idx][0]
+		else:
+			return None
 
-		
+	@property
+	def rcirc(self):
+		'''Compute the circularization radius at the stagnation radius'''
+		if self.stag_unique and self.vsig:
+			return (self.vsig**2.*self.rs[0])
 
-
+	@property
+	def rc_rss_ratio(self):
+		'''Ratio of circularizion radius to inner sonic point'''
+		if self.stag_unique and self.vsig:
+			return self.rcirc/self.r_ss
 
 
 
