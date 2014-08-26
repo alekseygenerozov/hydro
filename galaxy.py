@@ -212,6 +212,7 @@ def nuker_params(skip=False):
 	:param skip: skip over galaxies discarded by Wang and Merritt
 	'''
 	table=ascii.read('wm')
+	vsig=ascii.read('vsig.csv', delimiter=',',names=['gal', 'vsig'])
 	galaxies=dict()
 	for i in range(len(table)):
 		d=dict()
@@ -232,6 +233,12 @@ def nuker_params(skip=False):
 			d['type']='Core'
 		else:
 			d['type']='Cusp'
+		vsig_idx=np.where(vsig['gal']==table[i]['Name'])[0]
+		if vsig['vsig'][vsig_idx]:
+			d['vsig']= vsig['vsig'][vsig_idx][0]
+		else:
+			d['vsig']=None
+
 		galaxies[table[i]['Name']]=d
 
 	return galaxies
@@ -514,6 +521,18 @@ class Galaxy(object):
 		else:                                                                                                     
 			return np.sqrt(kb*self.temp/(self.mu*mp))
 
+	@property
+	def mach(self):
+		return self.vel/self.cs
+
+	@property 
+	def r_ss(self):
+		'''Radius at which the velocity would become supersonic on the inner boundary'''
+		slope=get_slope(self.radii[0], self.radii[3], self.mach[0], self.mach[3])
+		r_ss=self.radii[0]*np.exp((1./slope)*np.log(-1./self.mach[0]))
+
+		return r_ss
+
 	@property 
 	def alpha_max(self):
 		return np.max([np.abs(self.vel+self.cs), np.abs(self.vel-self.cs)],axis=0)
@@ -608,57 +627,6 @@ class Galaxy(object):
 	def cs_profile(self,r):
 		'''sound speed at any radius'''
 		return gal_properties.cs(self.temp_profile(r),mu=self.mu, gamma=self.gamma)
-
-	@property 
-	def chandra_obs(self):
-		'''"Observation" of rho/T Chandra resolution limit (~0.1 kpc at 17 Mpc--fixed for now)'''
-		r1,r2=0.1*kpc,0.2*kpc
-		rho1,rho2=self.rho_profile(r1),self.rho_profile(r2)
-		temp1,temp2=self.temp_profile(r1),self.temp_profile(r2)
-
-		return {'rad':[r1,r2],'rho':[rho1,rho2], 'temp':[temp1, temp2]}
-		
-	@property 
-	def chandra_rb(self):
-		'''Bondi radius which would be inferred for Chandra observation.'''
-		co=self.chandra_obs
-		temp1=co['temp'][0]
-		cs=gal_properties.cs(temp1,mu=self.mu,gamma=self.gamma)
-
-		return G*self.params['M']/cs**2.
-
-	@property
-	def chandra_extrap(self):
-		'''Extrapolating the quantities that would be observed by Chandra to rb'''
-		co=self.chandra_obs
-		r1,r2=co['rad']
-		rho1,rho2=co['rho']
-		temp1,temp2=co['temp']
-
-		temp_rb=temp1
-		rho_rb=pow_extrap(self.chandra_rb,r1,r2,rho1,rho2)
-		return rho_rb,temp_rb
-
-	@property
-	def chandra_plot(self):
-		'''Showing points on density profile that would be used for Chandra simulated observation'''
-		fig,ax=plt.subplots()
-		
-		co=self.chandra_obs
-		r1,r2=np.array(co['rad'])
-		rho1,rho2=np.array(co['rho'])
-		rbc=self.chandra_rb
-		rho_rbc=self.chandra_extrap[0]
-
-		ax.loglog([r1,r2],[rho1,rho2], 'rs')
-		ax.loglog(self.radii, self.rho)
-		ax.loglog(rbc, rho_rbc, 'g<')
-		ax.loglog(self.rb, self.rho_profile(self.rb), 'k<')
-		fig.suptitle(self.name+',{0},{1:3.2e},{2:3.2e}'.format(self.vw_extra/1.E5, self.chandra_mdot_ratio,self.mdot_bondi_ratio[0]))
-
-		plt.close()
-		return fig
-
 
 	@property
 	def chandra_mdot_bondi(self):
@@ -1389,10 +1357,15 @@ class Galaxy(object):
 		(4./3.)*np.pi*self.rs**2*self.rho_interp(self.rs)*(G*self.params['M']/self.rs)**0.5
 
 	@property
+	def mdot_edd(self):
+		'''Calculate Eddington accretion rate assuming a 10 percent radiative efficiency'''
+		return gal_properties.mdot_edd(self.params['M'], efficiency=0.1)
+
+	@property
 	def eddr(self):
 		'''Compute the Eddington ratio assuming a 10 percent radiative efficiency
 		'''
-		return self.mdot/gal_properties.mdot_edd(self.params['M'], efficiency=0.1)
+		return self.mdot/self.mdot_edd
 
 	@property
 	def bh_xray(self):
@@ -1418,6 +1391,57 @@ class Galaxy(object):
 
 	def x_ray_lum_interp(self, r):
 		return interp1d(self.radii, self.x_ray_lum)(r)
+
+	@property 
+	def chandra_obs(self):
+		'''"Observation" of rho/T Chandra resolution limit (~0.1 kpc at 17 Mpc--fixed for now)'''
+		r1,r2=0.1*kpc,0.2*kpc
+		rho1,rho2=self.rho_profile(r1),self.rho_profile(r2)
+		temp1,temp2=self.temp_profile(r1),self.temp_profile(r2)
+
+		return {'rad':[r1,r2],'rho':[rho1,rho2], 'temp':[temp1, temp2]}
+		
+	@property 
+	def chandra_rb(self):
+		'''Bondi radius which would be inferred for Chandra observation.'''
+		co=self.chandra_obs
+		temp1=co['temp'][0]
+		cs=gal_properties.cs(temp1,mu=self.mu,gamma=self.gamma)
+
+		return G*self.params['M']/cs**2.
+
+	@property
+	def chandra_extrap(self):
+		'''Extrapolating the quantities that would be observed by Chandra to rb'''
+		co=self.chandra_obs
+		r1,r2=co['rad']
+		rho1,rho2=co['rho']
+		temp1,temp2=co['temp']
+
+		temp_rb=temp1
+		rho_rb=pow_extrap(self.chandra_rb,r1,r2,rho1,rho2)
+		return rho_rb,temp_rb
+
+	@property
+	def chandra_plot(self):
+		'''Showing points on density profile that would be used for Chandra simulated observation'''
+		fig,ax=plt.subplots()
+		
+		co=self.chandra_obs
+		r1,r2=np.array(co['rad'])
+		rho1,rho2=np.array(co['rho'])
+		rbc=self.chandra_rb
+		rho_rbc=self.chandra_extrap[0]
+
+		ax.loglog([r1,r2],[rho1,rho2], 'rs')
+		ax.loglog(self.radii, self.rho)
+		ax.loglog(rbc, rho_rbc, 'g<')
+		ax.loglog(self.rb, self.rho_profile(self.rb), 'k<')
+		fig.suptitle(self.name+',{0},{1:3.2e},{2:3.2e}'.format(self.vw_extra/1.E5, self.chandra_mdot_ratio,self.mdot_bondi_ratio[0]))
+
+		plt.close()
+		return fig
+
 
 class NukerGalaxy(Galaxy):
 	'''Sub-classing galaxy above to represent Nuker parameterized galaxies'''
@@ -1485,6 +1509,10 @@ class NukerGalaxy(Galaxy):
 
 		return gal
 
+	@property
+	def mstar_total(self):
+		'''Get total stellar from the Mbh-Mbulge relation'''
+		return self.params['M']/0.006
 
 	@memoize
 	def rho_stars(self,r):

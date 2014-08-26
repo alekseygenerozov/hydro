@@ -177,14 +177,9 @@ class Catalog(object):
 		return fig
 
 	def bh_xray(self):
-		fig,ax=plt.subplots(1, figsize=(10,8))
-		ax.set_xlabel(r'$M_{*}$')
-		ax.set_ylabel(r'$L_x$ [ergs/s]')
-		ax.set_ylim([10.**33, 10.**42])
-
-		ax.set_xscale('log')
-		ax.set_yscale('log')
-
+		fig,ax=plt.subplots(2, figsize=(10,16))
+		ax[0].set_xlabel(r'$M_{*}$')
+		ax[0].set_ylabel(r'$\epsilon \dot{M} c^2$ [ergs/s]')
 		for idx, gal in enumerate(self.gals):
 			if (gal.rs/gal.r_Ia>1 and gal.vw_extra==5.E7):
 				col=self.cols[1]
@@ -196,19 +191,56 @@ class Catalog(object):
 				col='k'
 			else: 
 				continue
-			xray=gal.bh_xray
-			#Stellar mass inferred from the BH mass
-			stellar_mass=gal.params['M']/M_sun/0.006
-			ax.loglog([stellar_mass], [1.E-4*xray],'o',color=col, label=gal.name)
+
+			stellar_mass=gal.mstar_total/galaxy.M_sun
+
+			ax[0].loglog([stellar_mass], [5.E-7*gal.mdot*c**2],'o',color=col, label=(gal.name,'{0:3.2e}'.format(gal.eddr)))
+			ax[1].loglog([stellar_mass], [2.E-4*(gal.eddr)**2*gal.mdot_edd*c**2],'o',color=col, label=(gal.name,'{0:3.2e}'.format(gal.eddr)))
 
 		m1=1.E8
 		m2=1.E12
 		lum1=galaxy.pow_extrap(m1,10.**11.96, 10.**11.48, 10.**39.62, 10.**39.23)
 		lum2=galaxy.pow_extrap(m2,10.**11.96, 10.**11.48, 10.**39.62, 10.**39.23)
-		ax.loglog([m1, m2], [lum1, lum2])
-		ax.loglog([m1, m2], [10.**38.25, 10.**38.25])
+		for i in range(2):
+			ax[i].loglog([m1, m2], [lum1, lum2])
+			ax[i].loglog([m1, m2], [10.**38.25, 10.**38.25])
 
+		plt.close()
 		return fig
+
+	# def bh_xray(self):
+	# 	fig,ax=plt.subplots(1, figsize=(10,8))
+	# 	ax.set_xlabel(r'$M_{*}$')
+	# 	ax.set_ylabel(r'$L_x$ [ergs/s]')
+	# 	ax.set_ylim([10.**33, 10.**42])
+
+	# 	ax.set_xscale('log')
+	# 	ax.set_yscale('log')
+
+	# 	for idx, gal in enumerate(self.gals):
+	# 		if (gal.rs/gal.r_Ia>1 and gal.vw_extra==5.E7):
+	# 			col=self.cols[1]
+	# 		elif (gal.rs/gal.r_Ia<1 and gal.vw_extra==2.E7):
+	# 			col=self.cols[0]
+	# 		elif (gal.vw_extra==2.E7):
+	# 			col='b'
+	# 		elif gal.vw_extra==5.E7:
+	# 			col='k'
+	# 		else: 
+	# 			continue
+	# 		xray=gal.bh_xray
+	# 		#Stellar mass inferred from the BH mass
+	# 		stellar_mass=gal.mstar_total/M_sun
+	# 		ax.loglog([stellar_mass], [1.E-4*xray],'o',color=col, label=gal.name)
+
+	# 	m1=1.E8
+	# 	m2=1.E12
+	# 	lum1=galaxy.pow_extrap(m1,10.**11.96, 10.**11.48, 10.**39.62, 10.**39.23)
+	# 	lum2=galaxy.pow_extrap(m2,10.**11.96, 10.**11.48, 10.**39.62, 10.**39.23)
+	# 	ax.loglog([m1, m2], [lum1, lum2])
+	# 	ax.loglog([m1, m2], [10.**38.25, 10.**38.25])
+
+	# 	return fig
 
 	def profiles(self):
 		fig,ax=plt.subplots(3, sharex=True, figsize=(10, 24))
