@@ -533,9 +533,7 @@ class Galaxy(object):
 		r_ss=self.radii[0]*np.exp((1./slope)*np.log(-1./self.mach[0]))
 
 		return r_ss
-
-
-
+  
 	@property 
 	def alpha_max(self):
 		return np.max([np.abs(self.vel+self.cs), np.abs(self.vel-self.cs)],axis=0)
@@ -558,7 +556,7 @@ class Galaxy(object):
 
 	@property 
 	def fen(self):
-		return self.rho*self.radii**2*self.vel*self.bernoulli
+		return self.rho*self.radii**2*self.vel*self.bernoulli+self.radii**2*self.f_cond
 
 	@property 
 	def src_rho(self):
@@ -581,7 +579,7 @@ class Galaxy(object):
 		else:
 			with warnings.catch_warnings():
 				warnings.simplefilter("ignore")
-				src_s=self.q_grid*self.sp_heating/(self.rho*self.vel*self.temp)
+				src_s=(self.q_grid*self.sp_heating+self.cond)/(self.rho*self.vel*self.temp)
 		return src_s
 
 	@property
@@ -798,7 +796,6 @@ class Galaxy(object):
 		plt.close()
 		return fig1
 
-		
 	#Adding ghost zones onto the edges of the grid (moving the start of the grid)
 	def _add_ghosts(self):
 		self.start=self._num_ghosts
@@ -923,8 +920,10 @@ class Galaxy(object):
 	#Getting derivatives for a given field (density, velocity, etc.). If second is set to be true then the discretized 2nd
 	#deriv is evaluated instead of the first
 	def get_spatial_deriv(self, i, field, second=False):
-		field_list=getattr(self,field)[i-3:i+4]
+		if i<self.start or i>self.end:
+			return np.nan
 
+		field_list=getattr(self,field)[i-3:i+4]
 		if second:
 			return np.sum(field_list*self.second_deriv_coeffs[i])		
 		else:
@@ -1004,7 +1003,6 @@ class Galaxy(object):
 
 		return -vel*dv_dr-dlog_rho_dr*kb*temp/(self.mu*mp)-(kb/(self.mu*mp))*dtemp_dr-self.grad_phi_grid[i]+art_visc-(self.q_grid[i]*vel/rho)
 
-
 	#Evaluating the partial derivative of entropy with respect to time
 	def ds_dt(self, i):
 		rho=self.rho[i]
@@ -1022,8 +1020,7 @@ class Galaxy(object):
 		else:
 			art_visc=art_visc*(self.delta[i]/np.mean(self.delta))
 
-
-		return self.q_grid[i]*self.sp_heating[i]/(rho*temp)-vel*ds_dr+art_visc
+		return self.q_grid[i]*self.sp_heating[i]/(rho*temp)-vel*ds_dr+art_visc+self.cond[i]/(rho*temp)
 
 	def isot_off(self):
 		'''Switch off isothermal evolution'''
@@ -1470,25 +1467,45 @@ class Galaxy(object):
 	def chandra_mdot_ratio(self):
 		return self.chandra_mdot_bondi/self.mdot
 
+	@property
+	def kappa_cond(self):
+		if not hasattr(self, 'cond_scheme'):
+			self.set_param('cond_scheme',None)
+
+		if self.cond_scheme=='spitzer':
+			return self.spitzer
+		elif self.cond_scheme=='shcherba':
+			return self.shcherba
+		else:
+			return np.zeros(self.length) 
+
+	@property
+	def f_cond(self):
+		return np.array([-self.kappa_cond[i]*self.get_spatial_deriv(i, 'temp') for i in range(0,self.length)])
+
 	@property 
 	def cond_spitzer(self):
-		return [self.get_diffusion(i, 'spitzer', 'temp') for i in range(self.start, self.end)]
+		return np.array([-self.get_diffusion(i, 'spitzer', 'temp') for i in range(0, self.length)])
 
 	@property 
 	def cond_shcherba(self):
-		return [self.get_diffusion(i, 'shcherba', 'temp') for i in range(self.start, self.end)]
+		return np.array([-self.get_diffusion(i, 'shcherba', 'temp') for i in range(0, self.length)])
+
+	@property
+	def cond(self):
+		return np.array([-self.get_diffusion(i, 'kappa_cond', 'temp') for i in range(0, self.length)])
 
 	@property
 	def cond_spitzer_ratio(self):
-		return self.cond_spitzer/self.heating_pos[self.start:self.end]
+		return self.cond_spitzer[self.start:self.end]/self.heating_pos[self.start:self.end]
 
 	@property 
 	def cond_shcherba_ratio(self):
-		return self.cond_shcherba/self.heating_pos[self.start:self.end]
+		return self.cond_shcherba[self.start:self.end]/self.heating_pos[self.start:self.end]
 
 	@property
 	def cond_plot(self):
-		'''Plot condunctivity vs. heating rate.'''
+		'''Plot conductivity vs. heating rate.'''
 		fig,ax=plt.subplots()
 		ax.loglog(self.radii[self.start:self.end],abs(self.cond_spitzer_ratio))
 		ax.loglog(self.radii[self.start:self.end],abs(self.cond_shcherba_ratio))
