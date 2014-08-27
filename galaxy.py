@@ -635,11 +635,15 @@ class Galaxy(object):
 		return interp1d(self.radii, self.src_en)(r)	
 
 	def rho_profile(self, r):
-		'''Calculate density at any radius from our profile--use power law extrapolations beyond the bpundary'''
+		'''Calculate density at any radius from our profile--use power law extrapolations beyond the boundary'''
 		return extrap1d_pow(interp1d(self.radii, self.rho))(r)
 
+	def vel_profile(self,r):
+		'''Calculate density at any radius from our profile--use power law extrapolations beyond the boundary'''
+		return extrap1d_pow(interp1d(self.radii, self.vel))(r)		
+
 	def temp_profile(self, r):
-		'''Calculate temperature at any radius from our profile--use power law extrapolations beyond the bpundary'''
+		'''Calculate temperature at any radius from our profile--use power law extrapolations beyond the boundary'''
 		return extrap1d_pow(interp1d(self.radii, self.temp))(r)
 
 	def cs_profile(self,r):
