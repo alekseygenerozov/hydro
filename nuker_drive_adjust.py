@@ -45,7 +45,7 @@ def main():
 		except:
 			pass
 
-		if type(param)==float:
+		if type(init[i]['param'])==float:
 			gal.solve_adjust(5.*gal.tcross, init[i]['param'], init[i]['target'])
 		else:
 			gal.set_param(init[i]['param'], init[i]['target'])
