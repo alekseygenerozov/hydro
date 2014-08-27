@@ -43,7 +43,7 @@ def main():
 		try:
 			gal.set_param('outdir', init[i]['outdir'])
 		except:
-			pass
+			gal.set_param('outdir', gal.name+'/vw_{0}_{1}_{2}'.format(gal.vw_extra/1.E5, init[i]['param'], init[i]['target']))
 
 		if type(init[i]['param'])==float:
 			gal.solve_adjust(5.*gal.tcross, init[i]['param'], init[i]['target'])
