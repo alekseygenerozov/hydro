@@ -19,6 +19,7 @@ import operator
 
 import astropy.constants as const
 from astropy.table import Table
+from astropy.io import ascii
 
 import warnings
 
@@ -396,4 +397,12 @@ class Catalog(object):
 
 		return fig
 
+	def input_gen(self, param, target):
+		bc('mkdir -p input/')
+		col_names=['pickle', 'param', 'target', 'outdir']
+		for idx, gal in enumerate(self.gals):
+			d=gal.name+'/vw_{0}'.format(gal.vw_extra/1.E5)
+			d2=gal.name+'/vw_{0}_{1}_{2}'.format(gal.vw_extra/1.E5, param, target)
+			tab=Table([[d+'/grid.p'], [param], [target], [d2]], names=col_names)
+			ascii.write(tab,'input/input_{0}'.format(idx))
 
