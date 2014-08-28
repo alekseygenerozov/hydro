@@ -26,7 +26,7 @@ def main():
 	parser=argparse.ArgumentParser(
 		description='Code for gradually adjusting parameter to a particular value')
 	parser.add_argument('init', nargs=1,
-		help='File containing list of galaxies and config files')
+		help='File containing list of pickled grids')
 
 	args=parser.parse_args()
 	init=ascii.read(args.init[0])
@@ -45,7 +45,7 @@ def main():
 		except:
 			gal.set_param('outdir', gal.name+'/vw_{0}_{1}_{2}'.format(gal.vw_extra/1.E5, init[i]['param'], init[i]['target']))
 
-		if type(init[i]['value'])==float:
+		if type(init[i]['target'])==float:
 			gal.solve_adjust(5.*gal.tcross, init[i]['param'], init[i]['target'])
 		else:
 			gal.set_param(init[i]['param'], init[i]['target'])
