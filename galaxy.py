@@ -213,7 +213,7 @@ def nuker_params(skip=False):
 	:param skip: skip over galaxies discarded by Wang and Merritt
 	'''
 	table=ascii.read('wm')
-	vsig=ascii.read('vsig.csv', delimiter=',',names=['gal', 'vsig'])
+	#vsig=ascii.read('vsig.csv', delimiter=',',names=['gal', 'vsig','eps'])
 	galaxies=dict()
 	for i in range(len(table)):
 		d=dict()
@@ -234,11 +234,11 @@ def nuker_params(skip=False):
 			d['type']='Core'
 		else:
 			d['type']='Cusp'
-		vsig_idx=np.where(vsig['gal']==table[i]['Name'])[0]
-		if vsig['vsig'][vsig_idx]:
-			d['vsig']= vsig['vsig'][vsig_idx][0]
-		else:
-			d['vsig']=None
+		# vsig_idx=np.where(vsig['gal']==table[i]['Name'])[0]
+		# if vsig['vsig'][vsig_idx]:
+		# 	d['vsig']= vsig['vsig'][vsig_idx][0]
+		# else:
+		# 	d['vsig']=None
 
 		galaxies[table[i]['Name']]=d
 
@@ -446,6 +446,14 @@ class Galaxy(object):
 			return a*(r)**(eta)
 		else:
 			return 0.
+
+	@property
+	def M_bh_8(self):
+		return self.params['M']/1.E8/M_sun
+
+	@property 
+	def vw_extra_500(self):
+		return self.vw_extra/5.E7
 
 	def sigma(self, r):
 		return 0.
@@ -1723,6 +1731,21 @@ class NukerGalaxy(Galaxy):
 			return (self.temp_rs_analytic-self.temp_interp(self.rs))/self.temp_rs_analytic
 
 	@property
+	def rho_rs_analytic(self):
+		if self.params['gamma']<0.2:
+			return 2.5E-24*self.eta/(self.M_bh_8)**0.13/(self.vw_extra_500)
+		else:
+			return 5.5E-24*self.eta*self.vw_extra_500/(self.M_bh_8)**0.57
+
+	@property 
+	def alt_rho_rs_analytic(self):
+		rho=self.rho_rs_analytic
+		if self.params['gamma']<0.2:
+			return 2./3.*rho
+		else:
+			return 1./3.*rho
+			
+	@property
 	def tde_table(self):
 		'''Get crossing radius for jet'''
 		m6=self.params['M']/(1.E6*M_sun)
@@ -1770,10 +1793,11 @@ class NukerGalaxy(Galaxy):
 
 	@property 
 	def vsig(self):
-		vsig=ascii.read('vsig.csv', delimiter=',',names=['gal', 'vsig'])
+		vsig=ascii.read('vsig.csv', delimiter=',',names=['gal', 'vsig', 'eps'])
 		vsig_idx=np.where(vsig['gal']==self.name)[0]
-		if vsig['vsig'][vsig_idx]:
-			return vsig['vsig'][vsig_idx][0]
+		if vsig['vsig'][vsig_idx] and vsig['eps'][vsig_idx]:
+			eps=vsig['eps'][vsig_idx]
+			return vsig['vsig'][vsig_idx][0]*(eps/(1.-eps))**0.5
 		else:
 			return None
 
@@ -1781,7 +1805,7 @@ class NukerGalaxy(Galaxy):
 	def rcirc(self):
 		'''Compute the circularization radius at the stagnation radius'''
 		if self.stag_unique and self.vsig:
-			return (self.vsig**2.*self.rs[0])
+			return (self.vsig**2.*self.rs[0]**2/self.rinf)
 
 	@property
 	def rc_rss_ratio(self):
