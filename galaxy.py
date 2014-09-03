@@ -1793,11 +1793,12 @@ class NukerGalaxy(Galaxy):
 
 	@property 
 	def vsig(self):
-		vsig=ascii.read('vsig.csv', delimiter=',',names=['gal', 'vsig', 'eps'])
+		vsig=ascii.read('vsig.csv', delimiter=',',names=['gal', 'vsig', 'eps','log_re'])
 		vsig_idx=np.where(vsig['gal']==self.name)[0]
-		if vsig['vsig'][vsig_idx] and vsig['eps'][vsig_idx]:
-			eps=vsig['eps'][vsig_idx]
-			return vsig['vsig'][vsig_idx][0]*(eps/(1.-eps))**0.5
+		if vsig['vsig'][vsig_idx] and vsig['eps'][vsig_idx] and vsig['log_re'][vsig_idx]:
+			eps=vsig['eps'][vsig_idx[0]]
+			re=10.**vsig['log_re'][vsig_idx[0]]*pc
+			return vsig['vsig'][vsig_idx[0]]*(eps/(1.-eps))**0.5*(self.rs[0]/(0.5*re))**0.6
 		else:
 			return None
 
