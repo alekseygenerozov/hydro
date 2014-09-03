@@ -1482,14 +1482,16 @@ class Galaxy(object):
 	@property
 	def kappa_cond(self):
 		if not hasattr(self, 'cond_scheme'):
-			self.set_param('cond_scheme',None)
+			self.set_param('cond_scheme','spitzer')
+		if not hasattr(self, 'eps_cond'):
+			self.eps_cond=0.
 
-		if self.cond_scheme=='spitzer':
-			return self.spitzer
-		elif self.cond_scheme=='shcherba':
-			return self.shcherba
+		if self.cond_scheme=='shcherba':
+			return self.eps_cond*self.shcherba
 		else:
-			return np.zeros(self.length) 
+			return self.eps_cond*self.spitzer
+		# else:
+		# 	return np.zeros(self.length) 
 
 	@property
 	def f_cond(self):
