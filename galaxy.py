@@ -1228,6 +1228,7 @@ class Galaxy(object):
 		self.write_sol()
 
 		if np.any(np.isnan(grid_prims)):
+			print 'nan detected in solution'
 			sys.exit(3)
 			
 	def reset(self, index):
@@ -1271,6 +1272,7 @@ class Galaxy(object):
 			self._update_ghosts()
 		grid_prims=[getattr(self, field) for field in self.out_fields]
 		if np.any(np.isnan(grid_prims)):
+			print 'nan detected in solution'
 			sys.exit(3)
 
 		self.time_cur+=self.delta_t
