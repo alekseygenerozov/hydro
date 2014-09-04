@@ -986,6 +986,30 @@ class Galaxy(object):
 		#return -cs*drho_dr+art_visc*drho_dr_second
 		return -(1./rad)**2*self.get_spatial_deriv(i, 'frho')+self.q_grid[i]
 
+	@property
+	def art_visc_vel(self):
+		art_visc=[min(self.cs[i],  np.abs(self.vel[i]))*(self.radii[self.end]-self.radii[self.start])* self.get_laplacian(i, 'vel')/self.Re for i in range(self.length)]
+		art_visc=np.array(art_visc)
+		if self.visc_scheme=='const_visc':
+			pass
+		elif self.visc_scheme=='cap_visc':
+			art_visc=art_visc*min(1., (self.delta[i]/np.mean(self.delta)))
+		else:
+			art_visc=art_visc*(self.delta[i]/np.mean(self.delta))
+		return art_visc
+
+	@property
+	def art_visc_s(self):
+		art_visc=[min(self.cs[i],  np.abs(self.vel[i]))*(self.radii[self.end]-self.radii[self.start])* self.get_laplacian(i, 's')/self.Re_s for i in range(self.length)]
+		art_visc=np.array(art_visc)
+		if self.visc_scheme=='const_visc':
+			pass
+		elif self.visc_scheme=='cap_visc':
+			art_visc=art_visc*min(1., (self.delta[i]/np.mean(self.delta)))
+		else:
+			art_visc=art_visc*(self.delta[i]/np.mean(self.delta))
+		return art_visc
+
 	#Evaluating the partial derivative of velocity with respect to time
 	def dvel_dt(self, i):
 		rad=self.radii[i]
@@ -1497,19 +1521,19 @@ class Galaxy(object):
 
 	@property
 	def f_cond(self):
-		return np.array([-self.kappa_cond[i]*self.get_spatial_deriv(i, 'temp') for i in range(0,self.length)])
+		return np.array([self.kappa_cond[i]*self.get_spatial_deriv(i, 'temp') for i in range(0,self.length)])
 
 	@property 
 	def cond_spitzer(self):
-		return np.array([-self.get_diffusion(i, 'spitzer', 'temp') for i in range(0, self.length)])
+		return np.array([self.get_diffusion(i, 'spitzer', 'temp') for i in range(0, self.length)])
 
 	@property 
 	def cond_shcherba(self):
-		return np.array([-self.get_diffusion(i, 'shcherba', 'temp') for i in range(0, self.length)])
+		return np.array([self.get_diffusion(i, 'shcherba', 'temp') for i in range(0, self.length)])
 
 	@property
 	def cond(self):
-		return np.array([-self.get_diffusion(i, 'kappa_cond', 'temp') for i in range(0, self.length)])
+		return np.array([self.get_diffusion(i, 'kappa_cond', 'temp') for i in range(0, self.length)])
 
 	@property
 	def cond_spitzer_ratio(self):
