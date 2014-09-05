@@ -1619,11 +1619,14 @@ class NukerGalaxy(Galaxy):
 			init['length']=length
 
 		gal=cls(name, init=init, gdata=gdata)
-		try:
-			params=dill.load(open(loc+'/non_standard.p','rb'))
-			[gal.set_param(param, params[param]) for param in params]
-		except:
-			pass 
+		if params:
+			try:
+				params=dill.load(open(loc+'/non_standard.p','rb'))
+				[gal.set_param(param, params[param]) for param in params]
+			except:
+				pass 
+		else:
+			pass
 
 		return gal
 
