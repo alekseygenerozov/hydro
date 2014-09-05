@@ -103,6 +103,9 @@ def zero_crossings(a):
 	'''Identify zero crossings of an array'''
 	return np.where(np.diff(np.sign(a)))[0]
 
+def s(temp, rho, mu):
+	return (kb/(mu*mp))*np.log(1./rho*(temp)**(3./2.))
+
 class memoize(object):
 	'''Memoization intended for class methods.'''
 	#Exclude first argument which is just info on the object instance, and is not persistent through pickling. 
@@ -660,6 +663,11 @@ class Galaxy(object):
 
 	def _update_temp(self):
 		self.temp=(np.exp(self.log_rho)*np.exp(self.mu*mp*self.s/kb))**(2./3.)
+
+	def set_temp(self, temp):
+		'''set temperature to a particular constant value--to help with conduction'''
+		self.s=np.array([s(temp, self.rho[i], self.mu) for i in range(self.length)])
+		self._update_temp()
 
 	#Update array of conseerved quantities	
 	def _cons_update(self):
