@@ -89,7 +89,7 @@ def extrap1d_pow(interpolator):
 		elif x > xs[-1]:
 			return pow_extrap(x, xs[-1], xs[-2], ys[-1], ys[-2])
 		else:
-			return interpolator(x)
+			return interpolator([x])[0]
 
 	def ufunclike(xs):
 		try:
@@ -656,6 +656,14 @@ class Galaxy(object):
 	def temp_profile(self, r):
 		'''Calculate temperature at any radius from our profile--use power law extrapolations beyond the boundary'''
 		return extrap1d_pow(interp1d(self.radii, self.temp))(r)
+
+	def cooling_profile(self,r):
+		'''Calculate cooling rate at any radius from our profile--use power law extrapolations beyond the boundary'''
+		return extrap1d_pow(interp1d(self.radii, self.cooling))(r)
+
+	def heating_pos_profile(self,r):
+		'''Calculate heating profile of the grid'''
+		return extrap1d_pow(interp1d(self.radii, self.heating_pos))(r)
 
 	def cs_profile(self,r):
 		'''sound speed at any radius'''
@@ -1771,12 +1779,19 @@ class NukerGalaxy(Galaxy):
 
 	@property
 	def rho_rs_analytic(self):
+		'''Analytic estimate for the density at the stagnation radius'''
 		if self.params['gamma']<0.2:
 			return 2.5E-24*self.eta/(self.M_bh_8)**0.13/(self.vw_extra_500)
 		else:
 			return 5.5E-24*self.eta*self.vw_extra_500/(self.M_bh_8)**0.57
 
-
+	@property
+	def hc_rs_analytic(self):
+		'''Analytic estimate for the ratio of the heating and cooling rates at rs'''
+		if self.params['gamma']<0.2:
+			return 20.*self.vw_extra_500**7.4*self.mu**2.7/self.M_bh_8**0.86
+		else: 
+			return 4.8*self.vw_extra_500**5.4*self.mu**2.7/self.M_bh_8**0.43
 			
 	@property
 	def tde_table(self):
