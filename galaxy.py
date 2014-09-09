@@ -1776,13 +1776,7 @@ class NukerGalaxy(Galaxy):
 		else:
 			return 5.5E-24*self.eta*self.vw_extra_500/(self.M_bh_8)**0.57
 
-	@property 
-	def alt_rho_rs_analytic(self):
-		rho=self.rho_rs_analytic
-		if self.params['gamma']<0.2:
-			return 2./3.*rho
-		else:
-			return 1./3.*rho
+
 			
 	@property
 	def tde_table(self):
