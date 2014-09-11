@@ -555,7 +555,7 @@ class Galaxy(object):
 
 	@property
 	def heating_pos(self):
-		return self.q_grid*(self.vel**2+self.vw**2)
+		return 0.5*self.q_grid*(self.vel**2+self.vw**2)
 
 	@property 
 	def u(self):
@@ -853,15 +853,20 @@ class Galaxy(object):
 		
 	#Applying boundary conditions
 	def _update_ghosts(self):
-		'''Method to update boundaries'''
+		'''Method to update boundaries--bp=bondi-parker; s_fixed=fixed entropy on the inner grid (entropy is simply left alone. Otherwise do power law
+			extrapolations for all variables.'''
 		if self.bdry=='bp':
 			self._s_adjust()
 			self._dens_adjust()
 			self._mdot_adjust()
+		elif self.bdry=='s_fixed':
+			self._extrapolate('rho')
+			self._extrapolate('vel')
 		else:
 			self._extrapolate('rho')
 			self._extrapolate('vel')
 			self._extrapolate('s')
+
 		if not self.isot:
 			self._update_temp()
 
@@ -1766,6 +1771,29 @@ class NukerGalaxy(Galaxy):
 			return (self.sigma_interp(self.rs[0])**2+self.vw_extra**2)**0.5
 
 	@property
+	def vw_rs_analytic(self):
+		'''Approximation for the effective wind velocity at rs'''
+		return self.vw_extra*(1.+(0.4**2*self.sigma_200**2/self.vw_extra_500**2))**0.5
+
+	@property
+	def rho_rs(self):
+		'''Density at rs'''
+		if self.stag_unique:
+			return self.rho_profile(self.rs[0])
+
+	@property
+	def temp_rs(self):
+		'''Temperature at the rs'''
+		if self.stag_unique:
+			return self.temp_profile(self.rs[0])
+
+	@property
+	def q_rs(self):
+		'''Value of the source function at the stagnation radius'''
+		if self.stag_unique:
+			return self.q_interp(self.rs[0])
+
+	@property
 	def temp_rs_analytic(self):
 		'''Analytic expression for the temperature at the stagnation radius'''
 		if self.stag_unique:
@@ -1786,12 +1814,33 @@ class NukerGalaxy(Galaxy):
 			return 5.5E-24*self.eta*self.vw_extra_500/(self.M_bh_8)**0.57
 
 	@property
+	def heating_pos_rs_analytic(self):
+		if self.params['gamma']<0.2:
+			return 3.2E-21*self.vw_extra_500**4.*self.eta/self.M_bh_8**1.14
+		else:
+			return 3.4E-21*self.vw_extra_500**6*self.eta/self.M_bh_8**1.57
+
+	@property
+	def heating_pos_rs(self):
+		return self.heating_pos_profile(self.rs[0])
+
+	@property 
+	def cooling_rs(self):
+		return self.cooling_profile(self.rs[0])
+
+	@property
+	def hc_rs(self):
+		'''Ratio of heating to cooling at the stagnation radius'''
+		if self.stag_unique:
+			return self.heating_pos_rs/self.cooling_rs
+
+	@property
 	def hc_rs_analytic(self):
 		'''Analytic estimate for the ratio of the heating and cooling rates at rs'''
 		if self.params['gamma']<0.2:
-			return 20.*self.vw_extra_500**7.4*self.mu**2.7/self.M_bh_8**0.86
+			return 20.*(self.vw_rs_analytic/5.E7)**7.4*self.mu**2.7/self.M_bh_8**0.86
 		else: 
-			return 4.8*self.vw_extra_500**5.4*self.mu**2.7/self.M_bh_8**0.43
+			return 4.8*(self.vw_rs_analytic/5.E7)**5.4*self.mu**2.7/self.M_bh_8**0.43
 			
 	@property
 	def tde_table(self):

@@ -23,6 +23,8 @@ from astropy.io import ascii
 
 import warnings
 
+from custom_collections import LastUpdatedOrderedDict as od
+
 
 #Constants
 G=const.G.cgs.value
@@ -333,7 +335,10 @@ class Catalog(object):
 		return eta_tab
 
 	def gen_table(self, fields):
-		cols={'name':[], 'vw_extra':[]}
+		'''Generate table of properties for catalog'''
+		cols=od({})
+		cols['name']=[]
+		cols['vw_extra']=[]
 		for field in fields:
 			cols[field]=[]
 
