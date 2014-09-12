@@ -24,7 +24,7 @@ from astropy.io import ascii
 import warnings
 
 from custom_collections import LastUpdatedOrderedDict as od
-
+from latex_exp import latex_exp
 
 #Constants
 G=const.G.cgs.value
@@ -155,12 +155,13 @@ class Catalog(object):
 				vw_eff=(gal.sigma_inf**2.+(gal.vw_extra*1.E5)**2.)**0.5
 				eta=gal.vw_extra/gal.sigma_inf
 
-				if gal.params['gamma']<0.2:
-					symbol='<'
+				if gal.params['gamma']>0.2:
+					marker=self.cusp_symbol
 				else:
-					symbol='s'
-				ax[0].loglog(eta, x, symbol, label=gal.name, color=self.cols[self.gal_vws[idx]], markersize=10)
-				ax[1].plot(idx, gal.rs_residual, symbol, label=gal.name, color=self.cols[self.gal_vws[idx]], markersize=10)
+					marker=self.core_symbol
+
+				ax[0].loglog(eta, x, marker, label=gal.name, color=self.cols[self.gal_vws[idx]], markersize=10)
+				ax[1].plot(idx, gal.rs_residual, marker, label=gal.name, color=self.cols[self.gal_vws[idx]], markersize=10)
 		datacursor(formatter='{label}'.format)
 		return fig
 
@@ -179,26 +180,30 @@ class Catalog(object):
 		plt.show()
 		return fig
 
-	def bh_xray(self):
+	def bh_xray(self, eps1=5.E-7, eps2=2.E-4):
 		fig,ax=plt.subplots(2, figsize=(10,16))
+
 		ax[0].set_xlabel(r'$M_{*}$')
-		ax[0].set_ylabel(r'$\epsilon \dot{M} c^2$ [ergs/s]')
+		ax[0].set_ylabel(latex_exp.latex_exp(eps1, precision=0)+r' $\dot{M} c^2$ [ergs/s]')
+		ax[1].set_xlabel(r'$M_{*}$')
+		ax[1].set_ylabel(latex_exp.latex_exp(eps2, precision=0)+r' $\left(\dot{M}/\dot{M}_{\rm Edd}\right)^2 \dot{M}_{\rm Edd} c^2$ [ergs/s]')
+
 		for idx, gal in enumerate(self.gals):
 			if (gal.rs/gal.r_Ia>1 and gal.vw_extra==5.E7):
 				col=self.cols[1]
 			elif (gal.rs/gal.r_Ia<1 and gal.vw_extra==2.E7):
 				col=self.cols[0]
-			elif (gal.vw_extra==2.E7):
-				col='b'
-			elif gal.vw_extra==5.E7:
-				col='k'
 			else: 
 				continue
-
 			stellar_mass=gal.mstar_total/galaxy.M_sun
 
-			ax[0].loglog([stellar_mass], [5.E-7*gal.mdot*c**2],'o',color=col, label=(gal.name,'{0:3.2e}'.format(gal.eddr)))
-			ax[1].loglog([stellar_mass], [2.E-4*(gal.eddr)**2*gal.mdot_edd*c**2],'o',color=col, label=(gal.name,'{0:3.2e}'.format(gal.eddr)))
+			if gal.params['gamma']>0.2:
+				marker=self.cusp_symbol
+			else:
+				marker=self.core_symbol
+
+			ax[0].loglog([stellar_mass], [eps1*gal.mdot*c**2], marker, color=col, label=(gal.name,'{0:3.2e}'.format(gal.eddr)))
+			ax[1].loglog([stellar_mass], [eps2*(gal.eddr)**2*gal.mdot_edd*c**2], marker,color=col, label=(gal.name,'{0:3.2e}'.format(gal.eddr)))
 
 		m1=1.E8
 		m2=1.E12

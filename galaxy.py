@@ -824,6 +824,13 @@ class Galaxy(object):
 		plt.close()
 		return fig1
 
+	@property 
+	def plot_marker(self):
+		if self.params['gamma']<0.2:
+			return '<'
+		else:
+			return 's'
+
 	#Adding ghost zones onto the edges of the grid (moving the start of the grid)
 	def _add_ghosts(self):
 		self.start=self._num_ghosts
