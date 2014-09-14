@@ -25,6 +25,9 @@ def rs_approx(M, vw):
 	'''Simplified analytic expression for the stagnation radius--given a particular bh mass and particular vw (not including sigma)'''
 	return(7./4.)*G*M/((vw)**2./2.)
 
+def rs_approx_nond(eta):
+	return 7./2.*eta**-2.
+
 def vw_from_rs(M, rs):
 	'''Inverse of rs_approx'''
 	return ((7./2.)*G*M/(rs))**0.5

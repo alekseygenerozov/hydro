@@ -1,6 +1,6 @@
 import re
 from .. import galaxy
-from .. import gal_properties
+from .. import gal_properties as gp
 
 from bash_command import bash_command as bc
 import numpy as np
@@ -160,6 +160,7 @@ class Catalog(object):
 				else:
 					marker=self.core_symbol
 
+				ax[0].loglog(eta, gp.)
 				ax[0].loglog(eta, x, marker, label=gal.name, color=self.cols[self.gal_vws[idx]], markersize=10)
 				ax[1].plot(idx, gal.rs_residual, marker, label=gal.name, color=self.cols[self.gal_vws[idx]], markersize=10)
 		datacursor(formatter='{label}'.format)
@@ -305,7 +306,7 @@ class Catalog(object):
 			ax.loglog(mass, ratio, marker=symbol, color=self.cols[self.gal_vws[idx]])
 			if analytic:
 				mass_anal=[1.E6, 1.E10]
-				rs_anal=[(7./4.)*G*M*M_sun/((gal.vw_extra)**2./2.)/gal_properties.r_Ia(M*M_sun) for M in mass_anal]
+				rs_anal=[(7./4.)*G*M*M_sun/((gal.vw_extra)**2./2.)/gp.r_Ia(M*M_sun) for M in mass_anal]
 
 				ax.loglog(mass_anal, rs_anal, color=self.cols[self.gal_vws[idx]], markersize=10)
 

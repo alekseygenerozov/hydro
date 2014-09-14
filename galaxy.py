@@ -1294,7 +1294,7 @@ class Galaxy(object):
 		'''Revert grid, saved, fdiff array and output files to an earlier state.'''
 		self.reset(index)
 		
-		index=index%self.length
+		index=index%len(self.time_stamps)
 		self.saved=self.saved[:index+1]
 		self.time_stamps=self.time_stamps[:index+1]
 		self.fdiff=self.fdiff[:index+1]
