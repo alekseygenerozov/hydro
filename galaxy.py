@@ -1207,7 +1207,8 @@ class Galaxy(object):
 
 			#Take step and increment current time
 			self._step()
-			#If we have exceeded the max number of allowed steps then break
+			#If we have exceeded the max number of allowed steps then break--might 
+			# want to raise exception here instead.
 			if self.num_steps>self.max_steps:
 				print "Exceeded max number of allowed steps"
 				return 1
