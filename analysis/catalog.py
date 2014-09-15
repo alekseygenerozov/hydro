@@ -124,7 +124,11 @@ class Catalog(object):
 		return self.gal_vws_full[self.filt]
 
 	def mdot_mass(self):
-		fig,ax=plt.subplots()
+		fig,ax=plt.subplots(figsize=(10,8))
+		mass_anal=np.array([1.E6,5.E9])
+		for idx0,vw in enumerate(np.array([self.vws])):
+			ax.loglog(mass_anal, [gp.eddr_analytic(m*M_sun, vw*1.E5) for m in mass_anal], color=self.cols[idx0])
+			ax.loglog(mass_anal, [gp.eddr_analytic(m*M_sun, vw*1.E5, correction=False) for m in mass_anal],'--', color=self.cols[idx0])
 		for idx, gal in enumerate(self.gals):
 			if gal.params['gamma']>0.2:
 				marker=self.cusp_symbol
@@ -137,7 +141,7 @@ class Catalog(object):
 		return fig
 
 	def rs(self):
-		fig,ax=plt.subplots(2, sharex=False, figsize=(10, 16))
+		fig,ax=plt.subplots(2, sharex=False, figsize=(10,16))
 		ax[1].tick_params(\
 			axis='x',          # changes apply to the x-axis
 			which='both',      # both major and minor ticks are affected
@@ -150,6 +154,8 @@ class Catalog(object):
 		ax[1].set_ylabel('Frational difference\n from  analytic prediction')
 		#ax[1].set_ylim(-0.1, 0.8)
 
+		#eta_analytic=[10.,0.3]
+		#ax[0].loglog(eta_analytic, [gp.rs_approx_nond(eta) for eta in eta_analytic])
 		for idx, gal in enumerate(self.gals):
 				x=gal.rs[0]/gal.rinf
 				vw_eff=(gal.sigma_inf**2.+(gal.vw_extra*1.E5)**2.)**0.5
@@ -160,9 +166,8 @@ class Catalog(object):
 				else:
 					marker=self.core_symbol
 
-				ax[0].loglog(eta, gp.)
-				ax[0].loglog(eta, x, marker, label=gal.name, color=self.cols[self.gal_vws[idx]], markersize=10)
-				ax[1].plot(idx, gal.rs_residual, marker, label=gal.name, color=self.cols[self.gal_vws[idx]], markersize=10)
+				ax[0].loglog(eta, x, marker, label=gal.name, color=self.cols[self.gal_vws[idx]])
+				ax[1].plot(idx, gal.rs_residual, marker, label=gal.name, color=self.cols[self.gal_vws[idx]])
 		datacursor(formatter='{label}'.format)
 		return fig
 
@@ -416,4 +421,13 @@ class Catalog(object):
 			d2=gal.name+'/vw_{0}_{1}_{2}'.format(gal.vw_extra/1.E5, param, target)
 			tab=Table([[d+'/grid.p'], [param], [target], [d2]], names=col_names)
 			ascii.write(tab,'input/input_{0}'.format(idx))
+
+	def plot_gen(self, outdir):
+		'''Generate plots for our sample'''
+		fig_rs=self.rs()
+		fig_rs.savefig(outdir+'/rs.eps')
+		fig_cooling=self.cooling()
+		fig_cooling.savefig(outdir+'/cooling.eps')
+		fig_mdot=self.mdot_mass()
+		fig_mdot.savefig(outdir+'/mdot.eps')
 

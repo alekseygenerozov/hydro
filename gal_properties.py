@@ -21,12 +21,15 @@ def sigma_200(M):
 def r_Ia(M):
 	return 4.*(sigma_200(M))**-0.5*pc
 
-def rs_approx(M, vw):
+def rs_analytic_approx(M, vw, correction=True):
 	'''Simplified analytic expression for the stagnation radius--given a particular bh mass and particular vw (not including sigma)'''
-	return(7./4.)*G*M/((vw)**2./2.)
+	rs=7./4.*G*M/((vw)**2./2.)
+	if correction:
+		rs=rs*xi(M,vw)**-2.
+	return rs
 
 def rs_approx_nond(eta):
-	return 7./2.*eta**-2.
+	return 7./4.*eta**-2.
 
 def vw_from_rs(M, rs):
 	'''Inverse of rs_approx'''
@@ -46,6 +49,37 @@ def l_edd(M):
 
 def mdot_edd(M, efficiency=0.1):
 	return l_edd(M)/(efficiency*c**2)
+
+def xi(M, vw):
+	'''Correction to wind velocity to account for the contribution of the stellar velocity dispersion'''
+	M8=(M/(1.E8*M_sun))
+	vw500=vw/5.E7
+	return (1.+(0.14*M8**0.43/vw500**2.))**0.5
+
+def menc_rs_analytic(M, vw, correction=True):
+	Menc=9.41E40*(M/(1.E8*M_sun))**1.43*(vw/5.E7)**-2.
+	if correction:
+		Menc=Menc*xi(M,vw)**-2.
+	return Menc
+
+def menc_rs_analytic_core(M, vw, correction=True):
+	Menc=4.45E40*(M/(1.E8*M_sun))**1.86*(vw/5.E7)**-4.
+	if correction:
+		Menc=Menc*xi(M,vw)**-4.
+	return Menc
+
+def eddr_analytic(M, vw, eta=1., correction=True):
+	'''Analytic expression for the Eddington ratio--for cuspy galaxies'''
+	eddr=1.56E-3*(M/(1.E8*M_sun))**0.43*(vw/5.E7)**-2.
+	if correction:
+		eddr=eddr*xi(M,vw)**-2.
+	return eddr
+
+def eddr_analytic_core(M, vw, eta=1., correction=True):
+	eddr=7.4E-4*(M/(1.E8*M_sun))**0.86*(vw/5.E7)**-4.
+	if correction:
+		eddr=eddr*xi(M,vw)**-2.
+	return eddr
 
 def rb(M, cs):
 	'''Bondi radius from the mass M and sound speed cs'''

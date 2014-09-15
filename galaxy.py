@@ -1756,7 +1756,7 @@ class NukerGalaxy(Galaxy):
 
 	@property
 	def rs_analytic(self):
-		'''Analytic formula for the stagnation radius'''
+		'''Analytic formula for the stagnation radius--normalized by the influence radius'''
 		if self.stag_unique:
 			A=(4.*self.gamma-(1+self.params['gamma'])*(self.gamma-1.))/(4.*(self.gamma-1.))
 			eta=self.vw_extra/self.sigma_inf
@@ -1766,6 +1766,10 @@ class NukerGalaxy(Galaxy):
 			dens_slope=np.abs(derivative(lrho_interp, np.log(self.rs[0]), dx=self.delta_log[0]))
 
 			return 1./(dens_slope*eta**2)*((0.5)*(2*A-dens_slope)*(1+omega)-(2.-self.params['gamma'])/4.)
+
+	@property 
+	def rs_analytic_approx(self):
+		return gal_properties.rs_analytic_approx(self.params['M'],self.vw_extra)
 
 	@property 
 	def rs_residual(self):
@@ -1802,6 +1806,11 @@ class NukerGalaxy(Galaxy):
 			return self.q_interp(self.rs[0])
 
 	@property
+	def menc_rs(self):
+		if self.stag_unique:
+			return self.M_enc_interp(self.rs[0])
+
+	@property
 	def temp_rs_analytic(self):
 		'''Analytic expression for the temperature at the stagnation radius'''
 		if self.stag_unique:
@@ -1827,6 +1836,20 @@ class NukerGalaxy(Galaxy):
 			return 3.2E-21*self.vw_extra_500**4.*self.eta/self.M_bh_8**1.14
 		else:
 			return 3.4E-21*self.vw_extra_500**6*self.eta/self.M_bh_8**1.57
+
+	@property
+	def menc_rs_analytic(self):
+		if self.params['gamma']<0.2:
+			return gal_properties.menc_rs_analytic_core(self.params['M'],self.vw_extra)
+		else:
+			return gal_properties.menc_rs_analytic(self.params['M'],self.vw_extra)
+
+	@property 
+	def eddr_analytic(self):
+		if self.params['gamma']<0.2:
+			return gal_properties.eddr_analytic_core(self.params['M'], self.vw_extra)
+		else:
+			return gal_properties.eddr_analytic(self.params['M'], self.vw_extra)
 
 	@property
 	def heating_pos_rs(self):
