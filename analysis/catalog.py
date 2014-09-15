@@ -48,10 +48,11 @@ class Catalog(object):
 			len_cols=8
 		else:
 			len_cols=len(vws)	
+		#Use colors to distinguish different choices of vw_0, 
 		self.cols=brewer2mpl.get_map('Set2', 'qualitative', len_cols).mpl_colors
-
-		self.cusp_symbol='s'
-		self.core_symbol='<'
+		#And use different shapes to distinguish cores from cusps.
+		self.symbols=['s','>']
+		self.cusp_thres=0.2
 
 		self.gals_full=[]
 		self.gal_vws_full=[]
@@ -90,6 +91,20 @@ class Catalog(object):
 		print self.filt
 
 		self.restore_saved()
+
+	@property 
+	def gal_symbols_full(self):
+		symbols=np.empty(len(self.gals_full),dtype=int)
+		for idx, gal in enumerate(self.gals_full):
+			if gal.params['gamma']>self.cusp_thres:
+				symbols[idx]=0
+			else:
+				symbols[idx]=1
+		return symbols
+
+	@property
+	def gal_symbols(self):
+		return self.gal_symbols_full[self.filt]
 
 	def restore_saved(self):
 		[gal.restore_saved(self.dirs[idx]) for idx,gal in enumerate(self.gals)]
@@ -130,13 +145,9 @@ class Catalog(object):
 			ax.loglog(mass_anal, [gp.eddr_analytic(m*M_sun, vw*1.E5) for m in mass_anal], color=self.cols[idx0])
 			ax.loglog(mass_anal, [gp.eddr_analytic(m*M_sun, vw*1.E5, correction=False) for m in mass_anal],'--', color=self.cols[idx0])
 		for idx, gal in enumerate(self.gals):
-			if gal.params['gamma']>0.2:
-				marker=self.cusp_symbol
-			else:
-				marker=self.core_symbol
 			ax.set_xlabel(r'$M_{\bullet}/M_{\odot}$')
 			ax.set_ylabel(r'$\dot{M}/\dot{M_{\rm Edd}}$')
-			ax.loglog(gal.params['M']/M_sun, gal.eddr, marker, color=self.cols[self.gal_vws[idx]], label=gal.name)
+			ax.loglog(gal.params['M']/M_sun, gal.eddr,  marker=self.symbols[self.gal_symbols[idx]], color=self.cols[self.gal_vws[idx]], label=gal.name)
 		datacursor(formatter='{label}'.format)
 		return fig
 
@@ -161,13 +172,8 @@ class Catalog(object):
 				vw_eff=(gal.sigma_inf**2.+(gal.vw_extra*1.E5)**2.)**0.5
 				eta=gal.vw_extra/gal.sigma_inf
 
-				if gal.params['gamma']>0.2:
-					marker=self.cusp_symbol
-				else:
-					marker=self.core_symbol
-
-				ax[0].loglog(eta, x, marker, label=gal.name, color=self.cols[self.gal_vws[idx]])
-				ax[1].plot(idx, gal.rs_residual, marker, label=gal.name, color=self.cols[self.gal_vws[idx]])
+				ax[0].loglog(eta, x, marker=self.symbols[self.gal_symbols[idx]], label=gal.name, color=self.cols[self.gal_vws[idx]])
+				ax[1].plot(idx, gal.rs_residual,  marker=self.symbols[self.gal_symbols[idx]], label=gal.name, color=self.cols[self.gal_vws[idx]])
 		datacursor(formatter='{label}'.format)
 		return fig
 
@@ -203,13 +209,13 @@ class Catalog(object):
 				continue
 			stellar_mass=gal.mstar_total/galaxy.M_sun
 
-			if gal.params['gamma']>0.2:
-				marker=self.cusp_symbol
-			else:
-				marker=self.core_symbol
+			# if gal.params['gamma']>0.2:
+			# 	marker=self.cusp_symbol
+			# else:
+			# 	marker=self.core_symbol
 
-			ax[0].loglog([stellar_mass], [eps1*gal.mdot*c**2], marker, color=col, label=(gal.name,'{0:3.2e}'.format(gal.eddr)))
-			ax[1].loglog([stellar_mass], [eps2*(gal.eddr)**2*gal.mdot_edd*c**2], marker,color=col, label=(gal.name,'{0:3.2e}'.format(gal.eddr)))
+			ax[0].loglog([stellar_mass], [eps1*gal.mdot*c**2],  marker=self.symbols[self.gal_symbols[idx]], color=col, label=(gal.name,'{0:3.2e}'.format(gal.eddr)))
+			ax[1].loglog([stellar_mass], [eps2*(gal.eddr)**2*gal.mdot_edd*c**2],  marker=self.symbols[self.gal_symbols[idx]],color=col, label=(gal.name,'{0:3.2e}'.format(gal.eddr)))
 
 		m1=1.E8
 		m2=1.E12
