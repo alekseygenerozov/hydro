@@ -141,14 +141,26 @@ class Catalog(object):
 	def mdot_mass(self):
 		fig,ax=plt.subplots(figsize=(10,8))
 		mass_anal=np.array([1.E6,5.E9])
-		for idx0,vw in enumerate(np.array([self.vws])):
+		for idx0,vw in enumerate(np.array(self.vws)):
 			ax.loglog(mass_anal, [gp.eddr_analytic(m*M_sun, vw*1.E5) for m in mass_anal], color=self.cols[idx0])
-			ax.loglog(mass_anal, [gp.eddr_analytic(m*M_sun, vw*1.E5, correction=False) for m in mass_anal],'--', color=self.cols[idx0])
+			ax.loglog(mass_anal, [gp.eddr_analytic(m*M_sun, vw*1.E5, correction=False) for m in mass_anal],color=self.cols[idx0],linestyle='--')
 		for idx, gal in enumerate(self.gals):
 			ax.set_xlabel(r'$M_{\bullet}/M_{\odot}$')
 			ax.set_ylabel(r'$\dot{M}/\dot{M_{\rm Edd}}$')
 			ax.loglog(gal.params['M']/M_sun, gal.eddr,  marker=self.symbols[self.gal_symbols[idx]], color=self.cols[self.gal_vws[idx]], label=gal.name)
 		datacursor(formatter='{label}'.format)
+		return fig
+
+	def rs_mass(self):
+		fig,ax=plt.subplots(figsize=(10,8))
+		mass_anal=np.array([1.E6,5.E9])
+		for idx0,vw in enumerate(np.array(self.vws)):
+			ax.loglog(mass_anal, [gp.rs_analytic_approx(m*M_sun, vw*1.E5) for m in mass_anal], color=self.cols[idx0])
+			ax.loglog(mass_anal, [gp.rs_analytic_approx(m*M_sun, vw*1.E5, correction=False) for m in mass_anal],color=self.cols[idx0],linestyle='--')
+		for idx, gal in enumerate(self.gals):
+			ax.set_xlabel(r'$M_{\bullet}/M_{\odot}$')
+			ax.set_ylabel(r'$r_s$ [cm]')
+			ax.loglog(gal.params['M']/M_sun, gal.rs[0],  marker=self.symbols[self.gal_symbols[idx]], color=self.cols[self.gal_vws[idx]], label=gal.name+str(gal.dens_pow_slope_rs))
 		return fig
 
 	def rs(self):

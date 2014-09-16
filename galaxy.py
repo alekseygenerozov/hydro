@@ -1755,15 +1755,18 @@ class NukerGalaxy(Galaxy):
 		return getattr(self, field)(r)
 
 	@property
+	def dens_pow_slope_rs(self):
+		lrho_interp=interp1d(np.log(self.radii),self.log_rho)
+		return derivative(lrho_interp, np.log(self.rs[0]), dx=self.delta_log[0])
+
+	@property
 	def rs_analytic(self):
 		'''Analytic formula for the stagnation radius--normalized by the influence radius'''
 		if self.stag_unique:
 			A=(4.*self.gamma-(1+self.params['gamma'])*(self.gamma-1.))/(4.*(self.gamma-1.))
 			eta=self.vw_extra/self.sigma_inf
 			omega=self.M_enc_interp(self.rs[0])/self.params['M']
-
-			lrho_interp=interp1d(np.log(self.radii),self.log_rho)
-			dens_slope=np.abs(derivative(lrho_interp, np.log(self.rs[0]), dx=self.delta_log[0]))
+			dens_slope=np.abs(self.dens_pow_slope_rs)
 
 			return 1./(dens_slope*eta**2)*((0.5)*(2*A-dens_slope)*(1+omega)-(2.-self.params['gamma'])/4.)
 
