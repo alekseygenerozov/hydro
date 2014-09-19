@@ -377,15 +377,20 @@ class Galaxy(object):
 		self.nsolves=0
 
 	@classmethod
-	def from_dir(cls, loc, index=-1, rescale=1, length=None):
+	def from_dir(cls, loc, index=-1, rescale=1, length=None, rmin=None, rmax=None):
 		init={}
 
 		init_array=prepare_start(np.load(loc+'/save.npz')['a'][index])
 		init_array[:,0]=rescale*init_array[:,0]
 		radii=init_array[:,0]
-		
-		init['rmin']=radii[0]
-		init['rmax']=radii[-1]
+		if not rmin:
+			init['rmin']=radii[0]
+		else:
+			init['rmin']=rmin
+		if not rmax:
+			init['rmax']=radii[-1]
+		else:
+			init['rmax']=rmax
 
 		delta=np.diff(radii)
 		delta_log=np.diff(np.log(radii))
@@ -394,7 +399,7 @@ class Galaxy(object):
 			init['logr']=False
 		else:
 			init['logr']=True
-		init['f_initial']=extrap1d(interp1d(init_array[:,0], init_array[:,1:4], axis=0))
+		init['f_initial']=extrap1d_pow(interp1d(init_array[:,0], init_array[:,1:4], axis=0))
 		if not length:
 			init['length']=len(radii)
 		else:
@@ -1613,7 +1618,7 @@ class NukerGalaxy(Galaxy):
 
 
 	@classmethod
-	def from_dir(cls, name, loc, index=-1, rescale=1., gdata=None, length=None, params=False):
+	def from_dir(cls, name, loc, index=-1, rescale=1., rmin=None, rmax=None, gdata=None, length=None, params=False):
 		init={}
 		init_array=prepare_start(np.load(loc+'/save.npz')['a'][index])
 		if rescale=='auto':
@@ -1624,8 +1629,15 @@ class NukerGalaxy(Galaxy):
 
 		init_array[:,0]=rescale*init_array[:,0]
 		radii=init_array[:,0]
-		init['rmin']=radii[0]
-		init['rmax']=radii[-1]
+		if not rmin:
+			init['rmin']=radii[0]
+		else:
+			init['rmin']=rmin
+		if not rmax:
+			init['rmax']=radii[-1]
+		else:
+			init['rmax']=rmax
+
 		delta=np.diff(radii)
 		delta_log=np.diff(np.log(radii))
 
@@ -1633,7 +1645,7 @@ class NukerGalaxy(Galaxy):
 			init['logr']=False
 		else:
 			init['logr']=True
-		init['f_initial']=extrap1d(interp1d(init_array[:,0], init_array[:,1:4], axis=0))
+		init['f_initial']=extrap1d_pow(interp1d(init_array[:,0], init_array[:,1:4], axis=0))
 		if not length:
 			init['length']=len(radii)
 		else:

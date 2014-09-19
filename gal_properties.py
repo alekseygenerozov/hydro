@@ -19,9 +19,9 @@ def sigma_200(M):
 	return ((M)/(1.48E8*M_sun))**(1./4.65)
 
 def r_Ia(M):
-	return 4.*(sigma_200(M))**-0.5*pc
+	return 40.*(sigma_200(M))**-0.5*pc
 
-def rs_analytic_approx(M, vw, correction=True):
+def rs_approx(M, vw, correction=False):
 	'''Simplified analytic expression for the stagnation radius--given a particular bh mass and particular vw (not including sigma)'''
 	rs=7./4.*G*M/((vw)**2./2.)
 	if correction:
@@ -102,7 +102,8 @@ def rate_Ia(t):
 	return 0.03*(t/(1.E8*year))**(-1.12)*(1/year)*(1./(10.**10*M_sun))
 	
 def vw_eff_Ia(t):
-	return ((2.*th*rate_Ia(t)*(1.E51))/eta(t))**0.5
+	eps1a=0.4
+	return ((2.*th*rate_Ia(t)*(eps1a*1.E51))/eta(t))**0.5
 
 def vw_eff_stars(t):
 	if t<10.**7.5*year:

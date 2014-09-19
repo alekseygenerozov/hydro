@@ -145,18 +145,19 @@ class Catalog(object):
 			ax.loglog(mass_anal, [gp.eddr_analytic(m*M_sun, vw*1.E5) for m in mass_anal], color=self.cols[idx0])
 			ax.loglog(mass_anal, [gp.eddr_analytic(m*M_sun, vw*1.E5, correction=False) for m in mass_anal],color=self.cols[idx0],linestyle='--')
 		for idx, gal in enumerate(self.gals):
-			ax.set_xlabel(r'$M_{\bullet}/M_{\odot}$')
-			ax.set_ylabel(r'$\dot{M}/\dot{M_{\rm Edd}}$')
+			ax.set_xlabel(r'$\mathbf{M_{\bullet}/M_{\odot}}$')
+			ax.set_ylabel(r'$\mathbf{\dot{M}/\dot{M}_{Edd}}$')
 			ax.loglog(gal.params['M']/M_sun, gal.eddr,  marker=self.symbols[self.gal_symbols[idx]], color=self.cols[self.gal_vws[idx]], label=gal.name)
 		datacursor(formatter='{label}'.format)
+		plt.close()
 		return fig
 
 	def rs_mass(self):
 		fig,ax=plt.subplots(figsize=(10,8))
 		mass_anal=np.array([1.E6,5.E9])
 		for idx0,vw in enumerate(np.array(self.vws)):
-			ax.loglog(mass_anal, [gp.rs_analytic_approx(m*M_sun, vw*1.E5) for m in mass_anal], color=self.cols[idx0])
-			ax.loglog(mass_anal, [gp.rs_analytic_approx(m*M_sun, vw*1.E5, correction=False) for m in mass_anal],color=self.cols[idx0],linestyle='--')
+			ax.loglog(mass_anal, [gp.rs_approx(m*M_sun, vw*1.E5) for m in mass_anal], color=self.cols[idx0], linestyle='--')
+			ax.loglog(mass_anal, [gp.rs_approx(m*M_sun, vw*1.E5, correction=True) for m in mass_anal],color=self.cols[idx0])
 		for idx, gal in enumerate(self.gals):
 			ax.set_xlabel(r'$M_{\bullet}/M_{\odot}$')
 			ax.set_ylabel(r'$r_s$ [cm]')
@@ -172,8 +173,8 @@ class Catalog(object):
 			top='off',         # ticks along the top edge are off
 			labelbottom='off')
 
-		ax[0].set_xlabel(r'$v_w/\sigma$')
-		ax[0].set_ylabel(r'$r_{\rm stag}/r_{\rm soi}$')
+		ax[0].set_xlabel(r'$\mathbf{v_w/\sigma}$')
+		ax[0].set_ylabel(r'$\mathbf{r_{stag}/r_{soi}}$')
 		ax[1].set_ylabel('Frational difference\n from  analytic prediction')
 		#ax[1].set_ylim(-0.1, 0.8)
 
@@ -187,6 +188,7 @@ class Catalog(object):
 				ax[0].loglog(eta, x, marker=self.symbols[self.gal_symbols[idx]], label=gal.name, color=self.cols[self.gal_vws[idx]])
 				ax[1].plot(idx, gal.rs_residual,  marker=self.symbols[self.gal_symbols[idx]], label=gal.name, color=self.cols[self.gal_vws[idx]])
 		datacursor(formatter='{label}'.format)
+		plt.close()
 		return fig
 
 	def cooling(self):
@@ -201,16 +203,17 @@ class Catalog(object):
 			ax.loglog(gal.radii, heating/cooling, label=gal.name, color=self.cols[self.gal_vws[idx]])
 
 		datacursor(formatter='{label}'.format)
-		plt.show()
+		plt.close()
 		return fig
 
 	def bh_xray(self, eps1=5.E-7, eps2=2.E-4):
 		fig,ax=plt.subplots(2, figsize=(10,16))
 
-		ax[0].set_xlabel(r'$M_{*}$')
-		ax[0].set_ylabel(latex_exp.latex_exp(eps1, precision=0)+r' $\dot{M} c^2$ [ergs/s]')
-		ax[1].set_xlabel(r'$M_{*}$')
-		ax[1].set_ylabel(latex_exp.latex_exp(eps2, precision=0)+r' $\left(\dot{M}/\dot{M}_{\rm Edd}\right)^2 \dot{M}_{\rm Edd} c^2$ [ergs/s]')
+		ax[0].set_xlabel(r'$\mathbf{M_{gal}}$')
+		ax[0].set_ylabel(latex_exp.latex_exp(eps1, precision=0)+r' $\mathbf{\dot{M} c^2}$ [ergs/s]')
+		ax[1].set_xlabel(r'$\mathbf{M_{gal}}$')
+		ax[1].set_ylabel(latex_exp.latex_exp(eps2, precision=0)+r' $\mathbf{\left(\dot{M}/\dot{M}_{Edd}\right)^2 \dot{M}_{Edd} c^2}$ [ergs/s]')
+		#ax[1].set_ylabel(r'$\mathbf{'+latex_exp.latex_exp(eps2, precision=0)+r'}$'+r' $\mathbf{\left(\dot{M}/\dot{M}_{Edd}\right)^2 \dot{M}_{Edd} c^2}$ [ergs/s]')
 
 		for idx, gal in enumerate(self.gals):
 			if (gal.rs/gal.r_Ia>1 and gal.vw_extra==5.E7):
@@ -220,11 +223,6 @@ class Catalog(object):
 			else: 
 				continue
 			stellar_mass=gal.mstar_total/galaxy.M_sun
-
-			# if gal.params['gamma']>0.2:
-			# 	marker=self.cusp_symbol
-			# else:
-			# 	marker=self.core_symbol
 
 			ax[0].loglog([stellar_mass], [eps1*gal.mdot*c**2],  marker=self.symbols[self.gal_symbols[idx]], color=col, label=(gal.name,'{0:3.2e}'.format(gal.eddr)))
 			ax[1].loglog([stellar_mass], [eps2*(gal.eddr)**2*gal.mdot_edd*c**2],  marker=self.symbols[self.gal_symbols[idx]],color=col, label=(gal.name,'{0:3.2e}'.format(gal.eddr)))
@@ -239,40 +237,6 @@ class Catalog(object):
 
 		plt.close()
 		return fig
-
-	# def bh_xray(self):
-	# 	fig,ax=plt.subplots(1, figsize=(10,8))
-	# 	ax.set_xlabel(r'$M_{*}$')
-	# 	ax.set_ylabel(r'$L_x$ [ergs/s]')
-	# 	ax.set_ylim([10.**33, 10.**42])
-
-	# 	ax.set_xscale('log')
-	# 	ax.set_yscale('log')
-
-	# 	for idx, gal in enumerate(self.gals):
-	# 		if (gal.rs/gal.r_Ia>1 and gal.vw_extra==5.E7):
-	# 			col=self.cols[1]
-	# 		elif (gal.rs/gal.r_Ia<1 and gal.vw_extra==2.E7):
-	# 			col=self.cols[0]
-	# 		elif (gal.vw_extra==2.E7):
-	# 			col='b'
-	# 		elif gal.vw_extra==5.E7:
-	# 			col='k'
-	# 		else: 
-	# 			continue
-	# 		xray=gal.bh_xray
-	# 		#Stellar mass inferred from the BH mass
-	# 		stellar_mass=gal.mstar_total/M_sun
-	# 		ax.loglog([stellar_mass], [1.E-4*xray],'o',color=col, label=gal.name)
-
-	# 	m1=1.E8
-	# 	m2=1.E12
-	# 	lum1=galaxy.pow_extrap(m1,10.**11.96, 10.**11.48, 10.**39.62, 10.**39.23)
-	# 	lum2=galaxy.pow_extrap(m2,10.**11.96, 10.**11.48, 10.**39.62, 10.**39.23)
-	# 	ax.loglog([m1, m2], [lum1, lum2])
-	# 	ax.loglog([m1, m2], [10.**38.25, 10.**38.25])
-
-	# 	return fig
 
 	def profiles(self):
 		fig,ax=plt.subplots(3, sharex=True, figsize=(10, 24))
@@ -303,10 +267,13 @@ class Catalog(object):
 			except:
 				continue
 
-			rho_rb=gal.rho_interp(rb)
-			temp_rb=gal.temp_interp(rb)
-			x_ray_rb=gal.x_ray_lum_interp(rb)
-			
+			try:
+				rho_rb=gal.rho_interp(rb)
+				temp_rb=gal.temp_interp(rb)
+				x_ray_rb=gal.x_ray_lum_interp(rb)
+			except:
+				continue
+				
 			ax[0].loglog(gal.rb, rho_rb, 'o', color=col, markersize=10)
 			ax[1].loglog(gal.rb, temp_rb, 'o',color=col, markersize=10)
 			ax[2].loglog(gal.rb, x_ray_rb, 'o',color=col, markersize=10)
@@ -447,5 +414,7 @@ class Catalog(object):
 		fig_cooling=self.cooling()
 		fig_cooling.savefig(outdir+'/cooling.eps')
 		fig_mdot=self.mdot_mass()
-		fig_mdot.savefig(outdir+'/mdot.eps')
+		fig_mdot.savefig(outdir+'/mdot_mass.eps')
+		fig_bh_xray=self.bh_xray()
+		fig_bh_xray.savefig(outdir+'/bh_xray.eps')
 
