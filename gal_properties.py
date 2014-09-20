@@ -23,10 +23,15 @@ def r_Ia(M):
 
 def rs_approx(M, vw, correction=False):
 	'''Simplified analytic expression for the stagnation radius--given a particular bh mass and particular vw (not including sigma)'''
-	rs=7./4.*G*M/((vw)**2./2.)
 	if correction:
-		rs=rs*xi(M,vw)**-2.
+		rs=7./4.*G*M/(xi(M,vw)**2.*(vw)**2./2.)
+	else:
+		rs=7./4.*G*M/((vw)**2./2.)
+
 	return rs
+
+def rs_approx_2(M, vw):
+	return (7./4.)*G*M/(xi(M,vw)*vw**2./2.-2.*(sigma_200(M))**2.*(2.E7)**2)
 
 def rs_approx_nond(eta):
 	return 7./4.*eta**-2.

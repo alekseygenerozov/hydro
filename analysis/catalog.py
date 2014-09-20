@@ -140,10 +140,10 @@ class Catalog(object):
 
 	def mdot_mass(self):
 		fig,ax=plt.subplots(figsize=(10,8))
-		mass_anal=np.array([1.E6,5.E9])
-		for idx0,vw in enumerate(np.array(self.vws)):
-			ax.loglog(mass_anal, [gp.eddr_analytic(m*M_sun, vw*1.E5) for m in mass_anal], color=self.cols[idx0])
-			ax.loglog(mass_anal, [gp.eddr_analytic(m*M_sun, vw*1.E5, correction=False) for m in mass_anal],color=self.cols[idx0],linestyle='--')
+		mass_anal=np.logspace(6,9.3,30)
+		# for idx0,vw in enumerate(np.array(self.vws)):
+		# 	ax.loglog(mass_anal, [gp.eddr_analytic(m*M_sun, vw*1.E5) for m in mass_anal], color=self.cols[idx0])
+		# 	ax.loglog(mass_anal, [gp.eddr_analytic(m*M_sun, vw*1.E5, correction=False) for m in mass_anal],color=self.cols[idx0],linestyle='--')
 		for idx, gal in enumerate(self.gals):
 			ax.set_xlabel(r'$\mathbf{M_{\bullet}/M_{\odot}}$')
 			ax.set_ylabel(r'$\mathbf{\dot{M}/\dot{M}_{Edd}}$')
@@ -154,10 +154,11 @@ class Catalog(object):
 
 	def rs_mass(self):
 		fig,ax=plt.subplots(figsize=(10,8))
-		mass_anal=np.array([1.E6,5.E9])
+		mass_anal=np.logspace(6,9.3,30)
 		for idx0,vw in enumerate(np.array(self.vws)):
 			ax.loglog(mass_anal, [gp.rs_approx(m*M_sun, vw*1.E5) for m in mass_anal], color=self.cols[idx0], linestyle='--')
 			ax.loglog(mass_anal, [gp.rs_approx(m*M_sun, vw*1.E5, correction=True) for m in mass_anal],color=self.cols[idx0])
+			ax.loglog(mass_anal, [gp.rs_approx_2(m*M_sun, vw*1.E5) for m in mass_anal], color=self.cols[idx0], linestyle='-.')
 		for idx, gal in enumerate(self.gals):
 			ax.set_xlabel(r'$M_{\bullet}/M_{\odot}$')
 			ax.set_ylabel(r'$r_s$ [cm]')
@@ -216,16 +217,12 @@ class Catalog(object):
 		#ax[1].set_ylabel(r'$\mathbf{'+latex_exp.latex_exp(eps2, precision=0)+r'}$'+r' $\mathbf{\left(\dot{M}/\dot{M}_{Edd}\right)^2 \dot{M}_{Edd} c^2}$ [ergs/s]')
 
 		for idx, gal in enumerate(self.gals):
-			if (gal.rs/gal.r_Ia>1 and gal.vw_extra==5.E7):
-				col=self.cols[1]
-			elif (gal.rs/gal.r_Ia<1 and gal.vw_extra==2.E7):
-				col=self.cols[0]
-			else: 
+			if not (gal.vw_extra==2.E7):
 				continue
 			stellar_mass=gal.mstar_total/galaxy.M_sun
 
-			ax[0].loglog([stellar_mass], [eps1*gal.mdot*c**2],  marker=self.symbols[self.gal_symbols[idx]], color=col, label=(gal.name,'{0:3.2e}'.format(gal.eddr)))
-			ax[1].loglog([stellar_mass], [eps2*(gal.eddr)**2*gal.mdot_edd*c**2],  marker=self.symbols[self.gal_symbols[idx]],color=col, label=(gal.name,'{0:3.2e}'.format(gal.eddr)))
+			ax[0].loglog([stellar_mass], [eps1*gal.mdot*c**2],  marker=self.symbols[self.gal_symbols[idx]], color=self.cols[0], label=(gal.name,'{0:3.2e}'.format(gal.eddr)))
+			ax[1].loglog([stellar_mass], [eps2*(gal.eddr)**2*gal.mdot_edd*c**2],  marker=self.symbols[self.gal_symbols[idx]],color=self.cols[0], label=(gal.name,'{0:3.2e}'.format(gal.eddr)))
 
 		m1=1.E8
 		m2=1.E12

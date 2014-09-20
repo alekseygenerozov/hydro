@@ -1431,7 +1431,7 @@ class Galaxy(object):
 
 	@property
 	def mdot_bondi(self):
-		return gal_properties.mdot_bondi(self.params['M'], self.cs_profile(self.rb), self.rho_profile(self.rb))
+		return gal_properties.mdot_bondi(self.params['M'], self.cs_profile(self.rb), self.rho_profile(self.rb))[0]
 
 	@property
 	def mdot_bondi_ratio(self):
