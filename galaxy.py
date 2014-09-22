@@ -1571,6 +1571,8 @@ class Galaxy(object):
 
 		if self.cond_scheme=='shcherba':
 			return self.eps_cond*self.shcherba
+		elif self.cond_scheme=='simple':
+			return self.eps_cond*np.array([(2.*10**-6)*(1.E7)**(5./2.) for i in range(self.length)])
 		else:
 			return self.eps_cond*self.spitzer
 		# else:
@@ -1590,7 +1592,10 @@ class Galaxy(object):
 
 	@property
 	def cond(self):
-		return np.array([self.get_diffusion(i, 'kappa_cond', 'temp') for i in range(0, self.length)])
+		if not(hasattr(self,'cond_simple')) or self.cond_simple==False:
+			return np.array([self.get_diffusion(i, 'kappa_cond', 'temp') for i in range(0, self.length)])
+		else:
+			return np.array([self.kappa_cond[i]*self.get_spatial_deriv(i, 'temp', second=True) for i in range(0, self.length)])
 
 	@property
 	def cond_spitzer_ratio(self):
