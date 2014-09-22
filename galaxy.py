@@ -868,19 +868,42 @@ class Galaxy(object):
 		'''Method to update boundaries--bp=bondi-parker; s_fixed=fixed entropy on the inner grid (entropy is simply left alone. Otherwise do power law
 			extrapolations for all variables.'''
 		if self.bdry=='bp':
-			self._s_adjust()
-			self._dens_adjust()
-			self._mdot_adjust()
+			self._update_ghosts_bp()
 		elif self.bdry=='s_fixed':
-			self._extrapolate('rho')
-			self._extrapolate('vel')
+			self._update_ghosts_s_fixed()
+		elif self.bdry=='temp_fixed':
+			self._update_ghosts_temp_fixed()
 		else:
-			self._extrapolate('rho')
-			self._extrapolate('vel')
-			self._extrapolate('s')
-
+			self._update_ghosts_default()
+			
 		if not self.isot:
 			self._update_temp()
+
+	def _update_ghosts_default(self):
+		self._extrapolate('rho')
+		self._extrapolate('vel')
+		self._extrapolate('s')
+
+	def _update_ghosts_s_fixed(self):
+		self._extrapolate('rho')
+		self._extrapolate('vel')
+
+	def _update_ghosts_bp(self):
+		self._s_adjust()
+		self._dens_adjust()
+		self._mdot_adjust()
+
+	def _update_ghosts_temp_fixed(self):
+		temp_inner,temp_outer=self.temp[0],self.temp[-1]
+		self._extrapolate('rho')
+		self._extrapolate('vel')
+		self.s[0],self.s[-1]=s(temp_inner,self.rho[0],self.mu),s(temp_outer,self.rho[-1],self.mu)
+		self._bdry_interp('s')
+
+	def _bdry_interp(self,field):
+		field_arr=getattr(self, field)
+		for i in range(1, self.start):
+			field_arr[i]=self._interp_zones(self.radii[i], 0, self.start, field)
 
 	#Constant entropy across the ghost zones
 	def _s_adjust(self):
@@ -918,16 +941,16 @@ class Galaxy(object):
 		log_rho_start2=self.log_rho[self.start+3]
 
 		#If the inner bdry is fixed...(appropriate for Parker wind)
-		if self.bdry_fixed:
-			for i in range(1, self.start):
-				self.log_rho[i]=self._interp_zones(self.radii[i], 0, self.start, 'log_rho')
+		# if self.bdry_fixed:
+		# 	for i in range(1, self.start):
+		# 		self.log_rho[i]=self._interp_zones(self.radii[i], 0, self.start, 'log_rho')
 		#Updating the starting ghost zones, extrapolating using rho prop r^-3/2
-		else:
-			for i in range(0, self.start):
-				slope=-3./2.
-				#slope=(log_rho_start2-log_rho_start)/np.log(r_start2/r_start)
-				log_rho=slope*np.log(self.radii[i]/r_start)+log_rho_start
-				self.log_rho[i]=log_rho
+
+		for i in range(0, self.start):
+			slope=-3./2.
+			#slope=(log_rho_start2-log_rho_start)/np.log(r_start2/r_start)
+			log_rho=slope*np.log(self.radii[i]/r_start)+log_rho_start
+			self.log_rho[i]=log_rho
 		#Updating the end ghost zones
 		r_end=self.radii[self.end]
 		log_rho_end=self.log_rho[self.end]
