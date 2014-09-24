@@ -424,10 +424,12 @@ class Galaxy(object):
 		self.length=self.init['length']
 
 		if self._logr:
-			self.radii=np.logspace(np.log(rmin), np.log(rmax), self.length, base=e)
+			radii=np.logspace(np.log(rmin), np.log(rmax), self.length, base=e)
 		else:
-			self.radii=np.linspace(rmin, rmax, self.length)
-		prims=[f_initial(r, **self.func_params) for r in self.radii]
+			radii=np.linspace(rmin, rmax, self.length)
+		prims=[f_initial(r, **self.func_params) for r in radii]
+		
+		self.radii=radii
 		prims=np.array(prims)
 
 		delta=np.diff(self.radii)
@@ -439,6 +441,17 @@ class Galaxy(object):
 		self.vel=prims[:,1]
 		self.temp=prims[:,2]
 		self.s=(kb/(self.mu*mp))*np.log(1./np.exp(self.log_rho)*(self.temp)**(3./2.))
+
+	def re_grid(self, rmin, rmax, length=None):
+		#If length kw arg is unspecified then leave the number of grid points unchanged
+		if not length:
+			length=self.length
+
+		#Clearing past saved information
+		self.clear_saved()
+		#New initialization parameters
+		self.init={'rmin':rmin, 'rmax':rmax, 'length':length, 'logr':self._logr, 'f_initial':self.profile, 'func_params':{}}
+		self._init_grid()
 
 	def M_enc(self,r):
 		return 0.
@@ -658,9 +671,21 @@ class Galaxy(object):
 		'''Calculate density at any radius from our profile--use power law extrapolations beyond the boundary'''
 		return extrap1d_pow(interp1d(self.radii, self.vel))(r)		
 
+	def vel_profile_from_mdot(self,r):
+		rho=self.rho_profile(r)
+		if r>self.radii[-1]:
+			return self.frho[-1]/r**2/rho
+		elif r<self.radii[0]:
+			return self.frho[0]/r**2/rho
+		else:
+			return self.vel_interp(r)
+
 	def temp_profile(self, r):
 		'''Calculate temperature at any radius from our profile--use power law extrapolations beyond the boundary'''
 		return extrap1d_pow(interp1d(self.radii, self.temp))(r)
+
+	def profile(self, r):
+		return (self.rho_profile(r), self.vel_profile_from_mdot(r),self.temp_profile(r))
 
 	def cooling_profile(self,r):
 		'''Calculate cooling rate at any radius from our profile--use power law extrapolations beyond the boundary'''
@@ -1614,6 +1639,7 @@ class Galaxy(object):
 		plt.close()
 
 		return fig
+
 
 class NukerGalaxy(Galaxy):
 	'''Sub-classing galaxy above to represent Nuker parameterized galaxies'''
