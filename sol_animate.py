@@ -97,7 +97,7 @@ def main():
         description='Code for generating movies')
     parser.add_argument('loc', nargs=1,
         help='Name of directory containing saved data.')
-    parser.add_argument('-i', '--interval', nargs=1, type=int, default=1)
+    parser.add_argument('-i', '--interval', nargs=1, type=int, default=[1])
 
     #Read input file
     args=parser.parse_args()

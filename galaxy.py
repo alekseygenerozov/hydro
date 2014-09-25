@@ -428,10 +428,9 @@ class Galaxy(object):
 		else:
 			radii=np.linspace(rmin, rmax, self.length)
 		prims=[f_initial(r, **self.func_params) for r in radii]
-		
+
 		self.radii=radii
 		prims=np.array(prims)
-
 		delta=np.diff(self.radii)
 		self.delta=np.insert(delta, 0, delta[0])
 		delta_log=np.diff(np.log(self.radii))
@@ -1290,7 +1289,18 @@ class Galaxy(object):
 			steps=self.solve(time=interval, max_steps=max_steps)
 			if steps==1:
 				break
-			
+
+	def refine(self):
+		'''Reset and clear saved info--useful capturing how a solution blows up'''
+		self.set_param('outdir', 'refine')
+
+		self.reset(-1)
+		self.clear_saved()
+		self.set_param('sinterval',1)
+		self.set_param('tinterval',-1)
+
+		self.solve()
+	
 	#Create movie of solution
 	def animate(self,  analytic_func=None, index=1):
 		if analytic_func:

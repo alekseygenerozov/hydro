@@ -25,9 +25,12 @@ def main():
 		description='Code for gradually adjusting parameter to a particular value')
 	parser.add_argument('init', nargs=1,
 		help='File containing list of pickled grids')
+	parser.add_argument('-s', '--sudden', 
+		action='store_true', help='help to suddenly change paramters w/o going through a gradual adjustment.')
 
 	args=parser.parse_args()
 	init=ascii.read(args.init[0])
+	sudden=args.sudden
 
 	for i in range(len(init)):
 		#Opening the specified pickled galaxy object. Will use this parameters of the pickled grid.
@@ -47,7 +50,7 @@ def main():
 
 		#Behavior of code depends on the type of param that is passed, it is a float which may be gradually adjusted then 
 		#solve while gradually adjusting parameter, using the solve_adjust method.
-		if type(init[i]['target'])==float:
+		if type(init[i]['target'])==float and not sudden:
 			gal.solve_adjust(5.*gal.tcross, init[i]['param'], init[i]['target'])
 		else:
 			gal.set_param(init[i]['param'], init[i]['target'])
