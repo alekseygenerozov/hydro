@@ -1613,9 +1613,26 @@ class Galaxy(object):
 		# else:
 		# 	return np.zeros(self.length) 
 
+
+	@property
+	def f_cond_unsat(self):
+		return np.array([self.kappa_cond[i]*self.get_spatial_deriv(i, 'temp') for i in range(0,self.length)])
+
+	@property 
+	def f_cond_sat(self):
+		if not hasattr(self, 'phi_cond'):
+			self.set_param('phi_cond',1.)
+		return self.temp_deriv_signs*self.phi_cond*5.*self.rho*self.cs**3
+
+	@property 
+	def temp_deriv_signs(self):
+		temp_derivs=([self.get_spatial_deriv(i,'temp') for i in range(self.length)])
+		return temp_derivs/np.abs(temp_derivs)
+
 	@property
 	def f_cond(self):
-		return np.array([self.kappa_cond[i]*self.get_spatial_deriv(i, 'temp') for i in range(0,self.length)])
+		'''conductive flux'''
+		return (self.f_cond_unsat*self.f_cond_sat)/(self.f_cond_unsat+self.f_cond_sat)
 
 	@property 
 	def cond_spitzer(self):

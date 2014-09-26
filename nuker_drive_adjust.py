@@ -45,7 +45,7 @@ def main():
 		#Useful name for the output dir.
 		try:
 			gal.set_param('outdir', init[i]['outdir'])
-		except:
+		except IndexError:
 			gal.set_param('outdir', gal.name+'/vw_{0}_{1}_{2}'.format(gal.vw_extra/1.E5, init[i]['param'], init[i]['target']))
 
 		#Behavior of code depends on the type of param that is passed, it is a float which may be gradually adjusted then 
@@ -58,7 +58,7 @@ def main():
 		#If time is specified then run for that amount of time otherwise, run until conservation checks are specified 
 		try:
 			gal.solve(init[i]['time']*gal.tcross)
-		except:
+		except IndexError:
 			gal.solve()
 
 		galaxy.bash_command('cp '+init[i]['pickle']+' '+gal.outdir+'/init.p')
