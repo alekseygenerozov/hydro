@@ -555,6 +555,10 @@ class Galaxy(object):
 		return self.vel/self.cs
 
 	@property 
+	def tcross_local(self):
+		return self.radii/self.cs
+
+	@property 
 	def r_ss(self):
 		'''Radius at which the velocity would become supersonic on the inner boundary'''
 		slope=get_slope(self.radii[0], self.radii[3], self.mach[0], self.mach[3])
@@ -1633,6 +1637,15 @@ class Galaxy(object):
 	def f_cond(self):
 		'''conductive flux'''
 		return (self.f_cond_unsat*self.f_cond_sat)/(self.f_cond_unsat+self.f_cond_sat)
+
+	@property 
+	def tcond_unsat(self):
+		return abs((4.*self.rho*self.cs**2*self.radii**3)/(4.*np.pi*self.f_cond_unsat*self.radii**2))
+
+	@property 
+	def tcond_sat(self):
+		'''Conductive time-scale obtained from the saturated conductive flux'''
+		return abs((4.*self.rho*self.cs**2*self.radii**3)/(4.*np.pi*self.f_cond_sat*self.radii**2))
 
 	@property 
 	def cond_spitzer(self):
