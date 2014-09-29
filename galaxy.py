@@ -1170,7 +1170,7 @@ class Galaxy(object):
 		else:
 			art_visc=art_visc*(self.delta[i]/np.mean(self.delta))
 
-		return self.q_grid[i]*self.sp_heating[i]/(rho*temp)-vel*ds_dr+art_visc#+self.cond[i]/(rho*temp)
+		return self.q_grid[i]*self.sp_heating[i]/(rho*temp)-vel*ds_dr+art_visc+self.cond(i)/(rho*temp)
 
 	def isot_off(self):
 		'''Switch off isothermal evolution'''
@@ -1667,15 +1667,9 @@ class Galaxy(object):
 
 		return np.concatenate([start, sigma_cond, end])
 
-	# @property 
-	# def kappa_cond_eff(self):
-	# 	return self.kappa_cond/(1.+self.sigma_cond)
-	def _get_kappa_cond_eff(self):
-		self.kappa_cond_eff=self.kappa_cond/(1.+self.sigma_cond)
-
 	def _update_aux(self):
-		self._get_kappa_cond_eff()
-
+		self.kappa_cond_eff=self.kappa_cond/(1.+self.sigma_cond)
+		
 	@property 
 	def temp_deriv_signs(self):
 		temp_derivs=([self.get_spatial_deriv(i,'temp') for i in range(self.length)])
@@ -1703,12 +1697,11 @@ class Galaxy(object):
 	def cond_shcherba(self):
 		return np.array([self.get_diffusion(i, 'shcherba', 'temp') for i in range(0, self.length)])
 
-	@property
-	def cond(self):
+	def cond(self,i):
 		if not(hasattr(self,'cond_simple')) or self.cond_simple==False:
-			return np.array([self.get_diffusion(i, 'kappa_cond_eff', 'temp') for i in range(0, self.length)])
+			return self.get_diffusion(i, 'kappa_cond_eff', 'temp')
 		else:
-			return np.array([self.kappa_cond[i]*self.get_spatial_deriv(i, 'temp', second=True) for i in range(0, self.length)])
+			return self.kappa_cond[i]*self.get_spatial_deriv(i, 'temp', second=True) 
 
 	@property
 	def cond_spitzer_ratio(self):
