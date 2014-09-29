@@ -1668,6 +1668,10 @@ class Galaxy(object):
 		return np.concatenate([start, sigma_cond, end])
 
 	def _update_aux(self):
+		self.rho=np.exp(self.log_rho)
+		self.r2vel=self.radii**2*self.vel
+		self.frho=self.radii**2*self.vel*self.rho
+		self.pres=(kb*self.temp*self.rho)/(self.mu*mp)
 		self.kappa_cond_eff=self.kappa_cond/(1.+self.sigma_cond)
 		
 	@property 
@@ -1701,7 +1705,7 @@ class Galaxy(object):
 		if not(hasattr(self,'cond_simple')) or self.cond_simple==False:
 			return self.get_diffusion(i, 'kappa_cond_eff', 'temp')
 		else:
-			return self.kappa_cond[i]*self.get_spatial_deriv(i, 'temp', second=True) 
+			return self.kappa_cond_eff[i]*self.get_spatial_deriv(i, 'temp', second=True) 
 
 	@property
 	def cond_spitzer_ratio(self):
