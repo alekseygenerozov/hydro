@@ -1667,11 +1667,11 @@ class Galaxy(object):
 
 		return np.concatenate([start, sigma_cond, end])
 
+	# @property
+	# def kappa_cond_eff(self):
+	# 	return self.kappa_cond/(1.+self.sigma_cond)
+
 	def _update_aux(self):
-		self.rho=np.exp(self.log_rho)
-		self.r2vel=self.radii**2*self.vel
-		self.frho=self.radii**2*self.vel*self.rho
-		self.pres=(kb*self.temp*self.rho)/(self.mu*mp)
 		self.kappa_cond_eff=self.kappa_cond/(1.+self.sigma_cond)
 		
 	@property 
