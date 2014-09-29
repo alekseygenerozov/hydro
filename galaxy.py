@@ -901,6 +901,8 @@ class Galaxy(object):
 			self._update_ghosts_s_fixed()
 		elif self.bdry=='temp_fixed':
 			self._update_ghosts_temp_fixed()
+		elif self.bdry=='non_cond':
+			self._update_ghosts_non_cond()
 		else:
 			self._update_ghosts_default()
 			
@@ -927,6 +929,15 @@ class Galaxy(object):
 		self._extrapolate('vel')
 		self.s[0],self.s[-1]=s(temp_inner,self.rho[0],self.mu),s(temp_outer,self.rho[-1],self.mu)
 		self._bdry_interp('s')
+
+	def _update_ghosts_non_cond(self):
+		self._extrapolate('rho')
+		self._extrapolate('vel')
+		for i in range(0, self.start):
+			self.s[i]=s(self.temp[self.start],self.rho[i],self.mu)
+		for i in range(self.end+1,self.length):
+			self.s[i]=s(self.temp[self.end],self.rho[i],self.mu)
+
 
 	def _bdry_interp(self,field):
 		field_arr=getattr(self, field)
@@ -1647,6 +1658,14 @@ class Galaxy(object):
 		return self.temp_deriv_signs*self.phi_cond*5.*self.rho*self.cs**3
 
 	@property 
+	def sigma_cond(self):
+		return np.abs(self.f_cond_unsat/self.f_cond_sat)
+
+	@property 
+	def kappa_cond_eff(self):
+		return self.kappa_cond/(1.+self.sigma_cond)
+
+	@property 
 	def temp_deriv_signs(self):
 		temp_derivs=([self.get_spatial_deriv(i,'temp') for i in range(self.length)])
 		return temp_derivs/np.abs(temp_derivs)
@@ -1676,7 +1695,7 @@ class Galaxy(object):
 	@property
 	def cond(self):
 		if not(hasattr(self,'cond_simple')) or self.cond_simple==False:
-			return np.array([self.get_diffusion(i, 'kappa_cond', 'temp') for i in range(0, self.length)])
+			return np.array([self.get_diffusion(i, 'kappa_cond_eff', 'temp') for i in range(0, self.length)])
 		else:
 			return np.array([self.kappa_cond[i]*self.get_spatial_deriv(i, 'temp', second=True) for i in range(0, self.length)])
 
