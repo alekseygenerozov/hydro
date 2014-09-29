@@ -1659,7 +1659,11 @@ class Galaxy(object):
 
 	@property 
 	def sigma_cond(self):
-		return np.abs(self.f_cond_unsat/self.f_cond_sat)
+		sigma_cond=np.abs(self.f_cond_unsat[self.start:self.end+1]/self.f_cond_sat[self.start:self.end+1])
+		start=[sigma_cond[0] for i in range(0,self.start)]
+		end=[sigma_cond[-1] for i in range(self.end+1,self.length)]
+
+		return np.concatenate([start, sigma_cond, end])
 
 	@property 
 	def kappa_cond_eff(self):
