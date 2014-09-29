@@ -712,6 +712,7 @@ class Galaxy(object):
 
 	#Update array of conseerved quantities	
 	def _cons_update(self):
+		self._update_aux()
 		#differences in fluxes and source terms
 		fdiff=np.empty([2*len(self.cons_fields)+1, self.length-1])
 		fdiff[0]=self.radii[1:]
