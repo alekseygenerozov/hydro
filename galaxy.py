@@ -1041,34 +1041,34 @@ class Galaxy(object):
 	def get_laplacian(self, i, field):
 		return self.get_spatial_deriv(i, field, second=True)+(2./self.radii[i])*(self.get_spatial_deriv(i, field))
 
-	# def _cfl(self):
-	# 	# alpha_max=0.
-	# 	delta_t=np.zeros(self.length)
-	# 	delta_t=self.safety*self.delta/self.alpha_max
-
-	# 	#Setting the time step
-	# 	cfl_delta_t=np.min(delta_t)
-	# 	target_delta_t=self.time_target-self.time_cur
-	# 	self.delta_t=min([target_delta_t, cfl_delta_t])
-
-	@property
-	def _delta_t_cfl(self):
-		return np.min(self.safety*self.delta/self.alpha_max)
-
-	@property 
-	def _delta_t_cond(self):
-		if not hasattr(self, 'phi_cond'):
-			self.set_param('phi_cond',1.)
-		return np.min(np.abs(self.safety*self.rho[self.start:self.end+1]*self.cs[self.start:self.end+1]**2*
-			self.delta[self.start:self.end+1]/(self.f_cond[self.start:self.end+1])))
-
-	#Evaluate Courant condition for the entire grid. This gives us an upper bound on the time step we may take 
-	def _timestep(self):
+	def _cfl(self):
 		# alpha_max=0.
-		delta_t_allowed=min([self._delta_t_cfl,self._delta_t_cond])
+		delta_t=np.zeros(self.length)
+		delta_t=self.safety*self.delta/self.alpha_max
+
 		#Setting the time step
-		delta_t_target=self.time_target-self.time_cur
-		self.delta_t=min([delta_t_target, delta_t_allowed])
+		cfl_delta_t=np.min(delta_t)
+		target_delta_t=self.time_target-self.time_cur
+		self.delta_t=min([target_delta_t, cfl_delta_t])
+
+	# @property
+	# def _delta_t_cfl(self):
+	# 	return np.min(self.safety*self.delta/self.alpha_max)
+
+	# @property 
+	# def _delta_t_cond(self):
+	# 	if not hasattr(self, 'phi_cond'):
+	# 		self.set_param('phi_cond',1.)
+	# 	return np.min(np.abs(self.safety*self.rho[self.start:self.end+1]*self.cs[self.start:self.end+1]**2*
+	# 		self.delta[self.start:self.end+1]/(self.f_cond[self.start:self.end+1])))
+
+	# #Evaluate Courant condition for the entire grid. This gives us an upper bound on the time step we may take 
+	# def _timestep(self):
+	# 	# alpha_max=0.
+	# 	delta_t_allowed=min([self._delta_t_cfl,self._delta_t_cond])
+	# 	#Setting the time step
+	# 	delta_t_target=self.time_target-self.time_cur
+	# 	self.delta_t=min([delta_t_target, delta_t_allowed])
 
 	#Wrapper for evaluating the time derivative of all fields
 	def dfield_dt(self, i, field):
@@ -1412,7 +1412,7 @@ class Galaxy(object):
 		gamma=[8./15., 5./12., 3./4.]
 		zeta=[-17./60.,-5./12.,0.]
 
-		self._timestep()
+		self._cfl()
 
 		for substep in range(3):
 			self._sub_step(gamma[substep], zeta[substep])
