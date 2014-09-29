@@ -1170,7 +1170,7 @@ class Galaxy(object):
 		else:
 			art_visc=art_visc*(self.delta[i]/np.mean(self.delta))
 
-		return self.q_grid[i]*self.sp_heating[i]/(rho*temp)-vel*ds_dr+art_visc+self.cond[i]/(rho*temp)
+		return self.q_grid[i]*self.sp_heating[i]/(rho*temp)-vel*ds_dr+art_visc#+self.cond[i]/(rho*temp)
 
 	def isot_off(self):
 		'''Switch off isothermal evolution'''
@@ -1864,7 +1864,7 @@ class NukerGalaxy(Galaxy):
 		:param r: radius 
 		'''
 		return -G*self.params['M']/r
-
+		
 	def q(self, r):
 		'''Source term representing mass loss from stellar winds'''
 		return self.eta*self.rho_stars(r)/th
