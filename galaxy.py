@@ -493,6 +493,9 @@ class Galaxy(object):
 	def q_grid(self):
 		return np.array([self.q(r) for r in self.radii])
 
+	def q_gridpt(self, i):
+		return self.q(self.radii[i])
+
 	@property
 	def M_enc_grid(self):
 		return np.array(map(self.M_enc, self.radii))
@@ -573,6 +576,8 @@ class Galaxy(object):
 	@property 
 	def sp_heating(self):
 		return (0.5*self.vel**2+0.5*self.vw**2-(self.gamma)/(self.gamma-1)*(self.pres/self.rho))
+
+	def sp_heating_gridpt(self,i):
 
 	@property
 	def heating_pos(self):
@@ -1098,7 +1103,7 @@ class Galaxy(object):
 		rad=self.radii[i]
 
 		#return -cs*drho_dr+art_visc*drho_dr_second
-		return -(1./rad)**2*self.get_spatial_deriv(i, 'frho')+self.q_grid[i]
+		return -(1./rad)**2*self.get_spatial_deriv(i, 'frho')+self.q_gridpt(i)
 
 	@property
 	def art_visc_vel(self):
@@ -1151,7 +1156,7 @@ class Galaxy(object):
 		else:
 			art_visc=art_visc*(self.delta[i]/np.mean(self.delta))
 
-		return -vel*dv_dr-dlog_rho_dr*kb*temp/(self.mu*mp)-(kb/(self.mu*mp))*dtemp_dr-self.grad_phi_grid[i]+art_visc-(self.q_grid[i]*vel/rho)
+		return -vel*dv_dr-dlog_rho_dr*kb*temp/(self.mu*mp)-(kb/(self.mu*mp))*dtemp_dr-self.grad_phi_grid[i]+art_visc-(self.q_gridpt(i)*vel/rho)
 
 	#Evaluating the partial derivative of entropy with respect to time
 	def ds_dt(self, i):
@@ -1170,7 +1175,7 @@ class Galaxy(object):
 		else:
 			art_visc=art_visc*(self.delta[i]/np.mean(self.delta))
 
-		return self.q_grid[i]*self.sp_heating[i]/(rho*temp)-vel*ds_dr+art_visc+self.cond(i)/(rho*temp)
+		return self.q_gridpt(i)*self.sp_heating[i]/(rho*temp)-vel*ds_dr+art_visc+self.cond(i)/(rho*temp)
 
 	def isot_off(self):
 		'''Switch off isothermal evolution'''
