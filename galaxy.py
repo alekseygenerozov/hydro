@@ -1415,6 +1415,7 @@ class Galaxy(object):
 		self._cfl()
 
 		for substep in range(3):
+			self._update_aux()
 			self._sub_step(gamma[substep], zeta[substep])
 			if not self.isot:
 				self._update_temp()
@@ -1665,9 +1666,14 @@ class Galaxy(object):
 
 		return np.concatenate([start, sigma_cond, end])
 
-	@property 
-	def kappa_cond_eff(self):
-		return self.kappa_cond/(1.+self.sigma_cond)
+	# @property 
+	# def kappa_cond_eff(self):
+	# 	return self.kappa_cond/(1.+self.sigma_cond)
+	def _get_kappa_cond_eff(self):
+		self.kappa_cond_eff=self.kappa_cond/(1.+self.sigma_cond)
+
+	def _update_aux(self):
+		self._get_kappa_cond_eff()
 
 	@property 
 	def temp_deriv_signs(self):
