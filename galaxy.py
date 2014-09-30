@@ -615,7 +615,7 @@ class Galaxy(object):
 		else:
 			with warnings.catch_warnings():
 				warnings.simplefilter("ignore")
-				src_s=(self.q_grid*self.sp_heating+self.cond)/(self.rho*self.vel*self.temp)
+				src_s=(self.q_grid*self.sp_heating+self.cond_grid)/(self.rho*self.vel*self.temp)
 		return src_s
 
 	@property
@@ -1710,6 +1710,10 @@ class Galaxy(object):
 			return self.get_diffusion(i, 'kappa_cond_eff', 'temp')
 		else:
 			return self.kappa_cond_eff[i]*self.get_spatial_deriv(i, 'temp', second=True) 
+
+	@property 
+	def cond_grid(self):
+		np.array([self.cond(i) for i in range(self.length)])
 
 	@property
 	def cond_spitzer_ratio(self):
