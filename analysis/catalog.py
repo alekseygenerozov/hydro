@@ -219,7 +219,7 @@ class Catalog(object):
 		for idx, gal in enumerate(self.gals):
 			if not (gal.vw_extra==2.E7):
 				continue
-			stellar_mass=gal.mstar_total/galaxy.M_sun
+			stellar_mass=gal.mstar_bulge/galaxy.M_sun
 
 			ax[0].loglog([stellar_mass], [eps1*gal.mdot*c**2],  marker=self.symbols[self.gal_symbols[idx]], color=self.cols[0], label=(gal.name,'{0:3.2e}'.format(gal.eddr)))
 			ax[1].loglog([stellar_mass], [eps2*(gal.eddr)**2*gal.mdot_edd*c**2],  marker=self.symbols[self.gal_symbols[idx]],color=self.cols[0], label=(gal.name,'{0:3.2e}'.format(gal.eddr)))

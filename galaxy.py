@@ -232,6 +232,7 @@ def nuker_params(skip=False):
 		d['mub']=table[i]['$\mu_b$']
 		d['d']=table[i]['Distance']
 		d['M']=M_sun*10.**table[i]['$\\log_{10}(M_{\\bullet}/M_{\\odot})$\\tablenotemark{e}']
+		d['M2']=M_sun*10.**table[i]['$\\log_{10}(M_{\\bullet}/M_{\\odot})$\\tablenotemark{c}']
 		d['type']=table[i][r'Profile\tablenotemark{b}']
 		if d['type']=='$\\cap$':
 			d['type']='Core'
@@ -576,8 +577,6 @@ class Galaxy(object):
 	@property 
 	def sp_heating(self):
 		return (0.5*self.vel**2+0.5*self.vw**2-(self.gamma)/(self.gamma-1)*(self.pres/self.rho))
-
-	def sp_heating_gridpt(self,i):
 
 	@property
 	def heating_pos(self):
@@ -1808,9 +1807,10 @@ class NukerGalaxy(Galaxy):
 		return gal
 
 	@property
-	def mstar_total(self):
-		'''Get total stellar from the Mbh-Mbulge relation'''
-		return self.params['M']/0.006
+	def mstar_bulge(self):
+		'''Get the mbulge from WM04 table'''
+		params=nuker_params()
+		return params[self.name]['M2']/0.006
 
 	@memoize
 	def rho_stars(self,r):
