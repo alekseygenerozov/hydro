@@ -1713,7 +1713,7 @@ class Galaxy(object):
 
 	@property 
 	def cond_grid(self):
-		np.array([self.cond(i) for i in range(self.length)])
+		return np.array([self.cond(i) for i in range(self.length)])
 
 	@property
 	def cond_spitzer_ratio(self):
