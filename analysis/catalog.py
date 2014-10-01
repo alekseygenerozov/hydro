@@ -343,6 +343,17 @@ class Catalog(object):
 
 		return Table(cols)
 
+	def cond_plots(self):
+		bc('mkdir -p conduction')
+		for gal in self.gals:
+			gal.set_param('eps_cond',1.)
+			gal.set_param('cond_scheme', 'spitzer')
+			gal.set_param('phi_cond',0.05)
+			gal._update_aux()
+
+			fig=gal.cond_plot
+			fig.savefig('conduction/'+gal.name+'_'+str(gal.vw_extra/1.E5)+'_conduction.pdf')
+			plt.close()
 
 	def q_plot(self, scale_radius=True):
 		fig,ax=plt.subplots(1, figsize=(10, 8))
@@ -373,14 +384,6 @@ class Catalog(object):
 				ax[j,1].plot(gal.time_stamps, series[j][3])
 			
 			plt.savefig('series/'+gal.name+'_'+str(gal.vw_extra/1.E5)+'_series.pdf')
-			plt.close()
-
-	def conduction(self):
-		bc('mkdir -p conduction/')
-		for idx, gal in enumerate(self.gals):
-			fig=gal.cond_plot
-
-			fig.savefig('conduction/'+gal.name+'_'+str(gal.vw_extra/1.E5)+'_conduction.pdf')
 			plt.close()
 
 	def chandra_compare(self):

@@ -1697,14 +1697,6 @@ class Galaxy(object):
 		'''Conductive time-scale obtained from the saturated conductive flux'''
 		return abs((4.*self.rho*self.cs**2*self.radii**3)/(4.*np.pi*self.f_cond_sat*self.radii**2))
 
-	@property 
-	def cond_spitzer(self):
-		return np.array([self.get_diffusion(i, 'spitzer', 'temp') for i in range(0, self.length)])
-
-	@property 
-	def cond_shcherba(self):
-		return np.array([self.get_diffusion(i, 'shcherba', 'temp') for i in range(0, self.length)])
-
 	def cond(self,i):
 		if not(hasattr(self,'cond_simple')) or self.cond_simple==False:
 			return self.get_diffusion(i, 'kappa_cond_eff', 'temp')
@@ -1716,19 +1708,11 @@ class Galaxy(object):
 		return np.array([self.cond(i) for i in range(self.length)])
 
 	@property
-	def cond_spitzer_ratio(self):
-		return self.cond_spitzer[self.start:self.end]/self.heating_pos[self.start:self.end]
-
-	@property 
-	def cond_shcherba_ratio(self):
-		return self.cond_shcherba[self.start:self.end]/self.heating_pos[self.start:self.end]
-
-	@property
 	def cond_plot(self):
 		'''Plot conductivity vs. heating rate.'''
 		fig,ax=plt.subplots()
-		ax.loglog(self.radii[self.start:self.end],abs(self.cond_spitzer_ratio))
-		ax.loglog(self.radii[self.start:self.end],abs(self.cond_shcherba_ratio))
+		ax.loglog(self.radii[self.start:self.end+1],abs((self.cond_grid/self.heating_pos)[self.start:self.end+1]))
+		ax.set_title(self.name+' '+str(self.vw_extra/1.E5))
 		plt.close()
 
 		return fig
