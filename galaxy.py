@@ -447,11 +447,12 @@ class Galaxy(object):
 		if not length:
 			length=self.length
 
-		#Clearing past saved information
-		self.clear_saved()
 		#New initialization parameters
 		self.init={'rmin':rmin, 'rmax':rmax, 'length':length, 'logr':self._logr, 'f_initial':self.profile, 'func_params':{}}
 		self._init_grid()
+		self.saved=np.empty([0, self.length, len(self.out_fields)])
+		self.fdiff=np.empty([0, self.length-1, 2*len(self.cons_fields)+1])
+
 
 	def M_enc(self,r):
 		return 0.
