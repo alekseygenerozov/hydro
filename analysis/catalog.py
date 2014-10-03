@@ -26,6 +26,8 @@ import warnings
 from custom_collections import LastUpdatedOrderedDict as od
 from latex_exp import latex_exp
 
+import sys
+
 #Constants
 G=const.G.cgs.value
 M_sun=const.M_sun.cgs.value
@@ -235,7 +237,7 @@ class Catalog(object):
 		plt.close()
 		return fig
 
-	def profiles(self):
+	def profiles(self, labels=[]):
 		fig,ax=plt.subplots(3, sharex=True, figsize=(10, 24))
 		ax[0].set_ylabel(r'$\rho$ [g cm$^{-3}$]')
 		ax[1].set_ylabel(r'T [K]')
@@ -244,6 +246,18 @@ class Catalog(object):
 		# ax.set_ylabel(r'$r_{\rm stag}/r_{\rm soi}$')
 
 		for idx, gal in enumerate(self.gals):
+			gal_label=gal.name
+			try:
+				labels=np.array([labels]).flatten()
+			except:
+				pass
+			try:
+				for label in labels:
+					gal_label=gal_label+' '+str(gal.get_param(label))
+			except:
+				print sys.exc_info()[0]
+				pass
+
 			col=self.cols[self.gal_vws[idx]]
 
 			rho_interp=interp1d(gal.radii,gal.rho)
@@ -253,11 +267,11 @@ class Catalog(object):
 			temp_rs=gal.temp_interp(gal.rs[0])
 			x_ray_rs=gal.x_ray_lum_interp(gal.rs[0])
 
-			ax[0].loglog(gal.radii, gal.rho, color=col, label=gal.name)
+			ax[0].loglog(gal.radii, gal.rho, color=col, label=gal_label)
 			ax[0].loglog(gal.rs, rho_rs, 's', color=col,  markersize=10)
-			ax[1].loglog(gal.radii, gal.temp, color=col, label=gal.name)
+			ax[1].loglog(gal.radii, gal.temp, color=col, label=gal_label)
 			ax[1].loglog(gal.rs, temp_rs, 's',color=col, markersize=10)
-			ax[2].loglog(gal.radii, gal.x_ray_lum, color=col, label=gal.name)
+			ax[2].loglog(gal.radii, gal.x_ray_lum, color=col, label=gal_label)
 			ax[2].loglog(gal.rs, x_ray_rs, 's',color=col, markersize=10)
 			try:
 				rb=gal.rb
@@ -354,6 +368,56 @@ class Catalog(object):
 			fig=gal.cond_plot
 			fig.savefig('conduction/'+gal.name+'_'+str(gal.vw_extra/1.E5)+'_conduction.pdf')
 			plt.close()
+
+	def cond_ratios(self):
+		bc('mkdir -p conduction')
+		fig,ax=plt.subplots(1, figsize=(10, 8))
+		for gal in self.gals:
+			gal.set_param('eps_cond',1.)
+			gal.set_param('cond_scheme', 'spitzer')
+			gal.set_param('phi_cond',0.05)
+			gal._update_aux()
+
+			try:
+				ax.loglog(gal.M_bh_8, gal.field_interp('cond_grid')(1.E18)/gal.field_interp('heating_pos')(1.E18), 'ks')
+			except:
+				continue
+		
+		plt.close()
+		return fig
+
+	def cond_ratios_temp(self):
+		bc('mkdir -p conduction')
+		fig,ax=plt.subplots(1, figsize=(10, 8))
+		for gal in self.gals:
+			gal.set_param('eps_cond',1.)
+			gal.set_param('cond_scheme', 'spitzer')
+			gal.set_param('phi_cond',0.05)
+			gal._update_aux()
+
+			try:
+				ax.loglog(gal.temp_interp(1.E18), gal.field_interp('cond_grid')(1.E18)/gal.field_interp('heating_pos')(1.E18), 'ks')
+			except:
+				continue
+		
+		plt.close()
+		return fig
+
+	def cond_ratios_gamma(self):
+		bc('mkdir -p conduction')
+		fig,ax=plt.subplots(1, figsize=(10, 8))
+		for gal in self.gals:
+			gal.set_param('eps_cond',1.)
+			gal.set_param('cond_scheme', 'spitzer')
+			gal.set_param('phi_cond',0.05)
+			gal._update_aux()
+
+			try:
+				ax.loglog(gal.M_bh_8, gal.field_interp('cond_grid')(1.E18)/gal.field_interp('heating_pos')(1.E18), 'ks')
+			except:
+				continue
+		plt.close()
+		return fig
 
 	def q_plot(self, scale_radius=True):
 		fig,ax=plt.subplots(1, figsize=(10, 8))

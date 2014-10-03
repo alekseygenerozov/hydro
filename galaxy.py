@@ -49,6 +49,9 @@ th=4.35*10**17
 year=3.15569E7
 
 
+def pow_slope(r1, r2, field1, field2):
+	return np.log(field2/field1)/np.log(r2/r1)
+
 def pow_extrap(r, r1, r2, field1, field2):
 	'''Power law extrapolation given radius of interest, and input radii and fields'''
 	slope=np.log(field2/field1)/np.log(r2/r1)
@@ -632,6 +635,9 @@ class Galaxy(object):
 		kappa=0.1*kb*np.sqrt(kb*self.temp/me)*self.radii*(self.rho/(self.mu*mp))
 		return kappa
 
+	def field_interp(self,field):
+		return interp1d(self.radii, getattr(self,field))
+
 	def rho_interp(self, r):
 		return interp1d(self.radii, self.rho)(r)
 
@@ -874,7 +880,15 @@ class Galaxy(object):
 	def _add_ghosts(self):
 		self.start=self._num_ghosts
 		self.end=self.end-self._num_ghosts
-	
+
+	def _power_zones_slope(self, i1, i2, field):
+		r1=self.radii[i1]
+		r2=self.radii[i2]
+		field_arr=getattr(self, field)
+		field1=field_arr[i1]
+		field2=field_arr[i2]
+		return np.log(field2/field1)/np.log(r2/r1)
+
 	def _power_zones(self, rad, i1, i2, field):
 		'''Power law extrapolation from zones'''
 		r1=self.radii[i1]
@@ -943,7 +957,6 @@ class Galaxy(object):
 			self.s[i]=s(self.temp[self.start],self.rho[i],self.mu)
 		for i in range(self.end+1,self.length):
 			self.s[i]=s(self.temp[self.end],self.rho[i],self.mu)
-
 
 	def _bdry_interp(self,field):
 		field_arr=getattr(self, field)
