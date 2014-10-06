@@ -1070,25 +1070,6 @@ class Galaxy(object):
 		target_delta_t=self.time_target-self.time_cur
 		self.delta_t=min([target_delta_t, cfl_delta_t])
 
-	# @property
-	# def _delta_t_cfl(self):
-	# 	return np.min(self.safety*self.delta/self.alpha_max)
-
-	# @property 
-	# def _delta_t_cond(self):
-	# 	if not hasattr(self, 'phi_cond'):
-	# 		self.set_param('phi_cond',1.)
-	# 	return np.min(np.abs(self.safety*self.rho[self.start:self.end+1]*self.cs[self.start:self.end+1]**2*
-	# 		self.delta[self.start:self.end+1]/(self.f_cond[self.start:self.end+1])))
-
-	# #Evaluate Courant condition for the entire grid. This gives us an upper bound on the time step we may take 
-	# def _timestep(self):
-	# 	# alpha_max=0.
-	# 	delta_t_allowed=min([self._delta_t_cfl,self._delta_t_cond])
-	# 	#Setting the time step
-	# 	delta_t_target=self.time_target-self.time_cur
-	# 	self.delta_t=min([delta_t_target, delta_t_allowed])
-
 	#Wrapper for evaluating the time derivative of all fields
 	def dfield_dt(self, i, field):
 		if field=='rho':
@@ -1763,7 +1744,7 @@ class NukerGalaxy(Galaxy):
 
 
 	@classmethod
-	def from_dir(cls, name, loc, index=-1, rescale=1., rmin=None, rmax=None, gdata=None, length=None, params=False):
+	def from_dir(cls, name, loc, index=-1, rescale=1., rmin=None, rmax=None, gdata=None, length=None):
 		init={}
 		init_array=prepare_start(np.load(loc+'/save.npz')['a'][index])
 		if rescale=='auto':
@@ -1797,15 +1778,6 @@ class NukerGalaxy(Galaxy):
 			init['length']=length
 
 		gal=cls(name, init=init, gdata=gdata)
-		if params:
-			try:
-				params=dill.load(open(loc+'/non_standard.p','rb'))
-				[gal.set_param(param, params[param]) for param in params]
-			except:
-				pass 
-		else:
-			pass
-
 		return gal
 
 	@property
