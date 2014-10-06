@@ -1712,6 +1712,23 @@ class Galaxy(object):
 
 		return fig
 
+	@property
+	def tff(self):
+		return (2.*self.radii**3/(G*self.params['M']))**0.5
+
+	@property
+	def tcool(self):
+		return (self.rho*self.cs**2/self.cooling)
+
+	@property 
+	def tcool_tff(self):
+		return self.tcool/self.tff
+
+	@property
+	def tcool_tff_rs(self):
+		if self.stag_unique:
+			return self.field_interp('tcool_tff')(self.rs[0])
+
 
 class NukerGalaxy(Galaxy):
 	'''Sub-classing galaxy above to represent Nuker parameterized galaxies'''
