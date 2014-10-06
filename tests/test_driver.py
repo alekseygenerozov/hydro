@@ -50,7 +50,6 @@ def test_driver_grid():
 
 	assert np.allclose(driver.gal.radii, 2.*gal.radii)
 
-
 def test_driver_adjust():
 	init_file='test_driver_adjust'
 	driver=nd.Driver(init_file)
