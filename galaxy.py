@@ -1404,7 +1404,8 @@ class Galaxy(object):
 		grid_prims=[getattr(self, field) for field in self.out_fields]
 		if np.any(np.isnan(grid_prims)):
 			print 'nan detected in solution'
-			sys.exit(3)
+			self.save()
+			# sys.exit(3)
 
 		self.time_cur+=self.delta_t
 		self.total_time+=self.delta_t
@@ -1695,11 +1696,11 @@ class Galaxy(object):
 
 	@property
 	def tff(self):
-		return (2.*self.radii**3/(G*self.params['M']))**0.5
+		return (2.*self.radii**3/(G*(self.M_enc_grid+self.params['M'])))**0.5
 
 	@property
 	def tcool(self):
-		return (self.rho*self.cs**2/self.cooling)
+		return (1.5*(self.rho/(self.mu*mp))*kb*self.temp)/self.cooling
 
 	@property 
 	def tcool_tff(self):
