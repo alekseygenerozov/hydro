@@ -451,8 +451,10 @@ class Galaxy(object):
 			length=self.length
 
 		#New initialization parameters
-		self.init={'rmin':rmin, 'rmax':rmax, 'length':length, 'logr':self._logr, 'f_initial':self.profile, 'func_params':{}}
+		self.init={'rmin':rmin , 'rmax':rmax, 'length':length, 'logr':self._logr, 'f_initial':self.profile, 'func_params':{}}
 		self._init_grid()
+		self._add_ghosts()
+		
 		self.saved=np.empty([0, self.length, len(self.out_fields)])
 		self.fdiff=np.empty([0, self.length-1, 2*len(self.cons_fields)+1])
 
@@ -945,6 +947,8 @@ class Galaxy(object):
 				self._update_ghosts_temp_fixed()
 			elif bdry=='non_cond':
 				self._update_ghosts_non_cond()
+			elif bdry=='mdot_fixed':
+				self._update_ghosts_mdot_fixed()
 			else:
 				self._update_ghosts_default()
 			
@@ -960,10 +964,15 @@ class Galaxy(object):
 		self._extrapolate('rho')
 		self._extrapolate('vel')
 
+	def _update_ghosts_mdot_fixed(self):
+		self._extrapolate('rho')
+		self._extrapolate('s')
+		self._mdot_adjust()
+
 	def _update_ghosts_bp(self):
 		self._s_adjust_bp()
 		self._dens_adjust_bp()
-		self._mdot_adjust()
+		self._mdot_adjust_bp()
 
 	def _update_ghosts_temp_fixed(self):
 		self._extrapolate('rho')
@@ -1016,7 +1025,17 @@ class Galaxy(object):
 			self.log_rho[ghost_idx]=log_rho
 
 	def _mdot_adjust(self):
-		'''Enforce constant mdot across the ghost zones.'''
+		for i in range(1, 4):
+			ghost_idx=self.outwards(self._end_zone, i)
+			print ghost_idx
+			if self._end_zone==self.start:
+				src=np.trapz(self.src_rho[ghost_idx:self._end_zone+1], x=self.radii[ghost_idx:self._end_zone+1])
+			else:
+				src=np.trapz(self.src_rho[self._end_zone:ghost_idx+1], x=self.radii[self._end_zone:ghost_idx+1])
+			self.vel[ghost_idx]=(self.frho[self._end_zone]+src)/self.rho[ghost_idx]/self.radii[ghost_idx]**2
+			
+	def _mdot_adjust_bp(self):
+		'''Enforce constant mdot across the ghost zones. Source term is not accounted for in this version'''
 		for i in range(1,4):
 			ghost_idx=self.outwards(self._end_zone, i)
 			vel=self.frho[self._end_zone]/self.rho[ghost_idx]/self.radii[ghost_idx]**2
