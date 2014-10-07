@@ -1303,11 +1303,10 @@ class Galaxy(object):
 			# want to raise exception here instead.
 			if self.num_steps>self.max_steps:
 				print "Exceeded max number of allowed steps"
-				return 1
+				break
 
 		pbar.finish()
 		self.write_sol()
-		return 0
 
 	#Gradually perturb a given parameter (param) to go to the desired value (target). 
 	def solve_adjust(self, time, param, target, n=10, max_steps=np.inf):
@@ -1319,16 +1318,23 @@ class Galaxy(object):
 		:param int max_steps: Maximum number of steps for solver to take
 		'''
 		param_cur=getattr(self, param)
-		print target, param_cur
-		interval=time/float(n)
-		delta_param=(target-param_cur)/float(n)
-		while not np.allclose(param_cur, target):
-			param_cur+=delta_param
-			self.set_param(param,param_cur)
+		self.max_steps=max_steps
 
-			steps=self.solve(time=interval, max_steps=max_steps)
-			if steps==1:
-				break
+		if type(param_cur, float):
+			interval=time/float(n)
+			delta_param=(target-param_cur)/float(n)
+			while not np.allclose(param_cur, target):
+				param_cur+=delta_param
+				self.set_param(param,param_cur)
+
+				self.solve(time=interval, max_steps=max_steps)
+				if self.num_steps>self.max_steps:
+					break
+
+		else:
+			self.set_param(param, target)
+			self.solve(time, max_steps)
+
 
 	def refine(self):
 		'''Reset and clear saved info--useful capturing how a solution blows up'''
@@ -1341,36 +1347,6 @@ class Galaxy(object):
 
 		self.solve()
 	
-	#Create movie of solution
-	def animate(self,  analytic_func=None, index=1):
-		if analytic_func:
-			vec_analytic_func=np.vectorize(analytic_funcs)
-		def update_img(n):
-			time=self.time_stamps[n]
-			sol.set_ydata(self.saved[n*50,:,index])
-			label.set_text(str(time))
-
-		#Setting up for plotting
-		ymin=np.min(self.saved[:,:,index])
-		ymax=np.max(self.saved[:,:,index])
-		fig,ax=plt.subplots()
-		label=ax.text(0.02, 0.95, '', transform=ax.transAxes)	
-		ax.set_xscale('log')
-		if index==0:
-			ax.set_yscale('log')
-		ax.set_ylim(ymin-0.1*np.abs(ymin), ymax+0.1*np.abs(ymax))
-
-		#Plot solution/initial condition/(maybe) analytic solution
-		sol,=ax.plot(self.radii, self.saved[0,:,index], self.symbol)
-		ax.plot(self.radii, self.saved[0,:,index], 'b')
-		if analytic_func:
-			analytic_sol,=ax.plot(self.radii, vec_analytic_func(self.radii))
-		
-		#Exporting animation
-		sol_ani=animation.FuncAnimation(fig,update_img,len(self.saved)/50,interval=50, blit=True)
-		sol_ani.save('sol_'+self.out_fields[index]+'.mp4', dpi=100)
-		plt.clf()
-
 	def save(self):
 		'''Write state of grid to file'''
 		grid_prims=[getattr(self, field) for field in self.out_fields]
