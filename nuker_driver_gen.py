@@ -7,6 +7,7 @@ import ConfigParser
 import argparse
 
 import ast
+import sys
 
 
 def config_items_section(config,sec):
@@ -29,7 +30,7 @@ def config_parse_section(config, sec, items=None):
 		try:
 			param_dict[name]=ast.literal_eval(config.get(sec,name))
 		except ValueError,err:
-			param_dict[name]=self.config.get(sec,name)
+			param_dict[name]=config.get(sec,name)
 		except ConfigParser.NoOptionError:
 			continue
 		except ConfigParser.NoSectionError:
@@ -43,16 +44,26 @@ def ast_literal_eval_safe(s):
 	except ValueError,err:
 		return s
 
+class LazyCallable(object):
+	def __init__(self, name):
+		self.n, self.f = name, None
+	def __call__(self, *a, **k):
+		if self.f is None:
+			modn, funcn = self.n.rsplit('.', 1)
+			if modn not in sys.modules:
+				__import__(modn)
+			self.f = getattr(sys.modules[modn],funcn)
+		return self.f(*a, **k)
+
 class Driver(object):
 	'''Driver to set up solutions for Nuker galaxies'''
 	def __init__(self, config_file):
-
 		self.config_file=config_file
 		self.__parse_config()
 		if self.model:
 			self.gal=galaxy.NukerGalaxy.from_dir(self.name, self.model, **self.grid_params_dict)
 		else:
-			self.gal=galaxy.NukerGalaxy(self.name, **self.grid_params_dict)
+			self.gal=galaxy.NukerGalaxy(self.name, init=self.grid_params_dict)
 
 		for param in self.model_params_dict:
 			self.gal.set_param(param,self.model_params_dict[param])
@@ -69,11 +80,11 @@ class Driver(object):
 		self.name=ast_literal_eval_safe(self.config.get('name','name'))
 		try:
 			self.model=ast_literal_eval_safe(self.config.get('model','model'))
-		except ConfigParser.NoOptionError or ConfigParser.NoSectionError:
+			self.model_params=self.config.getboolean('model','model_params')
+		except (ConfigParser.NoOptionError,ConfigParser.NoSectionError):
 			self.model=None
+			self.model_params=None
 
-		self.model_params=self.config.getboolean('model','model_params')
-		
 		self.model_params_dict={}
 		if self.model_params and self.model:
 			self.model_params_dict=dill.load(open(self.model+'/non_standard.p','rb'))
@@ -86,9 +97,14 @@ class Driver(object):
 		self.user_params_dict=config_parse_section(self.config, 'params')
 
 	def __parse_config_grid(self):
-		grid_param_names=['rmin', 'rmax', 'logr', 'length', 'rescale']
+		if self.model:
+			grid_param_names=['rmin', 'rmax', 'logr', 'length', 'rescale']
+		else:
+			grid_params_names=['rmin', 'rmax', 'logr', 'length', 'f_initial', 'func_params']
 		self.grid_params_dict={}
-		self.grid_params_dict=config_parse_section(self.config, 'grid', grid_param_names)
+		self.grid_params_dict=config_parse_section(self.config, 'grid', grid_params_names)
+		if 'f_initial' in self.grid_params_dict:
+			self.grid_params_dict['f_initial']=LazyCallable(self.grid_params_dict['f_initial'])
 
 	def __parse_config_adjust(self):
 		self.adjust_params_dict=config_parse_section(self.config,'adjust')

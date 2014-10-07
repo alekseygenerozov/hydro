@@ -380,6 +380,7 @@ class Galaxy(object):
 		self.log=''
 		self.nsolves=0
 
+	##Should replace params here with dictionary as in the case with the constructor above
 	@classmethod
 	def from_dir(cls, loc, index=-1, rescale=1, length=None, rmin=None, rmax=None):
 		init={}
@@ -1330,7 +1331,6 @@ class Galaxy(object):
 				self.solve(time=interval, max_steps=max_steps)
 				if self.num_steps>self.max_steps:
 					break
-
 		else:
 			self.set_param(param, target)
 			self.solve(time, max_steps)
