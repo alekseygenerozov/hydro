@@ -29,10 +29,9 @@ def test_bdry_def():
 	start=np.load('data/power_laws/save.npz')['a'][-1]
 	start_copy=np.copy(start)
 	gal=galaxy.Galaxy.from_dir('data/power_laws')
-
-
 	gal._update_ghosts()
 
+	assert gal.bdry=='default'
 	assert np.allclose(gal.rho, start_copy[:,1])
 	assert np.allclose(gal.vel, start_copy[:,2])
 
@@ -42,11 +41,51 @@ def test_bdry_bp():
 
 	gal=galaxy.Galaxy.from_dir('data/bp/')
 	gal.set_param('bdry', 'bp')
-	assert gal.bdry=='bp'
-
 	gal._update_ghosts()
+
+	assert gal.bdry=='bp'
 	assert np.allclose(gal.rho, start_copy[:,1])
 	assert np.allclose(gal.vel, start_copy[:,2])
+
+def test_bdry_split():
+	start=np.load('data/mixed/save.npz')['a'][-1]
+	start_copy=np.copy(start)
+
+	gal=galaxy.Galaxy.from_dir('data/mixed/')
+	gal.set_param('bdry', ['bp','default'])
+	gal._update_ghosts()
+
+	assert gal.bdry==['bp','default']
+	assert np.allclose(gal.rho, start_copy[:,1])
+	assert np.allclose(gal.vel, start_copy[:,2])
+
+def test_bdry_split2():
+	start=np.load('data/mixed2/save.npz')['a'][-1]
+	start_copy=np.copy(start)
+
+	gal=galaxy.Galaxy.from_dir('data/mixed2/')
+	gal.set_param('bdry', ['default','bp'])
+	gal._update_ghosts()
+
+	assert gal.bdry==['default','bp']
+	assert np.allclose(gal.rho, start_copy[:,1])
+	assert np.allclose(gal.vel, start_copy[:,2])
+
+		
+def test_bdry_split3():
+	start=np.load('data/mixed2/save.npz')['a'][-1]
+	start_copy=np.copy(start)
+
+	gal=galaxy.Galaxy.from_dir('data/mixed/')
+	gal.set_param('bdry', ['bp','default'])
+	gal._update_ghosts()
+
+	assert gal.bdry==['bp','default']
+	assert not np.allclose(gal.rho, start_copy[:,1])
+	assert not np.allclose(gal.vel, start_copy[:,2])
+
+
+
 	
 
 

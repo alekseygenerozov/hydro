@@ -451,8 +451,10 @@ class Galaxy(object):
 			length=self.length
 
 		#New initialization parameters
-		self.init={'rmin':rmin, 'rmax':rmax, 'length':length, 'logr':self._logr, 'f_initial':self.profile, 'func_params':{}}
+		self.init={'rmin':rmin , 'rmax':rmax, 'length':length, 'logr':self._logr, 'f_initial':self.profile, 'func_params':{}}
 		self._init_grid()
+		self._add_ghosts()
+		
 		self.saved=np.empty([0, self.length, len(self.out_fields)])
 		self.fdiff=np.empty([0, self.length-1, 2*len(self.cons_fields)+1])
 
@@ -911,20 +913,44 @@ class Galaxy(object):
 		val2=field_arr[i2]
 		return np.interp(np.log(rad), [np.log(rad1), np.log(rad2)], [val1, val2])
 		
+	def inwards(self, idx, n):
+		'''Go n zones towards the middle of the grid'''
+		if idx<np.median(range(0, self.length+1)):
+			return idx+n
+		else:
+			return idx-n
+
+	def outwards(self, idx, n):
+		'''Go n zones away from the middle of the grid'''
+		if idx<np.median(range(0, self.length+1)):
+			return idx-n
+		else:
+			return idx+n
+
 	#Applying boundary conditions
 	def _update_ghosts(self):
 		'''Method to update boundaries--bp=bondi-parker; s_fixed=fixed entropy on the inner grid (entropy is simply left alone. Otherwise do power law
 			extrapolations for all variables.'''
-		if self.bdry=='bp':
-			self._update_ghosts_bp()
-		elif self.bdry=='s_fixed':
-			self._update_ghosts_s_fixed()
-		elif self.bdry=='temp_fixed':
-			self._update_ghosts_temp_fixed()
-		elif self.bdry=='non_cond':
-			self._update_ghosts_non_cond()
-		else:
-			self._update_ghosts_default()
+		bdry_list=np.array([self.bdry]).flatten()
+		try:
+		    bdry_list[1]
+		except IndexError:
+		    bdry_list=np.append(bdry_list, bdry_list[0])
+		for idx,zone in enumerate([self.start,self.end]):
+			bdry=bdry_list[idx]
+			self._end_zone=zone
+			if bdry=='bp':
+				self._update_ghosts_bp()
+			elif bdry=='s_fixed':
+				self._update_ghosts_s_fixed()
+			elif bdry=='temp_fixed':
+				self._update_ghosts_temp_fixed()
+			elif bdry=='non_cond':
+				self._update_ghosts_non_cond()
+			elif bdry=='mdot_fixed':
+				self._update_ghosts_mdot_fixed()
+			else:
+				self._update_ghosts_default()
 			
 		if not self.isot:
 			self._update_temp()
@@ -938,101 +964,82 @@ class Galaxy(object):
 		self._extrapolate('rho')
 		self._extrapolate('vel')
 
-	def _update_ghosts_bp(self):
-		self._s_adjust()
-		self._dens_adjust()
+	def _update_ghosts_mdot_fixed(self):
+		self._extrapolate('rho')
+		self._extrapolate('s')
 		self._mdot_adjust()
 
+	def _update_ghosts_bp(self):
+		self._s_adjust_bp()
+		self._dens_adjust_bp()
+		self._mdot_adjust_bp()
+
 	def _update_ghosts_temp_fixed(self):
-		temp_inner,temp_outer=self.temp[0],self.temp[-1]
 		self._extrapolate('rho')
 		self._extrapolate('vel')
-		self.s[0],self.s[-1]=s(temp_inner,self.rho[0],self.mu),s(temp_outer,self.rho[-1],self.mu)
+		last_ghost=self.outwards(self._end_zone, 3)
+		self.s[last_ghost]=s(self.temp[last_ghost],self.rho[last_ghost],self.mu)
 		self._bdry_interp('s')
 
 	def _update_ghosts_non_cond(self):
 		self._extrapolate('rho')
 		self._extrapolate('vel')
-		for i in range(0, self.start):
-			self.s[i]=s(self.temp[self.start],self.rho[i],self.mu)
-		for i in range(self.end+1,self.length):
-			self.s[i]=s(self.temp[self.end],self.rho[i],self.mu)
+		for i in range(1,4):
+			ghost_idx=self.outwards(self._end_zone,i)
+			self.s[ghost_idx]=s(self.temp[self._end_zone],self.rho[ghost_idx],self.mu)
 
 	def _bdry_interp(self,field):
 		field_arr=getattr(self, field)
-		for i in range(1, self.start):
-			field_arr[i]=self._interp_zones(self.radii[i], 0, self.start, field)
+		for i in range(1, 3):
+			ghost_idx=self.outwards(self._end_zone,i)
+			field_arr[i]=self._interp_zones(self.radii[i], self._end_zone, self.outwards(self._end_zone, 3), field)
 
 	#Constant entropy across the ghost zones
-	def _s_adjust(self):
-		s_start=self.s[self.start]
-		for i in range(0, self.start):
-			self.s[i]=s_start
-		s_end=self.s[self.end]
-		for i in range(self.end+1, self.length):
-			self.s[i]=s_end
+	def _s_adjust_bp(self):
+		s_start=self.s[self._end_zone]
+		for i in range(1,4):
+			ghost_idx=self.outwards(self._end_zone,i)
+			self.s[ghost_idx]=s_start
 
 	#Power law extrapolation of quantities into ghost zones 
 	def _extrapolate(self, field):
 		'''Perform power law extrapolation of quantities on grid to boundaries'''
 		field_arr=getattr(self, field)
-		for i in range(0, self.start):
-			val=self._power_zones(self.radii[i], self.start, self.start+3, field)
-			field_arr[i]=val
+		for i in range(1,4):
+			ghost_idx=self.outwards(self._end_zone, i)
+			val=self._power_zones(self.radii[ghost_idx], self._end_zone, self.inwards(self._end_zone, 3), field)
+			field_arr[ghost_idx]=val
 			if field=='rho':
-				self.log_rho[i]=np.log(val)
-			
-		
-		#Updating the end ghost zones, extrapolating using a power law density
-		for i in range(self.end+1, self.length):
-			val=self._power_zones(self.radii[i], self.end, self.end-3, field)
-			field_arr[i]=val
-			if field=='rho':
-				self.log_rho[i]=np.log(val)
+				self.log_rho[ghost_idx]=np.log(val)
 
 	#Extrapolate densities to the ghost zones; a lot of this method is redundant 
-	def _dens_adjust(self):
+	def _dens_adjust_bp(self):
 		'''Extrapolate $\rho$ assuming that the $\rho\sim r^{-3/2}$ on inner boundary and $\rho\sim r^{-3/2}$'''
-		r_start=self.radii[self.start]
-		r_start2=self.radii[self.start+3]
-		log_rho_start=self.log_rho[self.start]
-		log_rho_start2=self.log_rho[self.start+3]
+		for i in range(1, 4):
+			if self._end_zone==self.start:
+				slope=-3./2.
+			else:
+				slope=-2.
+			ghost_idx=self.outwards(self._end_zone, i)
+			log_rho=slope*np.log(self.radii[ghost_idx]/self.radii[self._end_zone])+self.log_rho[self._end_zone]
+			self.log_rho[ghost_idx]=log_rho
 
-		#If the inner bdry is fixed...(appropriate for Parker wind)
-		# if self.bdry_fixed:
-		# 	for i in range(1, self.start):
-		# 		self.log_rho[i]=self._interp_zones(self.radii[i], 0, self.start, 'log_rho')
-		#Updating the starting ghost zones, extrapolating using rho prop r^-3/2
-
-		for i in range(0, self.start):
-			slope=-3./2.
-			#slope=(log_rho_start2-log_rho_start)/np.log(r_start2/r_start)
-			log_rho=slope*np.log(self.radii[i]/r_start)+log_rho_start
-			self.log_rho[i]=log_rho
-		#Updating the end ghost zones
-		r_end=self.radii[self.end]
-		log_rho_end=self.log_rho[self.end]
-		r_end2=self.radii[self.end-3]
-		log_rho_end2=self.log_rho[self.end-3]
-		#Updating the end ghost zones, extrapolating using a power law density
-		for i in range(self.end+1, self.length):
-			slope=-2.
-			#slope=(log_rho_end-log_rho_end2)/np.log(r_end/r_end2)
-			log_rho=slope*np.log(self.radii[i]/r_end)+log_rho_end
-			self.log_rho[i]=log_rho
-
-	#Enforce constant mdot across the boundaries (bondary condition for velocity)
 	def _mdot_adjust(self):
-		#Start zones 
-		frho=self.frho[self.start]
-		for i in range(0, self.start):
-			vel=frho/self.rho[i]/self.radii[i]**2
-			self.vel[i]=vel
-		#End zones
-		frho=self.frho[self.end]
-		for i in range(self.end+1, self.length):
-			vel=frho/self.rho[i]/self.radii[i]**2
-			self.vel[i]=vel
+		for i in range(1, 4):
+			ghost_idx=self.outwards(self._end_zone, i)
+			print ghost_idx
+			if self._end_zone==self.start:
+				src=np.trapz(self.src_rho[ghost_idx:self._end_zone+1], x=self.radii[ghost_idx:self._end_zone+1])
+			else:
+				src=np.trapz(self.src_rho[self._end_zone:ghost_idx+1], x=self.radii[self._end_zone:ghost_idx+1])
+			self.vel[ghost_idx]=(self.frho[self._end_zone]+src)/self.rho[ghost_idx]/self.radii[ghost_idx]**2
+			
+	def _mdot_adjust_bp(self):
+		'''Enforce constant mdot across the ghost zones. Source term is not accounted for in this version'''
+		for i in range(1,4):
+			ghost_idx=self.outwards(self._end_zone, i)
+			vel=self.frho[self._end_zone]/self.rho[ghost_idx]/self.radii[ghost_idx]**2
+			self.vel[ghost_idx]=vel
 
 	#Evaluate terms of the form div(kappa*df/dr)-->Diffusion like terms (useful for something like the conductivity)
 	def get_diffusion(self, i, coeff, field):
