@@ -1441,7 +1441,10 @@ class Galaxy(object):
 		crossings=zero_crossings(self.vel)
 		zeros=[]
 		for cross in crossings:
-			zeros.append(brentq(self.vel_interp, self.radii[cross], self.radii[cross+1]))
+			try:
+				zeros.append(brentq(self.vel_interp, self.radii[cross], self.radii[cross+1]))
+			except ValueError:
+				zeros=[]
 		return zeros
 
 	#Get accretion rate  for galaxy by integrating source from stagnation radius
