@@ -1027,7 +1027,6 @@ class Galaxy(object):
 	def _mdot_adjust(self):
 		for i in range(1, 4):
 			ghost_idx=self.outwards(self._end_zone, i)
-			print ghost_idx
 			if self._end_zone==self.start:
 				src=np.trapz(self.src_rho[ghost_idx:self._end_zone+1], x=self.radii[ghost_idx:self._end_zone+1])
 			else:
