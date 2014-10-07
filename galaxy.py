@@ -6,7 +6,6 @@ from scipy.misc import derivative
 
 import copy
 import warnings
-import pickle
 import dill
 import sys
 import subprocess

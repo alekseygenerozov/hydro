@@ -119,9 +119,9 @@ class Driver(object):
 		except:
 			time=None
 		if time:
-			self.gal.solve()
+			self.gal.solve(time*gal.tcross)
 		else:
-			self.gal.solve(time)
+			self.gal.solve()
 
 def main():
 	parser=argparse.ArgumentParser(
