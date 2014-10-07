@@ -46,10 +46,14 @@ def ast_literal_eval_safe(s):
 class Driver(object):
 	'''Driver to set up solutions for Nuker galaxies'''
 	def __init__(self, config_file):
+
 		self.config_file=config_file
 		self.__parse_config()
+		if self.model:
+			self.gal=galaxy.NukerGalaxy.from_dir(self.name, self.model, **self.grid_params_dict)
+		else:
+			self.gal=galaxy.NukerGalaxy(self.name, **self.grid_params_dict)
 
-		self.gal=galaxy.NukerGalaxy.from_dir(self.name, self.model, **self.grid_params_dict)
 		for param in self.model_params_dict:
 			self.gal.set_param(param,self.model_params_dict[param])
 		for param in self.user_params_dict:
@@ -63,11 +67,15 @@ class Driver(object):
 		except ConfigParser.ParsingError, err:
 			print 'Could not parse:', err 
 		self.name=ast_literal_eval_safe(self.config.get('name','name'))
-		self.model=ast_literal_eval_safe(self.config.get('model','model'))
+		try:
+			self.model=ast_literal_eval_safe(self.config.get('model','model'))
+		except ConfigParser.NoOptionError or ConfigParser.NoSectionError:
+			self.model=None
+
 		self.model_params=self.config.getboolean('model','model_params')
 		
 		self.model_params_dict={}
-		if self.model_params:
+		if self.model_params and self.model:
 			self.model_params_dict=dill.load(open(self.model+'/non_standard.p','rb'))
 
 		self.__parse_config_params()
@@ -86,13 +94,14 @@ class Driver(object):
 		self.adjust_params_dict=config_parse_section(self.config,'adjust')
 
 	def solve(self):
+		'''Find solution for given galaxy'''
 		for param in self.adjust_params_dict:
 			self.gal.solve_adjust(5.*self.gal.tcross, param, self.adjust_params_dict[param])
+		
 		try:
 			time=self.config.getfloat('time','time')
 		except:
 			time=None
-
 		if time:
 			self.gal.solve()
 		else:
