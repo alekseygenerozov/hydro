@@ -18,8 +18,8 @@ def sigma_200(M):
 	'''M-sigma relationship taken from Wang and Merritt 2004'''
 	return ((M)/(1.48E8*M_sun))**(1./4.65)
 
-def r_Ia(M):
-	return 40.*(sigma_200(M))**-0.5*pc
+def r_Ia(t,M):
+	return (G/sigma/rate_Ia(t))**0.5
 
 def rs_approx(M, vw, correction=False):
 	'''Simplified analytic expression for the stagnation radius--given a particular bh mass and particular vw (not including sigma)'''
@@ -39,15 +39,6 @@ def rs_approx_nond(eta):
 def vw_from_rs(M, rs):
 	'''Inverse of rs_approx'''
 	return ((7./2.)*G*M/(rs))**0.5
-
-# def rho_rs(M, vw, nuk_gamma, eta=1):
-# 	'''Analytic approximation to the density at the stagnation radius'''
-# 	vw_extra_500=vw/5.E7
-# 	M_bh_8=M/1.E8/M_sun
-# 	if nuk_gamma<0.2:
-# 		return 2.5E-24*eta/(M_bh_8)**0.13/(vw_extra_500)
-# 	else:
-# 		return 5.5E-24*eta*vw_extra_500/(M_bh_8)**0.57
 
 def l_edd(M):
 	return 4.*np.pi*G*M*c/(0.4)
@@ -117,7 +108,7 @@ def vw_eff_stars(t):
 		return 1.E7
 
 def vw_eff(t, M):
-	r_Ia_0=r_Ia(M)
+	r_Ia_0=r_Ia(t,M)
 	vw_eff=np.array([vw_eff_stars(t), (vw_eff_Ia(t)**2+vw_eff_stars(t)**2)**0.5])
 	rs=np.array([rs_approx(M, vw) for vw in vw_eff])
 	if rs[0]<r_Ia_0:
