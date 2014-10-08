@@ -19,7 +19,7 @@ def sigma_200(M):
 	return ((M)/(1.48E8*M_sun))**(1./4.65)
 
 def r_Ia(t,M):
-	return (G/sigma/rate_Ia(t))**0.5
+	return (G/(sigma_200(M)*2.E7*rate_Ia(t)))**0.5
 
 def rs_approx(M, vw, correction=False):
 	'''Simplified analytic expression for the stagnation radius--given a particular bh mass and particular vw (not including sigma)'''

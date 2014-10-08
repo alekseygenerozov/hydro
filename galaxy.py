@@ -322,10 +322,10 @@ class Galaxy(object):
 		self._init_grid()
 
 		#Attributes to store length of the list as well as start and end indices (useful for ghost zones)
-		self.start=0
-		self.end=self.length-1
+		self.start=3
+		self.end=self.length-4
 		self.tcross=(self.radii[-1]-self.radii[0])/(kb*1.E7/mp)**0.5
-		self._num_ghosts=3
+
 		self.tinterval=0.05*self.tcross
 		self.sinterval=100
 
@@ -353,7 +353,6 @@ class Galaxy(object):
 		#Initializing the grid using the initial value function f_initial
 
 
-		self._add_ghosts()
 		#Coefficients use to calculate the derivatives 
 		first_deriv_weights=np.array([-1., 9., -45., 0., 45., -9., 1.])/60.
 		second_deriv_weights=np.array([2., -27., 270., -490., 270., -27., 2.])/(180.)
@@ -453,7 +452,8 @@ class Galaxy(object):
 		#New initialization parameters
 		self.init={'rmin':rmin , 'rmax':rmax, 'length':length, 'logr':self._logr, 'f_initial':self.profile, 'func_params':{}}
 		self._init_grid()
-		self._add_ghosts()
+		first_deriv_weights=np.array([-1., 9., -45., 0., 45., -9., 1.])/60.
+		second_deriv_weights=np.array([2., -27., 270., -490., 270., -27., 2.])/(180.)
 		if not self._logr:
 			self.first_deriv_coeffs=first_deriv_weights/self.delta[0]
 			self.second_deriv_coeffs=second_deriv_weights/self.delta[0]**2
@@ -884,11 +884,6 @@ class Galaxy(object):
 			return '<'
 		else:
 			return 's'
-
-	#Adding ghost zones onto the edges of the grid (moving the start of the grid)
-	def _add_ghosts(self):
-		self.start=self._num_ghosts
-		self.end=self.end-self._num_ghosts
 
 	def _power_zones_slope(self, i1, i2, field):
 		r1=self.radii[i1]
