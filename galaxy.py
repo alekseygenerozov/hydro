@@ -1904,9 +1904,24 @@ class NukerGalaxy(Galaxy):
 
 			return 1./(dens_slope*eta**2)*((0.5)*(2*A-dens_slope)*(1+omega)-(2.-self.params['gamma'])/4.)
 
+	# def rs_analytic_implicit(self,n=1):
+	# 	'''Returns implicit equation for rs'''
+	# 	A=(4.*self.gamma-(1+self.params['gamma'])*(self.gamma-1.))/(4.*(self.gamma-1.))
+	# 	B=7./4.
+	# 	f=lambda rs:(A*G*self.M_enc(rs)/rs)+(B*G*self.params['M']/rs)-self.vw_func(rs)**2/(2.*n)
+	# 	return f
+		# return brentq(f,1.E20, 1.E22)
+
+	def rs_analytic_implicit(self, dens_slope=1):
+		'''Analytic formula for the stagnation radius--normalized by the influence radius'''
+		A=(4.*self.gamma-(1+self.params['gamma'])*(self.gamma-1.))/(4.*(self.gamma-1.))
+		eta=self.vw_extra/self.sigma_inf
+		f=lambda rs:(rs/self.rinf)-1./(dens_slope*eta**2)*((0.5)*(2*A-dens_slope)*(1+self.M_enc(rs)/self.params['M'])-(2.-self.params['gamma'])/4.)
+		return f
+
 	@property 
 	def rs_analytic_approx(self):
-		return gal_properties.rs_analytic_approx(self.params['M'],self.vw_extra)
+		return gal_properties.rs_approx(self.params['M'],self.vw_extra)
 
 	@property 
 	def rs_residual(self):
