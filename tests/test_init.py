@@ -34,6 +34,8 @@ def test_init_array_lin():
 	assert gal._logr==False
 	assert np.allclose(gal.radii,np.linspace(1.,100.,gal.length))
 	assert gal.length==100
+	assert gal.end==96
+	assert gal.start==3
 
 	assert np.allclose(gal.rho,np.ones(gal.length))
 	assert np.allclose(gal.log_rho,np.zeros(gal.length))

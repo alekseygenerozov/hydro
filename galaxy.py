@@ -1730,37 +1730,32 @@ class NukerGalaxy(Galaxy):
 	def from_dir(cls, name, loc, index=-1, rescale=1., rmin=None, rmax=None, gdata=None, length=None):
 		init={}
 		init_array=prepare_start(np.load(loc+'/save.npz')['a'][index])
-		if rescale=='auto':
-			a=96.5
-			tmp=cls(name, gdata=gdata)
-			rescale=tmp.rinf/init_array[0,0]/a
-			print rescale
-
-		init_array[:,0]=rescale*init_array[:,0]
 		radii=init_array[:,0]
-		if not rmin:
-			init['rmin']=radii[0]
-		else:
-			init['rmin']=rmin
-		if not rmax:
-			init['rmax']=radii[-1]
-		else:
-			init['rmax']=rmax
-
 		delta=np.diff(radii)
-		delta_log=np.diff(np.log(radii))
-
 		if np.allclose(np.diff(delta),[0.]):
-			init['logr']=False
+			logr=False
 		else:
-			init['logr']=True
-		init['f_initial']=extrap1d_pow(interp1d(init_array[:,0], init_array[:,1:4], axis=0))
+			logr=True
 		if not length:
-			init['length']=len(radii)
-		else:
-			init['length']=length
+			length=len(radii)
 
-		gal=cls(name, init=init, gdata=gdata)
+		gal=cls(name, init={'rmin':radii[0], 'rmax':radii[-1], 'f_initial':interp1d(radii, init_array[:,1:4], axis=0), 'length':length, 'logr':logr}, gdata=gdata)
+		if rmin and rmax:
+			gal.re_grid(rmin, rmax)
+		elif rmin:
+			gal.re_grid(rmin, gal.radii[-1])
+		elif rmax:
+			gal.re_grid(gal.radii[0], rmax)
+		else:
+			pass
+
+		if rescale=='auto':
+			tmp=cls(name, gdata=gdata)
+			rescale=tmp.rinf/init_array[0,0]/96.5
+
+		if not np.allclose(rescale,1.):
+			gal.radii=rescale*gal.radii
+
 		return gal
 
 	@property
