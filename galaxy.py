@@ -839,23 +839,6 @@ class Galaxy(object):
 			checkf.write(check_str)
 		return check_str
 
-	def cons_plot_rhr(self, dict1={}, dict2={}):
-		if len(self.fdiff)==0:
-			self._cons_update()
-
-		fig1,ax1=plt.subplots(3, sharex=True, figsize=(10,24))
-		plt.title(self.name)
-		for i in range(3):
-			ax1[i].set_xscale('log')
-			ax1[i].set_yscale('log')
-		ax1[2].set_xlabel('Radius [cm]')
-
-		for i in range(1,4):
-			ax1[i-1].loglog(self.fdiff[-1,:,0],self.fdiff[-1,:,i], **dict1)
-			ax1[i-1].loglog(self.fdiff[-1,:,0],self.fdiff[-1,:,i+3], **dict2)
-		plt.close()
-		return fig1
-
 	def cons_plot(self, dict1={}, dict2={}):
 		'''Plot integrated source vs. flux difference for pairs of grid points'''
 		fig1,ax1=plt.subplots(4, sharex=True, figsize=(10,32))
@@ -867,7 +850,6 @@ class Galaxy(object):
 		plt.close()
 		return fig1
 		
-
 	def sol_plot(self, init=False, dict1={}, dict2={}, index=-1):
 		fig1,ax1=plt.subplots(3, sharex=True, figsize=(10,24))
 
