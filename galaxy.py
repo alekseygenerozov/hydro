@@ -413,6 +413,7 @@ class Galaxy(object):
 		else:
 			radii=np.linspace(rmin, rmax, self.length)
 		prims=[f_initial(r, **self.func_params) for r in radii]
+		print prims
 
 		self.radii=radii
 		prims=np.array(prims)
@@ -694,9 +695,11 @@ class Galaxy(object):
 	def vel_profile_from_mdot(self,r):
 		rho=self.rho_profile(r)
 		if r>self.radii[-1]:
-			return self.frho[-1]/r**2/rho
+			src=(self.eta/th)*integrate.quad(lambda r:self._rho_stars_interp(r)*r**2, self.radii[-1],r)[0]
+			return (self.frho[-1]+src)/self.rho_profile(r)/r**2
 		elif r<self.radii[0]:
-			return self.frho[0]/r**2/rho
+			src=(self.eta/th)*integrate.quad(lambda r:self._rho_stars_interp(r)*r**2, self.radii[0],r)[0]
+			return (self.frho[0]+src)/self.rho_profile(r)/r**2
 		else:
 			return self.vel_interp(r)
 
@@ -1787,7 +1790,7 @@ class NukerGalaxy(Galaxy):
 
 	@memoize
 	def M_enc(self,r):
-		'''Mass enclosed within radius r
+		'''Mass enclosed within radius r 
 		:param r: radius 
 		'''
 		rpc=r/pc
