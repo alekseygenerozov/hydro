@@ -321,11 +321,6 @@ class Galaxy(object):
 		# self.init_array=init_array
 		self._init_grid()
 
-		#Attributes to store length of the list as well as start and end indices (useful for ghost zones)
-		self.start=3
-		self.end=self.length-4
-		self.tcross=(self.radii[-1]-self.radii[0])/(kb*1.E7/mp)**0.5
-
 		self.tinterval=0.05*self.tcross
 		self.sinterval=100
 
@@ -351,19 +346,6 @@ class Galaxy(object):
 		#Will store values of time derivatives at each time step
 		self.time_derivs=np.zeros(self.length, dtype={'names':['log_rho', 'vel', 's'], 'formats':['float64', 'float64', 'float64']})
 		#Initializing the grid using the initial value function f_initial
-
-
-		#Coefficients use to calculate the derivatives 
-		first_deriv_weights=np.array([-1., 9., -45., 0., 45., -9., 1.])/60.
-		second_deriv_weights=np.array([2., -27., 270., -490., 270., -27., 2.])/(180.)
-		if not self._logr:
-			self.first_deriv_coeffs=first_deriv_weights/self.delta[0]
-			self.second_deriv_coeffs=second_deriv_weights/self.delta[0]**2
-		else: 
-			self.first_deriv_coeffs=np.array([first_deriv_weights/(r*self.delta_log[0]) for r in self.radii])
-			self.second_deriv_coeffs=np.array([(1./r**2)*(second_deriv_weights/(self.delta_log[0]**2)-(first_deriv_weights)/(self.delta_log[0]))\
-				for r in self.radii])
-
 		self.delta_t=0
 		self.time_cur=0
 		self.total_time=0
@@ -443,6 +425,21 @@ class Galaxy(object):
 		self.vel=prims[:,1]
 		self.temp=prims[:,2]
 		self.s=(kb/(self.mu*mp))*np.log(1./np.exp(self.log_rho)*(self.temp)**(3./2.))
+		#Attributes to store length of the list as well as start and end indices (useful for ghost zones)
+		self.start=3
+		self.end=self.length-4
+		self.tcross=(self.radii[-1]-self.radii[0])/(kb*1.E7/mp)**0.5
+		#Coefficients use to calculate the derivatives 
+		first_deriv_weights=np.array([-1., 9., -45., 0., 45., -9., 1.])/60.
+		second_deriv_weights=np.array([2., -27., 270., -490., 270., -27., 2.])/(180.)
+		if not self._logr:
+			self.first_deriv_coeffs=first_deriv_weights/self.delta[0]
+			self.second_deriv_coeffs=second_deriv_weights/self.delta[0]**2
+		else: 
+			self.first_deriv_coeffs=np.array([first_deriv_weights/(r*self.delta_log[0]) for r in self.radii])
+			self.second_deriv_coeffs=np.array([(1./r**2)*(second_deriv_weights/(self.delta_log[0]**2)-(first_deriv_weights)/(self.delta_log[0]))\
+				for r in self.radii])
+
 
 	def re_grid(self, rmin, rmax, length=None):
 		#If length kw arg is unspecified then leave the number of grid points unchanged
