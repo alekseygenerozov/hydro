@@ -413,7 +413,6 @@ class Galaxy(object):
 		else:
 			radii=np.linspace(rmin, rmax, self.length)
 		prims=[f_initial(r, **self.func_params) for r in radii]
-		print prims
 
 		self.radii=radii
 		prims=np.array(prims)
@@ -1430,6 +1429,14 @@ class Galaxy(object):
 			except ValueError:
 				zeros=[]
 		return zeros
+
+	def rs_plot(self):
+		stags=np.empty(len(self.saved))
+		for i in range(len(self.saved)):
+			self.reset(i)
+			stags[i]=self.rs[0]
+
+		return [self.time_stamps, stags]
 
 	#Get accretion rate  for galaxy by integrating source from stagnation radius
 	@property
