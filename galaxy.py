@@ -706,6 +706,9 @@ class Galaxy(object):
 	def profile(self, r):
 		return (self.rho_profile(r), self.vel_profile_from_mdot(r),self.temp_profile(r))
 
+	def pow_profile(self, r):
+		return (self.rho_profile(r), self.vel_profile(r),self.temp_profile(r))
+
 	def cooling_profile(self,r):
 		'''Calculate cooling rate at any radius from our profile--use power law extrapolations beyond the boundary'''
 		return extrap1d_pow(interp1d(self.radii, self.cooling))(r)
