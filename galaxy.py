@@ -840,6 +840,7 @@ class Galaxy(object):
 
 	def cons_plot(self, dict1={}, dict2={}):
 		'''Plot integrated source vs. flux difference for pairs of grid points'''
+		self._update_aux()
 		fig1,ax1=plt.subplots(4, sharex=True, figsize=(10,32))
 		for i in range(4):
 			src=[self.src_integral(self.src_fields[i], j, j+1) for j in range(self.length-1)]
@@ -1430,7 +1431,7 @@ class Galaxy(object):
 				zeros=[]
 		return zeros
 
-	def rs_plot(self):
+	def rs_series(self):
 		stags=np.empty(len(self.saved))
 		for i in range(len(self.saved)):
 			self.reset(i)
