@@ -449,15 +449,6 @@ class Galaxy(object):
 		#New initialization parameters
 		self.init={'rmin':rmin , 'rmax':rmax, 'length':length, 'logr':self._logr, 'f_initial':self.profile, 'func_params':{}}
 		self._init_grid()
-		first_deriv_weights=np.array([-1., 9., -45., 0., 45., -9., 1.])/60.
-		second_deriv_weights=np.array([2., -27., 270., -490., 270., -27., 2.])/(180.)
-		if not self._logr:
-			self.first_deriv_coeffs=first_deriv_weights/self.delta[0]
-			self.second_deriv_coeffs=second_deriv_weights/self.delta[0]**2
-		else: 
-			self.first_deriv_coeffs=np.array([first_deriv_weights/(r*self.delta_log[0]) for r in self.radii])
-			self.second_deriv_coeffs=np.array([(1./r**2)*(second_deriv_weights/(self.delta_log[0]**2)-(first_deriv_weights)/(self.delta_log[0]))\
-				for r in self.radii])
 		
 		self.saved=np.empty([0, self.length, len(self.out_fields)])
 		self.fdiff=np.empty([0, self.length-1, 2*len(self.cons_fields)+1])
