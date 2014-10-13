@@ -360,37 +360,39 @@ class Galaxy(object):
 		self.log=''
 		self.nsolves=0
 
-	##Should replace params here with dictionary as in the case with the constructor above
-	@classmethod
-	def from_dir(cls, loc, index=-1, rescale=1, length=None, rmin=None, rmax=None):
-		init={}
+	# ##Should replace params here with dictionary as in the case with the constructor above
+	# @classmethod
+	# def from_dir(cls, loc, index=-1, rescale=1, length=None, rmin=None, rmax=None):
+	# 	init={}
+	# 	init_array=prepare_start(np.load(loc+'/save.npz')['a'][index])
+	# 	radii=init_array[:,0]
+	# 	delta=np.diff(radii)
+	# 	if np.allclose(np.diff(delta),[0.]):
+	# 		logr=False
+	# 	else:
+	# 		logr=True
+	# 	if not length:
+	# 		length=len(radii)
 
-		init_array=prepare_start(np.load(loc+'/save.npz')['a'][index])
-		init_array[:,0]=rescale*init_array[:,0]
-		radii=init_array[:,0]
-		if not rmin:
-			init['rmin']=radii[0]
-		else:
-			init['rmin']=rmin
-		if not rmax:
-			init['rmax']=radii[-1]
-		else:
-			init['rmax']=rmax
+	# 	gal=cls(name, init={'rmin':radii[0], 'rmax':radii[-1], 'f_initial':interp1d(radii, init_array[:,1:4], axis=0), 'length':length, 'logr':logr}, gdata=gdata)
+	# 	if rmin and rmax:
+	# 		gal.re_grid(rmin, rmax)
+	# 	elif rmin:
+	# 		gal.re_grid(rmin, gal.radii[-1])
+	# 	elif rmax:
+	# 		gal.re_grid(gal.radii[0], rmax)
+	# 	else:
+	# 		pass
 
-		delta=np.diff(radii)
-		delta_log=np.diff(np.log(radii))
+	# 	if rescale=='auto':
+	# 		tmp=cls(name, gdata=gdata)
+	# 		rescale=tmp.rinf/init_array[0,0]/96.5
 
-		if np.allclose(np.diff(delta),[0.]):
-			init['logr']=False
-		else:
-			init['logr']=True
-		init['f_initial']=extrap1d_pow(interp1d(init_array[:,0], init_array[:,1:4], axis=0))
-		if not length:
-			init['length']=len(radii)
-		else:
-			init['length']=length
+	# 	if not np.allclose(rescale,1.):
+	# 		gal.radii=rescale*gal.radii
 
-		return cls(init=init)
+	# 	return gal
+
 
 	def restore_saved(self, loc):
 		'''Restored saved data to galaxy'''
@@ -441,13 +443,17 @@ class Galaxy(object):
 				for r in self.radii])
 
 
-	def re_grid(self, rmin, rmax, length=None):
+	def re_grid(self, rmin, rmax, length=None, extrap='default'):
 		#If length kw arg is unspecified then leave the number of grid points unchanged
 		if not length:
 			length=self.length
 
 		#New initialization parameters
-		self.init={'rmin':rmin , 'rmax':rmax, 'length':length, 'logr':self._logr, 'f_initial':self.profile, 'func_params':{}}
+		self.init={'rmin':rmin , 'rmax':rmax, 'length':length, 'logr':self._logr,'func_params':{}}
+		if extrap=='pow':
+			self.init['f_initial']=self.pow_profile
+		else:
+			self.init['f_initial']=self.profile
 		self._init_grid()
 		
 		self.saved=np.empty([0, self.length, len(self.out_fields)])
@@ -1729,7 +1735,7 @@ class NukerGalaxy(Galaxy):
 
 
 	@classmethod
-	def from_dir(cls, name, loc, index=-1, rescale=1., rmin=None, rmax=None, gdata=None, length=None):
+	def from_dir(cls, name, loc, index=-1, rescale=1., rmin=None, rmax=None, gdata=None, length=None, extrap='default'):
 		init={}
 		init_array=prepare_start(np.load(loc+'/save.npz')['a'][index])
 		radii=init_array[:,0]
@@ -1743,11 +1749,11 @@ class NukerGalaxy(Galaxy):
 
 		gal=cls(name, init={'rmin':radii[0], 'rmax':radii[-1], 'f_initial':interp1d(radii, init_array[:,1:4], axis=0), 'length':length, 'logr':logr}, gdata=gdata)
 		if rmin and rmax:
-			gal.re_grid(rmin, rmax)
+			gal.re_grid(rmin, rmax,extrap=extrap)
 		elif rmin:
-			gal.re_grid(rmin, gal.radii[-1])
+			gal.re_grid(rmin, gal.radii[-1],extrap=extrap)
 		elif rmax:
-			gal.re_grid(gal.radii[0], rmax)
+			gal.re_grid(gal.radii[0], rmax,extrap=extrap)
 		else:
 			pass
 
