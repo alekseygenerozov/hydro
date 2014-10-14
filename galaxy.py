@@ -1719,16 +1719,6 @@ class NukerGalaxy(Galaxy):
 			print 'Error! '+gname+' is not in catalog!'
 			raise
 
-		names=['Name', 'Type','M', r'$\alpha$', r'$\beta$', r'$\gamma$', r'$I_b$', r'$r_b$', 'Uv']
-		
-		self.params_table=Table([self.params])
-		self.params_table=Table(self.params_table['Name', 'type', 'M', 'alpha', 'beta', 'gamma', 'Ib', 'rb', 'Uv'], names=names)
-		self.params_table['M'].format=latex_exp.latex_exp
-		self.params_table[r'$I_b$'].format=latex_exp.latex_exp
-		#self.params_table[r'$r_b$'].format=latex_exp.latex_exp
-		self.params_table['M']=self.params_table['M']/M_sun
-		self.params_table['M'].unit=u.MsolMass
-
 		self.name=gname
 		self.eta=1.
 		self.rmin_star=1.E-3

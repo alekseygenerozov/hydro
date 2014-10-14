@@ -107,6 +107,12 @@ def vw_eff_stars(t):
 	else:
 		return 1.E7
 
+def tcool_tff_rs(M, vw):
+	return 34*(xi(M,vw))**3*(vw/(5.E7))**3*(M/(1.E8*M_sun))**(-0.43)
+
+def rho_rs(M, vw):
+	return 3.95E-24*(vw/5.E7)*(M/(1.E8*M_sun))**-0.56
+
 def vw_eff(t, M):
 	r_Ia_0=r_Ia(t,M)
 	vw_eff=np.array([vw_eff_stars(t), (vw_eff_Ia(t)**2+vw_eff_stars(t)**2)**0.5])
