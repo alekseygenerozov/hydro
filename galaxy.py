@@ -1724,9 +1724,6 @@ class NukerGalaxy(Galaxy):
 		self.rmin_star=1.E-3
 		self.rmax_star=1.E5
 
-		self.rg=G*self.params['M']/c**2
-
-
 	@classmethod
 	def from_dir(cls, name, loc, index=-1, rescale=1., rmin=None, rmax=None, gdata=None, length=None, extrap='default'):
 		init={}
@@ -1758,12 +1755,6 @@ class NukerGalaxy(Galaxy):
 			gal.radii=rescale*gal.radii
 
 		return gal
-
-	@property
-	def mstar_bulge(self):
-		'''Get the mbulge from WM04 table'''
-		params=nuker_params()
-		return params[self.name]['M2']/0.006
 
 	@memoize
 	def rho_stars(self,r):
@@ -1798,14 +1789,6 @@ class NukerGalaxy(Galaxy):
 			return self.M_enc(self.rmax_star*pc)
 		else:
 			return integrate.quad(lambda r1:4.*np.pi*r1**2*self._rho_stars_interp(r1*pc)*pc**3, self.rmin_star, rpc)[0]
-
-	@memoize
-	def sigma(self, r):
-		'''Velocity dispersion of galaxy
-		:param r: radius 
-		'''
-		return (G*(self.M_enc(r)+self.params['M'])/(r))**0.5
-
 	@memoize
 	def phi_s(self,r):
 		'''Potential from the stars
@@ -1813,13 +1796,14 @@ class NukerGalaxy(Galaxy):
 		'''
 		rpc=r/pc
 		return (-G*self.M_enc(r)/r)+4.*G*self.params['Uv']*M_sun*integrate.quad(lambda r1:nuker_prime(r1, **self.params)*(r1**2-rpc**2)**0.5, rpc, self.rmax_star)[0]/pc
-
-	def phi_bh(self,r):
-		'''Potential from the black hole
+		
+	@memoize
+	def sigma(self, r):
+		'''Velocity dispersion of galaxy
 		:param r: radius 
 		'''
-		return -G*self.params['M']/r
-		
+		return (G*(self.M_enc(r)+self.params['M'])/(r))**0.5
+
 	def q(self, r):
 		'''Source term representing mass loss from stellar winds'''
 		return self.eta*self.rho_stars(r)/th
@@ -1878,14 +1862,6 @@ class NukerGalaxy(Galaxy):
 			dens_slope=np.abs(self.dens_pow_slope_rs)
 
 			return 1./(dens_slope*eta**2)*((0.5)*(2*A-dens_slope)*(1+omega)-(2.-self.params['gamma'])/4.)
-
-	# def rs_analytic_implicit(self,n=1):
-	# 	'''Returns implicit equation for rs'''
-	# 	A=(4.*self.gamma-(1+self.params['gamma'])*(self.gamma-1.))/(4.*(self.gamma-1.))
-	# 	B=7./4.
-	# 	f=lambda rs:(A*G*self.M_enc(rs)/rs)+(B*G*self.params['M']/rs)-self.vw_func(rs)**2/(2.*n)
-	# 	return f
-		# return brentq(f,1.E20, 1.E22)
 
 	def rs_analytic_implicit(self, dens_slope=1):
 		'''Analytic formula for the stagnation radius--normalized by the influence radius'''
@@ -2070,9 +2046,41 @@ class NukerGalaxy(Galaxy):
 			return self.rcirc/self.r_ss
 
 
+class PowGalaxy(NukerGalaxy):
+	def __init__(self, init={}):
+		self.params={'M':1.E8*M_sun, 'gamma':0.8}
+		name='pow_gal_M{0:2.1e}_rinf{1:2.1e}_gamma{2:2.1e}'
+		NukerGalaxy.__init__(self, 'tmp', {'tmp':self.params}, init={})
 
+	@memoize
+	def rho_stars(self,r):
+		rpc=r/pc
+		if rpc<self.rmin_star or rpc>self.rmax_star:
+			return 0.
+		else:
+			return self.rho_0*r**(-1.-self.params['gamma'])
 
+	@memoize 
+	def M_enc(self, r):
+		rpc=r/pc
+		if rpc<self.rmin_star:
+			return 0.
+		elif rpc>self.rmax_star:
+			return self.M_enc(self.rmax_star*pc)
+		else:
+			return 4.*np.pi*self.rho_0*(r**(2.-self.params['gamma'])-(self.rmin_star*pc)**(2.-self.params['gamma']))
 
+	@memoize 
+	def phi_s(self,r):
+		return (-G*self.M_enc(r)/r)-4.*np.pi*G*rho_0*((self.rmax_star*pc)**(1.-self.params['gamma'])-r**(1.-self.params['gamma']))
+
+	@property
+	def rinf(self):
+		return gal_properties.rinf(self.params['M'])
+
+	@property
+	def rho_0(self):
+		return self.params['M']/(4.*np.pi*(self.rinf**(2.-self.params['gamma'])-(self.rmin_star*pc)**(2.-self.params['gamma'])))
 
 
 

@@ -1,4 +1,4 @@
-
+ 
 import astropy.constants as const
 import numpy as np
 
@@ -13,6 +13,9 @@ pc=const.pc.cgs.value
 th=4.35*10**17
 year=3.15569E7
 
+
+def rinf(M):
+	return 14.*(M/(1.E8*M_sun))**0.6*pc
 
 def sigma_200(M):
 	'''M-sigma relationship taken from Wang and Merritt 2004'''
