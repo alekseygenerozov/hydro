@@ -516,7 +516,11 @@ class Galaxy(object):
 
 	@property
 	def M_enc_grid(self):
-		return np.array(map(self.M_enc, self.radii))
+		try:
+			return self.cache['M_enc_grid']
+		except KeyError:
+			self.cache['M_enc_grid']=np.array([self.vw_func(r) for r in self.radii])
+			return self.cache['M_enc_grid']
 
 	@property
 	def sigma_grid(self):
@@ -1052,13 +1056,11 @@ class Galaxy(object):
 	def get_spatial_deriv(self, i, field, second=False):
 		if i<self.start or i>self.end:
 			return np.nan
-
 		field_list=getattr(self,field)[i-3:i+4]
 		if second:
-			return np.sum(field_list*self.second_deriv_coeffs[i])		
+			return np.sum(field_list*self.second_deriv_coeffs[i])
 		else:
 			return np.sum(field_list*self.first_deriv_coeffs[i])
-
 
 	#Calculate laplacian in spherical coords. 
 	def get_laplacian(self, i, field):
