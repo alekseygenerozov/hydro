@@ -2,7 +2,6 @@
 
 import galaxy
 import gal_properties
-import sol_check as sc
 
 import astropy.constants as const
 import numpy as np
