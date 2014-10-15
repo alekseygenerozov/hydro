@@ -2072,7 +2072,7 @@ class PowGalaxy(NukerGalaxy):
 
 	@memoize 
 	def phi_s(self,r):
-		return (-G*self.M_enc(r)/r)-4.*np.pi*G*rho_0*((self.rmax_star*pc)**(1.-self.params['gamma'])-r**(1.-self.params['gamma']))
+		return (-G*self.M_enc(r)/r)-4.*np.pi*G*self.rho_0*((self.rmax_star*pc)**(1.-self.params['gamma'])-r**(1.-self.params['gamma']))
 
 	@property
 	def rinf(self):
