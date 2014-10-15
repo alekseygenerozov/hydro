@@ -367,6 +367,7 @@ class Galaxy(object):
 
 		self.log=''
 		self.nsolves=0
+		self.cache={}
 
 	# ##Should replace params here with dictionary as in the case with the constructor above
 	# @classmethod
@@ -507,10 +508,11 @@ class Galaxy(object):
 
 	@property
 	def q_grid(self):
-		return np.array([self.q(r) for r in self.radii])
-
-	def q_gridpt(self, i):
-		return self.q(self.radii[i])
+		try:
+			return self.cache['q_grid']
+		except KeyError:
+			self.cache['q_grid']=np.array([self.q(r) for r in self.radii])
+			return self.cache['q_grid']
 
 	@property
 	def M_enc_grid(self):
@@ -1257,11 +1259,11 @@ class Galaxy(object):
 		dill.dump(self, open(self.outdir+'/grid.p', 'wb' ) )
 
 	def grid(self):
-		self.q_grid
 		self.M_enc_grid
 		self.phi_grid
 		self.sigma_grid
 		self.rinf
+		self.q_grid
 		self.vw
 
 	def solve(self, time=None, max_steps=np.inf):
@@ -1412,8 +1414,8 @@ class Galaxy(object):
 	def _sub_step(self, gamma, zeta):
 		#Calculating the derivatives of the field
 		for field in self.fields:
-			for i in range(self.start,self.end+1):
-				self.time_derivs[i][field]=self.dfield_dt(i, field)
+			#for i in range(self.start,self.end+1):
+			self.time_derivs[field]=[self.dfield_dt(i, field) for i in range(0, self.length)]
 
 		#Updating the values in the grid: have to calculate the time derivatives for all relevant fields before this step
 		for field in self.fields:
