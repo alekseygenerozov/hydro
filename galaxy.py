@@ -617,7 +617,8 @@ class Galaxy(object):
 
 	@property 
 	def fen(self):
-		return self.rho*self.radii**2*self.vel*self.bernoulli+self.radii**2*self.f_cond
+		# return self.rho*self.radii**2*self.vel*self.bernoulli+self.radii**2*self.f_cond
+		return self.rho*self.radii**2*self.vel*self.bernoulli
 
 	@property 
 	def src_rho(self):
@@ -640,7 +641,8 @@ class Galaxy(object):
 		else:
 			with warnings.catch_warnings():
 				warnings.simplefilter("ignore")
-				src_s=(self.q_grid*self.sp_heating+self.cond_grid)/(self.rho*self.vel*self.temp)
+				#src_s=(self.q_grid*self.sp_heating+self.cond_grid)/(self.rho*self.vel*self.temp)
+				src_s=(self.q_grid*self.sp_heating)/(self.rho*self.vel*self.temp)
 		return src_s
 
 	@property
@@ -1051,20 +1053,28 @@ class Galaxy(object):
 		kappa=getattr(self,coeff)[i]
 		return kappa*d2field_dr2+dkappa_dr*dfield_dr+(2./self.radii[i])*(kappa*dfield_dr)
 
+	def get_spatial_deriv(self, field,second=False):
+		field_list=getattr(self,field)
+		windows=np.array([field_list[i-3:i+4] for i in range(self.start, self.end+1)])
+		if second:
+			return np.sum(windows*self.second_deriv_coeffs[self.start:self.end+1],axis=1)
+		else:
+			return np.sum(windows*self.first_deriv_coeffs[self.start:self.end+1],axis=1)
+
 	#Getting derivatives for a given field (density, velocity, etc.). If second is set to be true then the discretized 2nd
 	#deriv is evaluated instead of the first
-	def get_spatial_deriv(self, i, field, second=False):
-		if i<self.start or i>self.end:
-			return np.nan
-		field_list=getattr(self,field)[i-3:i+4]
-		if second:
-			return np.sum(field_list*self.second_deriv_coeffs[i])
-		else:
-			return np.sum(field_list*self.first_deriv_coeffs[i])
+	# def get_spatial_deriv(self, i, field, second=False):
+	# 	if i<self.start or i>self.end:
+	# 		return np.nan
+	# 	field_list=getattr(self,field)[i-3:i+4]
+	# 	if second:
+	# 		return np.sum(field_list*self.second_deriv_coeffs[i])
+	# 	else:
+	# 		return np.sum(field_list*self.first_deriv_coeffs[i])
 
 	#Calculate laplacian in spherical coords. 
-	def get_laplacian(self, i, field):
-		return self.get_spatial_deriv(i, field, second=True)+(2./self.radii[i])*(self.get_spatial_deriv(i, field))
+	def get_laplacian(self, field):
+		return self.get_spatial_deriv(field, second=True)+(2./self.radii[self.start:self.end+1])*(self.get_spatial_deriv(field))
 
 	def _cfl(self):
 		# alpha_max=0.
@@ -1077,105 +1087,83 @@ class Galaxy(object):
 		self.delta_t=min([target_delta_t, cfl_delta_t])
 
 	#Wrapper for evaluating the time derivative of all fields
-	def dfield_dt(self, i, field):
+	def dfield_dt(self, field):
 		if field=='rho':
-			return self.drho_dt(i)
+			return self.drho_dt()
 		elif field=='vel':
-			return self.dvel_dt(i)
+			return self.dvel_dt()
 		elif field=='log_rho':
-			return self.dlog_rho_dt(i)
+			return self.dlog_rho_dt()
 		elif field=='s':
-			return self.ds_dt(i)
+			return self.ds_dt()
 		else:
 			return 0.
 
 	#Partial derivative of density with respect to time
-	def dlog_rho_dt(self, i):
-		rad=self.radii[i]
-		rho=self.rho[i]
-		vel=self.vel[i]
+	def dlog_rho_dt(self):
+		rad=self.radii[self.start:self.end+1]
+		rho=self.rho[self.start:self.end+1]
+		vel=self.vel[self.start:self.end+1]
 
 		#return -cs*drho_dr+art_visc*drho_dr_second
-		return -vel*self.get_spatial_deriv(i, 'log_rho')-(1/rad**2)*self.get_spatial_deriv(i, 'r2vel')+self.q_grid[i]/rho
+		return -vel*self.get_spatial_deriv('log_rho')-(1/rad**2)*self.get_spatial_deriv('r2vel')+self.q_grid[self.start:self.end+1]/rho
 
-	#Partial derivative of density with respect to time
-	def drho_dt(self, i):
-		rad=self.radii[i]
+	# #Partial derivative of density with respect to time
+	# def drho_dt(self, i):
+	# 	rad=self.radii[i]
 
-		#return -cs*drho_dr+art_visc*drho_dr_second
-		return -(1./rad)**2*self.get_spatial_deriv(i, 'frho')+self.q_grid[i]
+	# 	#return -cs*drho_dr+art_visc*drho_dr_second
+	# 	return -(1./rad)**2*self.get_spatial_deriv(i, 'frho')+self.q_grid[i]
 
 	@property
 	def art_visc_vel(self):
-		art_visc=[min(self.cs[i],  np.abs(self.vel[i]))*(self.radii[self.end]-self.radii[self.start])* self.get_laplacian(i, 'vel')/self.Re for i in range(self.length)]
-		art_visc=np.array(art_visc)
+		art_visc=np.array([min(self.cs[i],  abs(self.vel[i]))*(self.radii[self.end]-self.radii[self.start])/self.Re\
+			for i in range(self.start,self.end+1)])*self.get_laplacian('vel')
 		if self.visc_scheme=='const_visc':
 			pass
 		elif self.visc_scheme=='cap_visc':
-			art_visc=art_visc*min(1., (self.delta[i]/np.mean(self.delta)))
+			art_visc=art_visc*min(1., (self.delta[self.start:self.end+1]/np.mean(self.delta)))
 		else:
-			art_visc=art_visc*(self.delta[i]/np.mean(self.delta))
+			art_visc=art_visc*(self.delta[self.start:self.end+1]/np.mean(self.delta))
 		return art_visc
 
 	@property
 	def art_visc_s(self):
-		art_visc=[min(self.cs[i],  np.abs(self.vel[i]))*(self.radii[self.end]-self.radii[self.start])* self.get_laplacian(i, 's')/self.Re_s for i in range(self.length)]
-		art_visc=np.array(art_visc)
+		art_visc=np.array([min(self.cs[i],  np.abs(self.vel[i]))*(self.radii[self.end]-self.radii[self.start])/self.Re_s for i in range(self.start,self.end+1)])*self.get_laplacian('s')
 		if self.visc_scheme=='const_visc':
 			pass
 		elif self.visc_scheme=='cap_visc':
-			art_visc=art_visc*min(1., (self.delta[i]/np.mean(self.delta)))
+			art_visc=art_visc*min(1., (self.delta[self.start:self.end+1]/np.mean(self.delta)))
 		else:
-			art_visc=art_visc*(self.delta[i]/np.mean(self.delta))
+			art_visc=art_visc*(self.delta[self.start:self.end+1]/np.mean(self.delta))
 		return art_visc
 
 	#Evaluating the partial derivative of velocity with respect to time
-	def dvel_dt(self, i):
-		rad=self.radii[i]
-		vel=self.vel[i]
-		rho=self.rho[i]
-		temp=self.temp[i]
-
-		#If the density zero of goes negative return zero to avoid numerical issues
-		if rho<=self.floor:
-			return 0
+	def dvel_dt(self):
+		rad=self.radii[self.start:self.end+1]
+		vel=self.vel[self.start:self.end+1]
+		rho=self.rho[self.start:self.end+1]
+		temp=self.temp[self.start:self.end+1]
 
 		# dpres_dr=self.get_spatial_deriv(i, 'pres')
-		dlog_rho_dr=self.get_spatial_deriv(i, 'log_rho')
-		dtemp_dr=self.get_spatial_deriv(i, 'temp')
-		dv_dr=self.get_spatial_deriv(i, 'vel')
-		d2v_dr2=self.get_spatial_deriv(i, 'vel', second=True)
+		dlog_rho_dr=self.get_spatial_deriv('log_rho')
+		dtemp_dr=self.get_spatial_deriv('temp')
+		dv_dr=self.get_spatial_deriv('vel')
+		d2v_dr2=self.get_spatial_deriv('vel', second=True)
 		drho_dr=dlog_rho_dr*(rho)
 
-		lap_vel=self.get_laplacian(i, 'vel')
-		art_visc=min(self.cs[i],  np.abs(self.vel[i]))*(self.radii[self.end]-self.radii[self.start])*lap_vel/self.Re
-		if self.visc_scheme=='const_visc':
-			pass
-		elif self.visc_scheme=='cap_visc':
-			art_visc=art_visc*min(1., (self.delta[i]/np.mean(self.delta)))
-		else:
-			art_visc=art_visc*(self.delta[i]/np.mean(self.delta))
-
-		return -vel*dv_dr-dlog_rho_dr*kb*temp/(self.mu*mp)-(kb/(self.mu*mp))*dtemp_dr-self.grad_phi_grid[i]+art_visc-(self.q_grid[i]*vel/rho)
+		return -vel*dv_dr-dlog_rho_dr*kb*temp/(self.mu*mp)-(kb/(self.mu*mp))*dtemp_dr-self.grad_phi_grid[self.start:self.end+1]+self.art_visc_vel-(self.q_grid[self.start:self.end+1]*vel/rho)
 
 	#Evaluating the partial derivative of entropy with respect to time
-	def ds_dt(self, i):
-		rho=self.rho[i]
-		temp=self.temp[i]
-		vel=self.vel[i]
-		rad=self.radii[i]
-		cs=self.cs[i]
-		ds_dr=self.get_spatial_deriv(i, 's')
-		lap_s=self.get_laplacian(i, 's')
-		art_visc=min(self.cs[i],  np.abs(self.vel[i]))*(self.radii[self.end]-self.radii[self.start])*lap_s/self.Re_s
-		if self.visc_scheme=='const_visc':
-			pass
-		elif self.visc_scheme=='cap_visc':
-			art_visc=art_visc*min(1., (self.delta[i]/np.mean(self.delta)))
-		else:
-			art_visc=art_visc*(self.delta[i]/np.mean(self.delta))
+	def ds_dt(self):
+		rad=self.radii[self.start:self.end+1]
+		vel=self.vel[self.start:self.end+1]
+		rho=self.rho[self.start:self.end+1]
+		temp=self.temp[self.start:self.end+1]
+		cs=self.cs[self.start:self.end+1]
+		ds_dr=self.get_spatial_deriv('s')
 
-		return self.q_grid[i]*self.sp_heating[i]/(rho*temp)-vel*ds_dr+art_visc+self.cond(i)/(rho*temp)
+		return self.q_grid[self.start:self.end+1]*self.sp_heating[self.start:self.end+1]/(rho*temp)-vel*ds_dr+self.art_visc_s#+self.cond(i)/(rho*temp)
 
 	def isot_off(self):
 		'''Switch off isothermal evolution'''
@@ -1418,16 +1406,15 @@ class Galaxy(object):
 	def _sub_step(self, gamma, zeta):
 		#Calculating the derivatives of the field
 		for field in self.fields:
-			#for i in range(self.start,self.end+1):
-			self.time_derivs[field]=[self.dfield_dt(i, field) for i in range(0, self.length)]
+			self.time_derivs[field][self.start:self.end+1]=self.dfield_dt(field) 
 
 		#Updating the values in the grid: have to calculate the time derivatives for all relevant fields before this step
 		for field in self.fields:
 			field_arr=getattr(self,field)
-			for i in range(self.start, self.end+1):
-				f=field_arr[i]+gamma*self.time_derivs[i][field]*self.delta_t
-				g=f+zeta*self.time_derivs[i][field]*self.delta_t
-				field_arr[i]=g
+			#for i in range(self.start, self.end+1):
+			f=field_arr+gamma*self.time_derivs[field]*self.delta_t
+			g=f+zeta*self.time_derivs[field]*self.delta_t
+			field_arr=g
 
 	#Extracting the array corresponding to a particular field from the grid as well as an array of radii
 	def get_field(self, field):
@@ -1667,11 +1654,12 @@ class Galaxy(object):
 	# 	return self.kappa_cond/(1.+self.sigma_cond)
 
 	def _update_aux(self):
-		self.kappa_cond_eff=self.kappa_cond/(1.+self.sigma_cond)
+		pass
+		#self.kappa_cond_eff=self.kappa_cond/(1.+self.sigma_cond)
 		
 	@property 
 	def temp_deriv_signs(self):
-		temp_derivs=([self.get_spatial_deriv(i,'temp') for i in range(self.length)])
+		temp_derivs=self.get_spatial_deriv('temp') 
 		return temp_derivs/np.abs(temp_derivs)
 
 	@property
@@ -1690,9 +1678,9 @@ class Galaxy(object):
 
 	def cond(self,i):
 		if not(hasattr(self,'cond_simple')) or self.cond_simple==False:
-			return self.get_diffusion(i, 'kappa_cond_eff', 'temp')
+			return self.get_diffusion('kappa_cond_eff', 'temp')
 		else:
-			return self.kappa_cond_eff[i]*self.get_spatial_deriv(i, 'temp', second=True) 
+			return self.get_spatial_deriv('temp', second=True) 
 
 	@property 
 	def cond_grid(self):
