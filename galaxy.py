@@ -1239,6 +1239,8 @@ class Galaxy(object):
 				return
 			#Clear cached values if the Nuker parameters have been reset
 			self.cache={}
+		elif param=='vw_extra' or param=='eta':
+			self.cache={}
 		else:
 			setattr(self,param,value)
 
