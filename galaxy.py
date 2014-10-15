@@ -369,40 +369,6 @@ class Galaxy(object):
 		self.nsolves=0
 		self.cache={}
 
-	# ##Should replace params here with dictionary as in the case with the constructor above
-	# @classmethod
-	# def from_dir(cls, loc, index=-1, rescale=1, length=None, rmin=None, rmax=None):
-	# 	init={}
-	# 	init_array=prepare_start(np.load(loc+'/save.npz')['a'][index])
-	# 	radii=init_array[:,0]
-	# 	delta=np.diff(radii)
-	# 	if np.allclose(np.diff(delta),[0.]):
-	# 		logr=False
-	# 	else:
-	# 		logr=True
-	# 	if not length:
-	# 		length=len(radii)
-
-	# 	gal=cls(name, init={'rmin':radii[0], 'rmax':radii[-1], 'f_initial':interp1d(radii, init_array[:,1:4], axis=0), 'length':length, 'logr':logr}, gdata=gdata)
-	# 	if rmin and rmax:
-	# 		gal.re_grid(rmin, rmax)
-	# 	elif rmin:
-	# 		gal.re_grid(rmin, gal.radii[-1])
-	# 	elif rmax:
-	# 		gal.re_grid(gal.radii[0], rmax)
-	# 	else:
-	# 		pass
-
-	# 	if rescale=='auto':
-	# 		tmp=cls(name, gdata=gdata)
-	# 		rescale=tmp.rinf/init_array[0,0]/96.5
-
-	# 	if not np.allclose(rescale,1.):
-	# 		gal.radii=rescale*gal.radii
-
-	# 	return gal
-
-
 	def restore_saved(self, loc):
 		'''Restored saved data to galaxy'''
 		saved=np.load(loc+'/save.npz')
@@ -519,7 +485,7 @@ class Galaxy(object):
 		try:
 			return self.cache['M_enc_grid']
 		except KeyError:
-			self.cache['M_enc_grid']=np.array([self.vw_func(r) for r in self.radii])
+			self.cache['M_enc_grid']=np.array([self.M_enc(r) for r in self.radii])
 			return self.cache['M_enc_grid']
 
 	@property
@@ -1045,17 +1011,17 @@ class Galaxy(object):
 			self.vel[ghost_idx]=vel
 
 	#Evaluate terms of the form div(kappa*df/dr)-->Diffusion like terms (useful for something like the conductivity)
-	def get_diffusion(self, i, coeff, field):
-		dkappa_dr=self.get_spatial_deriv(i, coeff)
-		dfield_dr=self.get_spatial_deriv(i, field)
-		d2field_dr2=self.get_spatial_deriv(i, field, second=True)
+	def get_diffusion(self, coeff, field):
+		dkappa_dr=self.get_spatial_deriv(coeff)
+		dfield_dr=self.get_spatial_deriv(field)
+		d2field_dr2=self.get_spatial_deriv(field, second=True)
 
-		kappa=getattr(self,coeff)[i]
-		return kappa*d2field_dr2+dkappa_dr*dfield_dr+(2./self.radii[i])*(kappa*dfield_dr)
+		kappa=getattr(self,coeff)[self.start:self.end]
+		return kappa*d2field_dr2+dkappa_dr*dfield_dr+(2./self.radii[self.start:self.end])*(kappa*dfield_dr)
 
 	def get_spatial_deriv(self, field,second=False):
 		field_list=getattr(self,field)
-		windows=np.array([field_list[i-3:i+4] for i in range(self.start, self.end+1)])
+		windows=np.array([field_list[i-3:i+4] if i<=self.end and i>=self.start for i in range(self.start, self.end+1)])
 		if second:
 			return np.sum(windows*self.second_deriv_coeffs[self.start:self.end+1],axis=1)
 		else:
@@ -1163,7 +1129,8 @@ class Galaxy(object):
 		cs=self.cs[self.start:self.end+1]
 		ds_dr=self.get_spatial_deriv('s')
 
-		return self.q_grid[self.start:self.end+1]*self.sp_heating[self.start:self.end+1]/(rho*temp)-vel*ds_dr+self.art_visc_s#+self.cond(i)/(rho*temp)
+		ds_dt=self.q_grid[self.start:self.end+1]*self.sp_heating[self.start:self.end+1]/(rho*temp)-vel*ds_dr+self.art_visc_s+self.cond_grid[self.start:self.end+1]
+
 
 	def isot_off(self):
 		'''Switch off isothermal evolution'''
@@ -1414,7 +1381,7 @@ class Galaxy(object):
 			#for i in range(self.start, self.end+1):
 			f=field_arr+gamma*self.time_derivs[field]*self.delta_t
 			g=f+zeta*self.time_derivs[field]*self.delta_t
-			field_arr=g
+			setattr(self,field,g)
 
 	#Extracting the array corresponding to a particular field from the grid as well as an array of radii
 	def get_field(self, field):
@@ -1633,25 +1600,23 @@ class Galaxy(object):
 
 	@property
 	def f_cond_unsat(self):
-		return np.array([self.kappa_cond[i]*self.get_spatial_deriv(i, 'temp') for i in range(0,self.length)])
+		return self.kappa_cond[self.start:self.end+1]*self.get_spatial_deriv('temp')
 
 	@property 
 	def f_cond_sat(self):
 		if not hasattr(self, 'phi_cond'):
 			self.set_param('phi_cond',1.)
-		return self.temp_deriv_signs*self.phi_cond*5.*self.rho*self.cs**3
+		return self.temp_deriv_signs*self.phi_cond*5.*self.rho[self.start:self.end+1]*self.cs[self.start:self.end+1]**3
 
 	@property 
 	def sigma_cond(self):
-		sigma_cond=np.abs(self.f_cond_unsat[self.start:self.end+1]/self.f_cond_sat[self.start:self.end+1])
-		start=[sigma_cond[0] for i in range(0,self.start)]
-		end=[sigma_cond[-1] for i in range(self.end+1,self.length)]
+		sigma_cond=np.abs(self.f_cond_unsat/self.f_cond_sat)
 
-		return np.concatenate([start, sigma_cond, end])
+		return  sigma_cond
 
-	# @property
-	# def kappa_cond_eff(self):
-	# 	return self.kappa_cond/(1.+self.sigma_cond)
+	@property
+	def kappa_cond_eff(self):
+		return self.kappa_cond[self.start:self.end+1]/(1.+self.sigma_cond)
 
 	def _update_aux(self):
 		pass
@@ -1676,15 +1641,16 @@ class Galaxy(object):
 		'''Conductive time-scale obtained from the saturated conductive flux'''
 		return abs((4.*self.rho*self.cs**2*self.radii**3)/(4.*np.pi*self.f_cond_sat*self.radii**2))
 
-	def cond(self,i):
+	@property 
+	def cond_grid(self):
 		if not(hasattr(self,'cond_simple')) or self.cond_simple==False:
 			return self.get_diffusion('kappa_cond_eff', 'temp')
 		else:
-			return self.get_spatial_deriv('temp', second=True) 
+			return self.kappe_cond_eff*self.get_spatial_deriv('temp', second=True) 
 
-	@property 
-	def cond_grid(self):
-		return np.array([self.cond(i) for i in range(self.length)])
+	# @property 
+	# def cond_grid(self):
+	# 	return np.array([self.cond(i) for i in range(self.length)])
 
 	@property
 	def cond_plot(self):
