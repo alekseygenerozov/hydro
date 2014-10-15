@@ -147,6 +147,14 @@ class memoize(object):
 		#print self.cache
 		return fn
 
+def memodict(f):
+	""" Memoization decorator for a function taking a single argument """
+	class memodict(dict):
+		def __missing__(self, key):
+			ret = self[key] = f(key)
+			return ret 
+	return memodict().__getitem__
+
 def lazyprop(fn):
 	attr_name = '_lazy_' + fn.__name__
 	@property
@@ -536,7 +544,11 @@ class Galaxy(object):
 
 	@property 
 	def vw(self):
-		return np.array([self.vw_func(r) for r in self.radii])
+		try:
+			return self.cache['vw']
+		except KeyError:
+			self.cache['vw']=np.array([self.vw_func(r) for r in self.radii])
+			return self.cache['vw']
 		
 	@property
 	def rho(self):
@@ -917,9 +929,9 @@ class Galaxy(object):
 			extrapolations for all variables.'''
 		bdry_list=np.array([self.bdry]).flatten()
 		try:
-		    bdry_list[1]
+			bdry_list[1]
 		except IndexError:
-		    bdry_list=np.append(bdry_list, bdry_list[0])
+			bdry_list=np.append(bdry_list, bdry_list[0])
 		for idx,zone in enumerate([self.start,self.end]):
 			bdry=bdry_list[idx]
 			self._end_zone=zone
@@ -1087,7 +1099,7 @@ class Galaxy(object):
 		rad=self.radii[i]
 
 		#return -cs*drho_dr+art_visc*drho_dr_second
-		return -(1./rad)**2*self.get_spatial_deriv(i, 'frho')+self.q_gridpt(i)
+		return -(1./rad)**2*self.get_spatial_deriv(i, 'frho')+self.q_grid[i]
 
 	@property
 	def art_visc_vel(self):
@@ -1140,7 +1152,7 @@ class Galaxy(object):
 		else:
 			art_visc=art_visc*(self.delta[i]/np.mean(self.delta))
 
-		return -vel*dv_dr-dlog_rho_dr*kb*temp/(self.mu*mp)-(kb/(self.mu*mp))*dtemp_dr-self.grad_phi_grid[i]+art_visc-(self.q_gridpt(i)*vel/rho)
+		return -vel*dv_dr-dlog_rho_dr*kb*temp/(self.mu*mp)-(kb/(self.mu*mp))*dtemp_dr-self.grad_phi_grid[i]+art_visc-(self.q_grid[i]*vel/rho)
 
 	#Evaluating the partial derivative of entropy with respect to time
 	def ds_dt(self, i):
@@ -1159,7 +1171,7 @@ class Galaxy(object):
 		else:
 			art_visc=art_visc*(self.delta[i]/np.mean(self.delta))
 
-		return self.q_gridpt(i)*self.sp_heating[i]/(rho*temp)-vel*ds_dr+art_visc+self.cond(i)/(rho*temp)
+		return self.q_grid[i]*self.sp_heating[i]/(rho*temp)-vel*ds_dr+art_visc+self.cond(i)/(rho*temp)
 
 	def isot_off(self):
 		'''Switch off isothermal evolution'''
@@ -1250,6 +1262,7 @@ class Galaxy(object):
 		self.phi_grid
 		self.sigma_grid
 		self.rinf
+		self.vw
 
 	def solve(self, time=None, max_steps=np.inf):
 		'''Solve hydro equations for galaxy
@@ -1385,7 +1398,7 @@ class Galaxy(object):
 			if not self.isot:
 				self._update_temp()
 			self._update_ghosts()
-		grid_prims=[getattr(self, field) for field in self.out_fields]
+		grid_prims=[getattr(self, field) for field in self.fields]
 		if np.any(np.isnan(grid_prims)):
 			print 'nan detected in solution'
 			self.save()
@@ -2060,7 +2073,7 @@ class PowGalaxy(NukerGalaxy):
 		else:
 			return self.rho_0*r**(-1.-self.params['gamma'])
 
-	@memoize 
+	@memoize
 	def M_enc(self, r):
 		rpc=r/pc
 		if rpc<self.rmin_star:
@@ -2070,7 +2083,7 @@ class PowGalaxy(NukerGalaxy):
 		else:
 			return 4.*np.pi*self.rho_0*(r**(2.-self.params['gamma'])-(self.rmin_star*pc)**(2.-self.params['gamma']))
 
-	@memoize 
+	@memoize
 	def phi_s(self,r):
 		return (-G*self.M_enc(r)/r)-4.*np.pi*G*self.rho_0*((self.rmax_star*pc)**(1.-self.params['gamma'])-r**(1.-self.params['gamma']))
 
