@@ -2048,9 +2048,9 @@ class NukerGalaxy(Galaxy):
 
 class PowGalaxy(NukerGalaxy):
 	def __init__(self, init={}):
-		self.params={'M':1.E8*M_sun, 'gamma':0.8}
+		self.params={'M':1.E7*M_sun, 'gamma':0.8}
 		name='pow_gal_M{0:2.1e}_rinf{1:2.1e}_gamma{2:2.1e}'
-		NukerGalaxy.__init__(self, 'tmp', {'tmp':self.params}, init={})
+		NukerGalaxy.__init__(self, 'tmp', {'tmp':self.params}, init=init)
 
 	@memoize
 	def rho_stars(self,r):
