@@ -538,12 +538,12 @@ class Galaxy(object):
 	def pres(self):
 		return (kb*self.temp*self.rho)/(self.mu*mp)
 
-	@property
-	def cs(self):
-		if not self.isot:
-			return np.sqrt(self.gamma*kb*self.temp/(self.mu*mp))
-		else:                                                                                                     
-			return np.sqrt(kb*self.temp/(self.mu*mp))
+	# @property
+	# def cs(self):
+	# 	if not self.isot:
+	# 		return np.sqrt(self.gamma*kb*self.temp/(self.mu*mp))
+	# 	else:                                                                                                     
+	# 		return np.sqrt(kb*self.temp/(self.mu*mp))
 
 	@property
 	def mach(self):
@@ -1016,7 +1016,7 @@ class Galaxy(object):
 		dfield_dr=self.get_spatial_deriv(field)
 		d2field_dr2=self.get_spatial_deriv(field, second=True)
 
-		kappa=getattr(self,coeff)[self.start:self.end]
+		kappa=getattr(self,coeff)
 		return kappa*d2field_dr2+dkappa_dr*dfield_dr+(2./self.radii)*(kappa*dfield_dr)
 
 	def get_spatial_deriv(self, field,second=False):
@@ -1094,7 +1094,7 @@ class Galaxy(object):
 	#Evaluating the partial derivative of entropy with respect to time
 	def ds_dt(self):
 		ds_dr=self.get_spatial_deriv('s')
-		ds_dt=self.q_grid*self.sp_heating/(self.rho*self.temp)-self.vel*ds_dr+self.art_visc_s#+self.cond_grid[self.start:self.end+1]
+		ds_dt=self.q_grid*self.sp_heating/(self.rho*self.temp)-self.vel*ds_dr+self.art_visc_s+self.cond_grid
 		return ds_dt
 
 	def isot_off(self):
@@ -1270,6 +1270,7 @@ class Galaxy(object):
 	
 	def save(self):
 		'''Write state of grid to file'''
+		self._update_aux()
 		grid_prims=[getattr(self, field) for field in self.out_fields]
 		grid_prims[2]=grid_prims[2]/grid_prims[7]
 		self.time_stamps.append(self.total_time)
@@ -1565,27 +1566,28 @@ class Galaxy(object):
 
 	@property
 	def f_cond_unsat(self):
-		return self.kappa_cond[self.start:self.end+1]*self.get_spatial_deriv('temp')
+		return self.kappa_cond*self.get_spatial_deriv('temp')
 
 	@property 
 	def f_cond_sat(self):
 		if not hasattr(self, 'phi_cond'):
 			self.set_param('phi_cond',1.)
-		return self.temp_deriv_signs*self.phi_cond*5.*self.rho[self.start:self.end+1]*self.cs[self.start:self.end+1]**3
+		return self.temp_deriv_signs*self.phi_cond*5.*self.rho*self.cs**3
 
 	@property 
 	def sigma_cond(self):
-		sigma_cond=np.abs(self.f_cond_unsat/self.f_cond_sat)
+		return np.abs(self.f_cond_unsat/self.f_cond_sat)
 
-		return  sigma_cond
-
-	@property
-	def kappa_cond_eff(self):
-		return self.kappa_cond[self.start:self.end+1]/(1.+self.sigma_cond)
+	# @property
+	# def kappa_cond_eff(self):
+	# 	return self.kappa_cond/(1.+self.sigma_cond)
 
 	def _update_aux(self):
-		pass
-		#self.kappa_cond_eff=self.kappa_cond/(1.+self.sigma_cond)
+		if not self.isot:
+			self.cs=np.sqrt(self.gamma*kb*self.temp/(self.mu*mp))
+		else:                                                                                                     
+			self.cs=np.sqrt(kb*self.temp/(self.mu*mp))
+		self.kappa_cond_eff=self.kappa_cond/(1.+self.sigma_cond)
 		
 	@property 
 	def temp_deriv_signs(self):
