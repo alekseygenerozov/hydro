@@ -538,12 +538,12 @@ class Galaxy(object):
 	def pres(self):
 		return (kb*self.temp*self.rho)/(self.mu*mp)
 
-	# @property
-	# def cs(self):
-	# 	if not self.isot:
-	# 		return np.sqrt(self.gamma*kb*self.temp/(self.mu*mp))
-	# 	else:                                                                                                     
-	# 		return np.sqrt(kb*self.temp/(self.mu*mp))
+	@property
+	def cs(self):
+		if not self.isot:
+			return np.sqrt(self.gamma*kb*self.temp/(self.mu*mp))
+		else:                                                                                                     
+			return np.sqrt(kb*self.temp/(self.mu*mp))
 
 	@property
 	def mach(self):
@@ -1094,7 +1094,7 @@ class Galaxy(object):
 	#Evaluating the partial derivative of entropy with respect to time
 	def ds_dt(self):
 		ds_dr=self.get_spatial_deriv('s')
-		ds_dt=self.q_grid*self.sp_heating/(self.rho*self.temp)-self.vel*ds_dr+self.art_visc_s+self.cond_grid
+		ds_dt=self.q_grid*self.sp_heating/(self.rho*self.temp)-self.vel*ds_dr+self.art_visc_s#+self.cond_grid
 		return ds_dt
 
 	def isot_off(self):
@@ -1578,16 +1578,17 @@ class Galaxy(object):
 	def sigma_cond(self):
 		return np.abs(self.f_cond_unsat/self.f_cond_sat)
 
-	# @property
-	# def kappa_cond_eff(self):
-	# 	return self.kappa_cond/(1.+self.sigma_cond)
+	@property
+	def kappa_cond_eff(self):
+		return self.kappa_cond/(1.+self.sigma_cond)
 
 	def _update_aux(self):
-		if not self.isot:
-			self.cs=np.sqrt(self.gamma*kb*self.temp/(self.mu*mp))
-		else:                                                                                                     
-			self.cs=np.sqrt(kb*self.temp/(self.mu*mp))
-		self.kappa_cond_eff=self.kappa_cond/(1.+self.sigma_cond)
+		pass
+		# if not self.isot:
+		# 	self.cs=np.sqrt(self.gamma*kb*self.temp/(self.mu*mp))
+		# else:                                                                                                     
+		# 	self.cs=np.sqrt(kb*self.temp/(self.mu*mp))
+		# self.kappa_cond_eff=self.kappa_cond/(1.+self.sigma_cond)
 		
 	@property 
 	def temp_deriv_signs(self):
