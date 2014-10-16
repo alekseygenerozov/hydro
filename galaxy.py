@@ -1094,7 +1094,7 @@ class Galaxy(object):
 	#Evaluating the partial derivative of entropy with respect to time
 	def ds_dt(self):
 		ds_dr=self.get_spatial_deriv('s')
-		ds_dt=self.q_grid*self.sp_heating/(self.rho*self.temp)-self.vel*ds_dr+self.art_visc_s#+self.cond_grid
+		ds_dt=self.q_grid*self.sp_heating/(self.rho*self.temp)-self.vel*ds_dr+self.art_visc_s+self.cond_grid
 		return ds_dt
 
 	def isot_off(self):
@@ -1572,7 +1572,7 @@ class Galaxy(object):
 	def f_cond_sat(self):
 		if not hasattr(self, 'phi_cond'):
 			self.set_param('phi_cond',1.)
-		return self.temp_deriv_signs*self.phi_cond*5.*self.rho*self.cs**3
+		return self.phi_cond*5.*self.rho*self.cs**3
 
 	@property 
 	def sigma_cond(self):
@@ -1580,25 +1580,23 @@ class Galaxy(object):
 
 	@property
 	def kappa_cond_eff(self):
-		return self.kappa_cond/(1.+self.sigma_cond)
+		kappa=self.kappa_cond/(1.+self.sigma_cond)
+		kappa[0:self.start+1]=kappa[self.start]
+		kappa[self.end+1:self.length]=kappa[self.end]
+		return kappa
 
 	def _update_aux(self):
 		pass
-		# if not self.isot:
-		# 	self.cs=np.sqrt(self.gamma*kb*self.temp/(self.mu*mp))
-		# else:                                                                                                     
-		# 	self.cs=np.sqrt(kb*self.temp/(self.mu*mp))
-		# self.kappa_cond_eff=self.kappa_cond/(1.+self.sigma_cond)
 		
 	@property 
 	def temp_deriv_signs(self):
 		temp_derivs=self.get_spatial_deriv('temp') 
-		return temp_derivs/np.abs(temp_derivs)
+		return np.sign(temp_derivs)
 
 	@property
 	def f_cond(self):
 		'''conductive flux'''
-		return (self.f_cond_unsat*self.f_cond_sat)/(self.f_cond_unsat+self.f_cond_sat)
+		return self.temp_deriv_signs*(np.abs(self.f_cond_unsat)*self.f_cond_sat)/(np.abs(self.f_cond_unsat)+self.f_cond_sat)
 
 	@property 
 	def tcond_unsat(self):
