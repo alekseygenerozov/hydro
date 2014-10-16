@@ -892,7 +892,7 @@ class Galaxy(object):
 
 	def outwards(self, idx, n):
 		'''Go n zones away from the middle of the grid'''
-		if idx<np.median(range(0, self.length+1)):
+		if idx<self.length/2:
 			return idx-n
 		else:
 			return idx+n
