@@ -538,12 +538,12 @@ class Galaxy(object):
 	def pres(self):
 		return (kb*self.temp*self.rho)/(self.mu*mp)
 
-	@property
-	def cs(self):
-		if not self.isot:
-			return np.sqrt(self.gamma*kb*self.temp/(self.mu*mp))
-		else:                                                                                                     
-			return np.sqrt(kb*self.temp/(self.mu*mp))
+	# @property
+	# def cs(self):
+	# 	if not self.isot:
+	# 		return np.sqrt(self.gamma*kb*self.temp/(self.mu*mp))
+	# 	else:                                                                                                     
+	# 		return np.sqrt(kb*self.temp/(self.mu*mp))
 
 	@property
 	def mach(self):
@@ -1586,8 +1586,11 @@ class Galaxy(object):
 		return kappa
 
 	def _update_aux(self):
-		pass
-		
+		if not self.isot:
+			self.cs=np.sqrt(self.gamma*kb*self.temp/(self.mu*mp))
+		else:
+			self.cs=np.sqrt(kb*self.temp/(self.mu*mp))
+
 	@property 
 	def temp_deriv_signs(self):
 		temp_derivs=self.get_spatial_deriv('temp') 
