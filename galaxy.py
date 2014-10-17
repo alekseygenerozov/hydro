@@ -416,7 +416,11 @@ class Galaxy(object):
 			self.first_deriv_coeffs=np.array([first_deriv_weights/(r*self.delta_log[0]) for r in self.radii])
 			self.second_deriv_coeffs=np.array([(1./r**2)*(second_deriv_weights/(self.delta_log[0]**2)-(first_deriv_weights)/(self.delta_log[0]))\
 				for r in self.radii])
-
+		self.first_deriv_matrix=np.zeros([70, 70])
+		self.second_deriv_matrix=np.zeros([70,70])
+		for i in range(self.start,self.end+1):
+			self.first_deriv_matrix[i,i-3:i+4]=self.first_deriv_coeffs[i]
+			self.second_deriv_matrix[i,i-3:i+4]=self.second_deriv_coeffs[i]
 
 	def re_grid(self, rmin, rmax, length=None, extrap='default'):
 		#If length kw arg is unspecified then leave the number of grid points unchanged
@@ -1021,11 +1025,11 @@ class Galaxy(object):
 
 	def get_spatial_deriv(self, field,second=False):
 		field_list=getattr(self,field)
-		windows=np.array([field_list[i-3:i+4] if i<=self.end and i>=self.start else [np.nan]*7 for i in range(0, self.length)])
+		#windows=np.array([field_list[i-3:i+4] if i<=self.end and i>=self.start else [np.nan]*7 for i in range(0, self.length)])
 		if second:
-			return np.sum(windows*self.second_deriv_coeffs,axis=1)
+			return np.dot(self.second_deriv_matrix, field_list)
 		else:
-			return np.sum(windows*self.first_deriv_coeffs,axis=1)
+			return np.dot(self.first_deriv_matrix, field_list)
 
 	#Calculate laplacian in spherical coords. 
 	def get_laplacian(self, field):
@@ -1060,8 +1064,7 @@ class Galaxy(object):
 
 	@property
 	def art_visc_vel(self):
-		art_visc=np.array([min(self.cs[i],  abs(self.vel[i]))*(self.radii[self.end]-self.radii[self.start])/self.Re\
-			for i in range(0,self.length)])*self.get_laplacian('vel')
+		art_visc=np.min(self.cs, np.abs(self.vel),axis=0)*(self.radii[self.end]-self.radii[self.start])/self.Re)*self.get_laplacian('vel')
 		if self.visc_scheme=='const_visc':
 			pass
 		elif self.visc_scheme=='cap_visc':
