@@ -1470,7 +1470,7 @@ class Galaxy(object):
 		if self.eddr<0.03:
 			xray=(self.eddr/0.03)**2*l_0
 		else:
-			xray=(gal.eddr/0.03)*l_0
+			xray=(self.eddr/0.03)*l_0
 
 		return xray
 
