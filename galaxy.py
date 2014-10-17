@@ -1064,8 +1064,7 @@ class Galaxy(object):
 
 	@property
 	def art_visc_vel(self):
-		art_visc=np.array([min(self.cs[i],  abs(self.vel[i]))*(self.radii[self.end]-self.radii[self.start])/self.Re\
-			for i in range(0,self.length)])*self.get_laplacian('vel')
+		art_visc=np.min([np.abs(self.vel), self.cs],axis=0)*(self.radii[self.end]-self.radii[self.start])/self.Re*self.get_laplacian('vel')
 		if self.visc_scheme=='const_visc':
 			pass
 		elif self.visc_scheme=='cap_visc':
@@ -1076,7 +1075,7 @@ class Galaxy(object):
 
 	@property
 	def art_visc_s(self):
-		art_visc=np.array([min(self.cs[i],  np.abs(self.vel[i]))*(self.radii[self.end]-self.radii[self.start])/self.Re_s for i in range(0,self.length)])*self.get_laplacian('s')
+		art_visc=np.min([np.abs(self.vel), self.cs],axis=0)*(self.radii[self.end]-self.radii[self.start])/self.Re_s*self.get_laplacian('s')
 		if self.visc_scheme=='const_visc':
 			pass
 		elif self.visc_scheme=='cap_visc':
@@ -1324,11 +1323,11 @@ class Galaxy(object):
 		self._cfl()
 
 		for substep in range(3):
-			self._update_aux()
 			self._sub_step(gamma[substep], zeta[substep])
 			if not self.isot:
 				self._update_temp()
 			self._update_ghosts()
+			self._update_aux()
 		grid_prims=[getattr(self, field) for field in self.fields]
 		if np.any(np.isnan(grid_prims)):
 			print 'nan detected in solution'
