@@ -1064,7 +1064,8 @@ class Galaxy(object):
 
 	@property
 	def art_visc_vel(self):
-		art_visc=np.min(self.cs, np.abs(self.vel),axis=0)*(self.radii[self.end]-self.radii[self.start])/self.Re)*self.get_laplacian('vel')
+		art_visc=np.array([min(self.cs[i],  abs(self.vel[i]))*(self.radii[self.end]-self.radii[self.start])/self.Re\
+			for i in range(0,self.length)])*self.get_laplacian('vel')
 		if self.visc_scheme=='const_visc':
 			pass
 		elif self.visc_scheme=='cap_visc':
