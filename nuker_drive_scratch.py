@@ -2,14 +2,12 @@
 
 import galaxy
 import parker
-import sol_check as sc
 
 import astropy.constants as const
 import numpy as np
 
 import argparse
 
-import ipyani
 from math import e
 
 from astropy.io import ascii

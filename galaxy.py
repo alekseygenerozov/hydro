@@ -1160,10 +1160,6 @@ class Galaxy(object):
 			except KeyError:
 				print 'This Nuker parameter does not exist'
 				return
-			#Clear cached values if the Nuker parameters have been reset
-			self.cache={}
-		elif param=='vw_extra' or param=='eta':
-			self.cache={}
 		else:
 			setattr(self,param,value)
 
@@ -1171,6 +1167,7 @@ class Galaxy(object):
 			self.non_standard[param]=value
 
 		self.log=self.log+param+' old:'+str(old)+' new:'+str(value)+' time:'+str(self.total_time)+'\n'
+		self.cache={}
 			
 	#Method to write solution info to file
 	def write_sol(self):
