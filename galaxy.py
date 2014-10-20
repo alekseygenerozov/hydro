@@ -439,6 +439,45 @@ class Galaxy(object):
 		self.fdiff=np.empty([0, self.length-1, 2*len(self.cons_fields)+1])
 		self.cache={}
 
+	@classmethod
+	def from_dir(cls, args=[], loc='.', index=-1, rescale=1., rmin=None, rmax=None, gdata=None, length=None, extrap='default',**kwargs):
+		print args, kwargs
+		init={}
+		init_array=prepare_start(np.load(loc+'/save.npz')['a'][index])
+		radii=init_array[:,0]
+		delta=np.diff(radii)
+		if np.allclose(np.diff(delta),[0.]):
+			logr=False
+		else:
+			logr=True
+		if not length:
+			length=len(radii)
+
+		try:
+			gal=cls(*args, init={'rmin':radii[0], 'rmax':radii[-1], 'f_initial':interp1d(radii, init_array[:,1:4], axis=0), 'length':length, 'logr':logr}, **kwargs)
+		except:
+			print 'Unable to initialize grid--check input and try again'
+			raise
+
+		gal._update_aux()
+		if rmin and rmax:
+			gal.re_grid(rmin, rmax,extrap=extrap)
+		elif rmin:
+			gal.re_grid(rmin, gal.radii[-1],extrap=extrap)
+		elif rmax:
+			gal.re_grid(gal.radii[0], rmax,extrap=extrap)
+		else:
+			pass
+
+		if rescale=='auto':
+			tmp=cls(name, gdata=gdata)
+			rescale=tmp.rinf/init_array[0,0]/96.5
+
+		if not np.allclose(rescale,1.):
+			gal.radii=rescale*gal.radii
+
+		return gal
+
 	def M_enc(self,r):
 		return 0.
 
@@ -1618,10 +1657,6 @@ class Galaxy(object):
 		else:
 			return self.kappe_cond_eff*self.get_spatial_deriv('temp', second=True) 
 
-	# @property 
-	# def cond_grid(self):
-	# 	return np.array([self.cond(i) for i in range(self.length)])
-
 	@property
 	def cond_plot(self):
 		'''Plot conductivity vs. heating rate.'''
@@ -1667,37 +1702,37 @@ class NukerGalaxy(Galaxy):
 		self.rmin_star=1.E-3
 		self.rmax_star=1.E5
 
-	@classmethod
-	def from_dir(cls, name, loc, index=-1, rescale=1., rmin=None, rmax=None, gdata=None, length=None, extrap='default'):
-		init={}
-		init_array=prepare_start(np.load(loc+'/save.npz')['a'][index])
-		radii=init_array[:,0]
-		delta=np.diff(radii)
-		if np.allclose(np.diff(delta),[0.]):
-			logr=False
-		else:
-			logr=True
-		if not length:
-			length=len(radii)
+	# @classmethod
+	# def from_dir(cls, name, loc, index=-1, rescale=1., rmin=None, rmax=None, gdata=None, length=None, extrap='default'):
+	# 	init={}
+	# 	init_array=prepare_start(np.load(loc+'/save.npz')['a'][index])
+	# 	radii=init_array[:,0]
+	# 	delta=np.diff(radii)
+	# 	if np.allclose(np.diff(delta),[0.]):
+	# 		logr=False
+	# 	else:
+	# 		logr=True
+	# 	if not length:
+	# 		length=len(radii)
 
-		gal=cls(name, init={'rmin':radii[0], 'rmax':radii[-1], 'f_initial':interp1d(radii, init_array[:,1:4], axis=0), 'length':length, 'logr':logr}, gdata=gdata)
-		if rmin and rmax:
-			gal.re_grid(rmin, rmax,extrap=extrap)
-		elif rmin:
-			gal.re_grid(rmin, gal.radii[-1],extrap=extrap)
-		elif rmax:
-			gal.re_grid(gal.radii[0], rmax,extrap=extrap)
-		else:
-			pass
+	# 	gal=cls(name, init={'rmin':radii[0], 'rmax':radii[-1], 'f_initial':interp1d(radii, init_array[:,1:4], axis=0), 'length':length, 'logr':logr}, gdata=gdata)
+	# 	if rmin and rmax:
+	# 		gal.re_grid(rmin, rmax,extrap=extrap)
+	# 	elif rmin:
+	# 		gal.re_grid(rmin, gal.radii[-1],extrap=extrap)
+	# 	elif rmax:
+	# 		gal.re_grid(gal.radii[0], rmax,extrap=extrap)
+	# 	else:
+	# 		pass
 
-		if rescale=='auto':
-			tmp=cls(name, gdata=gdata)
-			rescale=tmp.rinf/init_array[0,0]/96.5
+	# 	if rescale=='auto':
+	# 		tmp=cls(name, gdata=gdata)
+	# 		rescale=tmp.rinf/init_array[0,0]/96.5
 
-		if not np.allclose(rescale,1.):
-			gal.radii=rescale*gal.radii
+	# 	if not np.allclose(rescale,1.):
+	# 		gal.radii=rescale*gal.radii
 
-		return gal
+	# 	return gal
 
 	@memoize
 	def rho_stars(self,r):
