@@ -440,7 +440,7 @@ class Galaxy(object):
 		self.cache={}
 
 	@classmethod
-	def from_dir(cls, args=[], loc='.', index=-1, rescale=1., rmin=None, rmax=None, gdata=None, length=None, extrap='default',**kwargs):
+	def from_dir(cls, args=[], loc='.', index=-1, rescale=1., rmin=None, rmax=None, gdata=None, length=None, extrap='default', model_params=True, **kwargs):
 		print args, kwargs
 		init={}
 		init_array=prepare_start(np.load(loc+'/save.npz')['a'][index])
@@ -475,6 +475,13 @@ class Galaxy(object):
 
 		if not np.allclose(rescale,1.):
 			gal.radii=rescale*gal.radii
+		if model_params:
+			try:
+				model_params_dict=dill.load(open(loc+'/non_standard.p','rb'))
+			except:
+				return gal
+			for param in model_params_dict:
+				gal.set_param(param,model_params_dict[param])
 
 		return gal
 
@@ -1701,38 +1708,6 @@ class NukerGalaxy(Galaxy):
 		self.eta=1.
 		self.rmin_star=1.E-3
 		self.rmax_star=1.E5
-
-	# @classmethod
-	# def from_dir(cls, name, loc, index=-1, rescale=1., rmin=None, rmax=None, gdata=None, length=None, extrap='default'):
-	# 	init={}
-	# 	init_array=prepare_start(np.load(loc+'/save.npz')['a'][index])
-	# 	radii=init_array[:,0]
-	# 	delta=np.diff(radii)
-	# 	if np.allclose(np.diff(delta),[0.]):
-	# 		logr=False
-	# 	else:
-	# 		logr=True
-	# 	if not length:
-	# 		length=len(radii)
-
-	# 	gal=cls(name, init={'rmin':radii[0], 'rmax':radii[-1], 'f_initial':interp1d(radii, init_array[:,1:4], axis=0), 'length':length, 'logr':logr}, gdata=gdata)
-	# 	if rmin and rmax:
-	# 		gal.re_grid(rmin, rmax,extrap=extrap)
-	# 	elif rmin:
-	# 		gal.re_grid(rmin, gal.radii[-1],extrap=extrap)
-	# 	elif rmax:
-	# 		gal.re_grid(gal.radii[0], rmax,extrap=extrap)
-	# 	else:
-	# 		pass
-
-	# 	if rescale=='auto':
-	# 		tmp=cls(name, gdata=gdata)
-	# 		rescale=tmp.rinf/init_array[0,0]/96.5
-
-	# 	if not np.allclose(rescale,1.):
-	# 		gal.radii=rescale*gal.radii
-
-	# 	return gal
 
 	@memoize
 	def rho_stars(self,r):
