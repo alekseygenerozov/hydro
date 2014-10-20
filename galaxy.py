@@ -526,17 +526,17 @@ class Galaxy(object):
 			self.cache['vw']=np.array([self.vw_func(r) for r in self.radii])
 			return self.cache['vw']
 		
-	@property
-	def rho(self):
-		return np.exp(self.log_rho)
+	# @property
+	# def rho(self):
+	# 	return np.exp(self.log_rho)
 
 	@property 
 	def r2vel(self):
 		return self.radii**2*self.vel
 
-	@property 
-	def frho(self):
-		return self.radii**2*self.vel*self.rho
+	# @property 
+	# def frho(self):
+	# 	return self.radii**2*self.vel*self.rho
 
 	@property
 	def pres(self):
@@ -1089,7 +1089,6 @@ class Galaxy(object):
 		dlog_rho_dr=self.get_spatial_deriv('log_rho')
 		dtemp_dr=self.get_spatial_deriv('temp')
 		dv_dr=self.get_spatial_deriv('vel')
-		d2v_dr2=self.get_spatial_deriv('vel', second=True)
 		drho_dr=dlog_rho_dr*(self.rho)
 
 		return -self.vel*dv_dr-dlog_rho_dr*kb*self.temp/(self.mu*mp)-(kb/(self.mu*mp))*dtemp_dr-self.grad_phi_grid+self.art_visc_vel-(self.q_grid*self.vel/self.rho)
@@ -1590,6 +1589,8 @@ class Galaxy(object):
 			self.cs=np.sqrt(self.gamma*kb*self.temp/(self.mu*mp))
 		else:
 			self.cs=np.sqrt(kb*self.temp/(self.mu*mp))
+		self.rho=np.exp(self.log_rho)
+		self.frho=self.radii**2*self.vel*self.rho
 
 	@property 
 	def temp_deriv_signs(self):

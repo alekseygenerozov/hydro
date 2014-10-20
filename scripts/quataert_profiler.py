@@ -32,7 +32,7 @@ def main():
 	gal=galaxy.Galaxy(init=init)
 	gal.set_param('bdry', 'bp')
 	gal.set_param('mu', 0.5)
-	gal.set_param('tinterval', None)
+	# gal.set_param('tinterval', None)
 	gal.set_param('outdir', 'quataert')
 
 	gal.set_param('isot', True)
@@ -40,7 +40,9 @@ def main():
 	gal.set_param('isot', False)
 	gal.solve(gal.tcross)
 
-cProfile.run('main()', 'restats')
-p = pstats.Stats('restats')
-p.strip_dirs().sort_stats(1).print_stats()
+main()
+
+# cProfile.run('main()', 'restats')
+# p = pstats.Stats('restats')
+# p.strip_dirs().sort_stats(1).print_stats()
 
