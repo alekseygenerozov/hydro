@@ -1,3 +1,4 @@
+# cython: profile=True
 import numpy as np
 from scipy import integrate
 from scipy.interpolate import interp1d
@@ -1178,12 +1179,12 @@ class Galaxy(object):
 		np.savez(self.outdir+'/cons', a=self.fdiff)
 		log=open(self.outdir+'/log', 'w')
 		log.write(self.log)
-		dill.dump(self.non_standard, open(self.outdir+'/non_standard.p','wb'))
+		#dill.dump(self.non_standard, open(self.outdir+'/non_standard.p','wb'))
 		self.backup()
 
 	def backup(self):
 		bash_command('mkdir -p '+self.outdir)
-		dill.dump(self, open(self.outdir+'/grid.p', 'wb' ) )
+		#dill.dump(self, open(self.outdir+'/grid.p', 'wb' ) )
 
 	def grid(self):
 		self.M_enc_grid
