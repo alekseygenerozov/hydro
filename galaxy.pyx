@@ -1,5 +1,6 @@
 # cython: profile=True
 import numpy as np
+cimport numpy as np
 from scipy import integrate
 from scipy.interpolate import interp1d
 from scipy.optimize import fsolve, brentq
@@ -33,20 +34,28 @@ import progressbar as progress
 import os.path
 import re
 import functools
+# We now need to fix a datatype for our arrays. I've used the variable
+# DTYPE for this, which is assigned to the usual NumPy runtime
+# type info object.
+DTYPE = np.float64
+# "ctypedef" assigns a corresponding compile-time type to DTYPE_t. For
+# every type in the numpy module there's a corresponding compile-time
+# type with a _t-suffix.
+ctypedef np.float64_t DTYPE_t
 
 #Constants
-G=const.G.cgs.value
-M_sun=const.M_sun.cgs.value
-kb=const.k_B.cgs.value
-mp=const.m_p.cgs.value
-me=const.m_e.cgs.value
-h=const.h.cgs.value
-c=const.c.cgs.value
-pc=const.pc.cgs.value
-kpc=1.E3*pc
-eV=u.eV.to('erg')
-th=4.35*10**17
-year=3.15569E7
+cdef np.float64 G=const.G.cgs.value
+cdef np.float64 M_sun=const.M_sun.cgs.value
+cdef np.float64 kb=const.k_B.cgs.value
+cdef np.float64 mp=const.m_p.cgs.value
+cdef np.float64 me=const.m_e.cgs.value
+cdef np.float64 h=const.h.cgs.value
+cdef np.float64 c=const.c.cgs.value
+cdef np.float64 pc=const.pc.cgs.value
+cdef np.float64 kpc=1.E3*pc
+cdef np.float64 eV=u.eV.to('erg')
+cdef np.float64 th=4.35*10**17
+cdef np.float64 year=3.15569E7
 
 
 def pow_slope(r1, r2, field1, field2):
@@ -312,11 +321,10 @@ class Galaxy(object):
 		initial conditions
 	:param init_dir: name of directory containing previous from which the current run should be initialized
 	'''
-
 	def __init__(self, init={}):
 		self.params={'M':3.6E6*M_sun}
-		self.isot=False
-		self.gamma=5./3.
+		self.isot=5./3.
+		self.gamma=gamma
 		self.fields=['log_rho', 'vel', 's']
 		self.mu=1.
 
@@ -378,6 +386,11 @@ class Galaxy(object):
 
 	def _init_grid(self):
 		#Initializing the radial grid
+		cdef np.ndarray[DTYPE_t, ndim=1] radii
+		cdef np.ndarray[DTYPE_t, ndim=1] vel
+		cdef np.ndarray[DTYPE_t, ndim=1] log_rho
+		cdef np.ndarray[DTYPE_t, ndim=1] temp
+
 		rmin,rmax,f_initial=self.init['rmin'],self.init['rmax'],self.init['f_initial']
 		self.func_params=self.init['func_params']
 		self._logr=self.init['logr']
@@ -399,9 +412,12 @@ class Galaxy(object):
 		delta_log=np.diff(np.log(self.radii))
 		self.delta_log=np.insert(delta_log, 0, delta_log[0])
 
-		self.log_rho=np.log(prims[:,0])
-		self.vel=prims[:,1]
-		self.temp=prims[:,2]
+		log_rho=np.log(prims[:,0])
+		self.log_rho=log_rho
+		vel=prims[:,1]
+		self.vel=vel	
+		temp=prims[:,2]	
+		self.temp=temp
 		self.s=(kb/(self.mu*mp))*np.log(1./np.exp(self.log_rho)*(self.temp)**(3./2.))
 		#Attributes to store length of the list as well as start and end indices (useful for ghost zones)
 		self.start=3
@@ -527,17 +543,17 @@ class Galaxy(object):
 			self.cache['vw']=np.array([self.vw_func(r) for r in self.radii])
 			return self.cache['vw']
 		
-	@property
-	def rho(self):
-		return np.exp(self.log_rho)
+	# @property
+	# def rho(self):
+	# 	return np.exp(self.log_rho)
 
 	@property 
 	def r2vel(self):
 		return self.radii**2*self.vel
 
-	@property 
-	def frho(self):
-		return self.radii**2*self.vel*self.rho
+	# @property 
+	# def frho(self):
+	# 	return self.radii**2*self.vel*self.rho
 
 	@property
 	def pres(self):
@@ -990,6 +1006,7 @@ class Galaxy(object):
 	#Extrapolate densities to the ghost zones; a lot of this method is redundant 
 	def _dens_adjust_bp(self):
 		'''Extrapolate $\rho$ assuming that the $\rho\sim r^{-3/2}$ on inner boundary and $\rho\sim r^{-3/2}$'''
+		cdef int i 
 		for i in range(1, 4):
 			if self._end_zone==self.start:
 				slope=-3./2.
@@ -1000,6 +1017,7 @@ class Galaxy(object):
 			self.log_rho[ghost_idx]=log_rho
 
 	def _mdot_adjust(self):
+		cdef int i
 		for i in range(1, 4):
 			ghost_idx=self.outwards(self._end_zone, i)
 			if self._end_zone==self.start:
@@ -1010,6 +1028,7 @@ class Galaxy(object):
 			
 	def _mdot_adjust_bp(self):
 		'''Enforce constant mdot across the ghost zones. Source term is not accounted for in this version'''
+		cdef int i 
 		for i in range(1,4):
 			ghost_idx=self.outwards(self._end_zone, i)
 			vel=self.frho[self._end_zone]/self.rho[ghost_idx]/self.radii[ghost_idx]**2
@@ -1019,22 +1038,29 @@ class Galaxy(object):
 	def get_diffusion(self, coeff, field):
 		dkappa_dr=self.get_spatial_deriv(coeff)
 		dfield_dr=self.get_spatial_deriv(field)
-		d2field_dr2=self.get_spatial_deriv(field, second=True)
+		d2field_dr2=self.get_spatial_deriv_second(field)
 
 		kappa=getattr(self,coeff)
 		return kappa*d2field_dr2+dkappa_dr*dfield_dr+(2./self.radii)*(kappa*dfield_dr)
 
-	def get_spatial_deriv(self, field,second=False):
+	# def get_spatial_deriv(self, field,second=False):
+	# 	field_list=getattr(self,field)
+	# 	#windows=np.array([field_list[i-3:i+4] if i<=self.end and i>=self.start else [np.nan]*7 for i in range(0, self.length)])
+	# 	if second:
+	# 		return np.dot(self.second_deriv_matrix, field_list)
+	# 	else:
+	# 		return np.dot(self.first_deriv_matrix, field_list)
+	def get_spatial_deriv(self, field):
 		field_list=getattr(self,field)
-		#windows=np.array([field_list[i-3:i+4] if i<=self.end and i>=self.start else [np.nan]*7 for i in range(0, self.length)])
-		if second:
-			return np.dot(self.second_deriv_matrix, field_list)
-		else:
-			return np.dot(self.first_deriv_matrix, field_list)
+		return np.dot(self.first_deriv_matrix, field_list)
+
+	def get_spatial_deriv_second(self, field):
+		field_list=getattr(self,field)
+		return np.dot(self.second_deriv_matrix, field_list)
 
 	#Calculate laplacian in spherical coords. 
 	def get_laplacian(self, field):
-		return self.get_spatial_deriv(field, second=True)+(2./self.radii)*(self.get_spatial_deriv(field))
+		return self.get_spatial_deriv_second(field)+(2./self.radii)*(self.get_spatial_deriv(field))
 
 	def _cfl(self):
 		# alpha_max=0.
@@ -1090,7 +1116,7 @@ class Galaxy(object):
 		dlog_rho_dr=self.get_spatial_deriv('log_rho')
 		dtemp_dr=self.get_spatial_deriv('temp')
 		dv_dr=self.get_spatial_deriv('vel')
-		d2v_dr2=self.get_spatial_deriv('vel', second=True)
+		d2v_dr2=self.get_spatial_deriv_second('vel')
 		drho_dr=dlog_rho_dr*(self.rho)
 
 		return -self.vel*dv_dr-dlog_rho_dr*kb*self.temp/(self.mu*mp)-(kb/(self.mu*mp))*dtemp_dr-self.grad_phi_grid+self.art_visc_vel-(self.q_grid*self.vel/self.rho)
@@ -1161,10 +1187,6 @@ class Galaxy(object):
 			except KeyError:
 				print 'This Nuker parameter does not exist'
 				return
-			#Clear cached values if the Nuker parameters have been reset
-			self.cache={}
-		elif param=='vw_extra' or param=='eta':
-			self.cache={}
 		else:
 			setattr(self,param,value)
 
@@ -1172,6 +1194,7 @@ class Galaxy(object):
 			self.non_standard[param]=value
 
 		self.log=self.log+param+' old:'+str(old)+' new:'+str(value)+' time:'+str(self.total_time)+'\n'
+		self.cache={}
 			
 	#Method to write solution info to file
 	def write_sol(self):
@@ -1179,12 +1202,12 @@ class Galaxy(object):
 		np.savez(self.outdir+'/cons', a=self.fdiff)
 		log=open(self.outdir+'/log', 'w')
 		log.write(self.log)
-		#dill.dump(self.non_standard, open(self.outdir+'/non_standard.p','wb'))
+		dill.dump(self.non_standard, open(self.outdir+'/non_standard.p','wb'))
 		self.backup()
 
 	def backup(self):
 		bash_command('mkdir -p '+self.outdir)
-		#dill.dump(self, open(self.outdir+'/grid.p', 'wb' ) )
+		dill.dump(self, open(self.outdir+'/grid.p', 'wb' ) )
 
 	def grid(self):
 		self.M_enc_grid
@@ -1594,6 +1617,8 @@ class Galaxy(object):
 			self.cs=np.sqrt(self.gamma*kb*self.temp/(self.mu*mp))
 		else:
 			self.cs=np.sqrt(kb*self.temp/(self.mu*mp))
+		self.rho=np.exp(self.log_rho)
+		self.frho=self.radii**2*self.vel*self.rho
 
 	@property 
 	def temp_deriv_signs(self):
@@ -1619,7 +1644,7 @@ class Galaxy(object):
 		if not(hasattr(self,'cond_simple')) or self.cond_simple==False:
 			return self.get_diffusion('kappa_cond_eff', 'temp')
 		else:
-			return self.kappe_cond_eff*self.get_spatial_deriv('temp', second=True) 
+			return self.kappe_cond_eff*self.get_spatial_deriv_second('temp') 
 
 	# @property 
 	# def cond_grid(self):
