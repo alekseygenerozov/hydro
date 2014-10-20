@@ -44,19 +44,18 @@ DTYPE = np.float64
 ctypedef np.float64_t DTYPE_t
 
 #Constants
-cdef np.float64 G=const.G.cgs.value
-cdef np.float64 M_sun=const.M_sun.cgs.value
-cdef np.float64 kb=const.k_B.cgs.value
-cdef np.float64 mp=const.m_p.cgs.value
-cdef np.float64 me=const.m_e.cgs.value
-cdef np.float64 h=const.h.cgs.value
-cdef np.float64 c=const.c.cgs.value
-cdef np.float64 pc=const.pc.cgs.value
-cdef np.float64 kpc=1.E3*pc
-cdef np.float64 eV=u.eV.to('erg')
-cdef np.float64 th=4.35*10**17
-cdef np.float64 year=3.15569E7
-
+cdef DTYPE_t G=const.G.cgs.value
+cdef DTYPE_t M_sun=const.M_sun.cgs.value
+cdef DTYPE_t kb=const.k_B.cgs.value
+cdef DTYPE_t mp=const.m_p.cgs.value
+cdef DTYPE_t me=const.m_e.cgs.value
+cdef DTYPE_t h=const.h.cgs.value
+cdef DTYPE_t c=const.c.cgs.value
+cdef DTYPE_t pc=const.pc.cgs.value
+cdef DTYPE_t kpc=1.E3*pc
+cdef DTYPE_t eV=u.eV.to('erg')
+cdef DTYPE_t th=4.35*10**17
+cdef DTYPE_t year=3.15569E7
 
 def pow_slope(r1, r2, field1, field2):
 	return np.log(field2/field1)/np.log(r2/r1)
@@ -313,7 +312,7 @@ def background(rad, rho_0=2.E-31, temp=1.E6, r0=5.E11, n=0.):
 	return np.array([rho_0, 0., temp])
 	
 
-class Galaxy(object):
+cdef class Galaxy(object):
 	'''Class to representing galaxy--Corresponds to Quataert 2004. Can be initialized either using an analytic function or a
 	numpy ndarray object
 
@@ -323,8 +322,8 @@ class Galaxy(object):
 	'''
 	def __init__(self, init={}):
 		self.params={'M':3.6E6*M_sun}
-		self.isot=5./3.
-		self.gamma=gamma
+		self.isot=False
+		self.gamma=5./3.
 		self.fields=['log_rho', 'vel', 's']
 		self.mu=1.
 
@@ -342,6 +341,7 @@ class Galaxy(object):
 		self.sinterval=100
 
 		self.visc_scheme='default'
+		
 		self.Re=90.
 		self.Re_s=1.E20
 		self.floor=0.
@@ -390,6 +390,8 @@ class Galaxy(object):
 		cdef np.ndarray[DTYPE_t, ndim=1] vel
 		cdef np.ndarray[DTYPE_t, ndim=1] log_rho
 		cdef np.ndarray[DTYPE_t, ndim=1] temp
+		cdef int start
+		cdef int end
 
 		rmin,rmax,f_initial=self.init['rmin'],self.init['rmax'],self.init['f_initial']
 		self.func_params=self.init['func_params']
@@ -420,8 +422,12 @@ class Galaxy(object):
 		self.temp=temp
 		self.s=(kb/(self.mu*mp))*np.log(1./np.exp(self.log_rho)*(self.temp)**(3./2.))
 		#Attributes to store length of the list as well as start and end indices (useful for ghost zones)
+		start=3
 		self.start=3
-		self.end=self.length-4
+		end=self.length-4
+		self.end=end
+		print self.radii[3]
+		print self.radii[self.end]
 		self.tcross=(self.radii[-1]-self.radii[0])/(kb*1.E7/mp)**0.5
 		#Coefficients use to calculate the derivatives 
 		first_deriv_weights=np.array([-1., 9., -45., 0., 45., -9., 1.])/60.
@@ -1091,7 +1097,10 @@ class Galaxy(object):
 
 	@property
 	def art_visc_vel(self):
-		art_visc=np.min([np.abs(self.vel), self.cs],axis=0)*(self.radii[self.end]-self.radii[self.start])/self.Re*self.get_laplacian('vel')
+		np.min([np.abs(self.vel), self.cs],axis=0)
+		(self.radii[-1]-self.radii[0])/self.Re
+		self.get_laplacian('vel')
+		art_visc=np.min([np.abs(self.vel), self.cs],axis=0)*(self.radii[-1]-self.radii[0])/self.Re*self.get_laplacian('vel')
 		if self.visc_scheme=='const_visc':
 			pass
 		elif self.visc_scheme=='cap_visc':
