@@ -452,7 +452,6 @@ class Galaxy(object):
 
 	@classmethod
 	def from_dir(cls, args=[], loc='.', index=-1, rescale=1., rmin=None, rmax=None, gdata=None, length=None, extrap='default', model_params=True, **kwargs):
-		print args, kwargs
 		init={}
 		init_array=prepare_start(np.load(loc+'/save.npz')['a'][index])
 		radii=init_array[:,0]
@@ -2022,11 +2021,11 @@ class PowGalaxy(NukerGalaxy):
 		elif rpc>self.rmax_star:
 			return self.M_enc(self.rmax_star*pc)
 		else:
-			return 4.*np.pi*self.rho_0*(r**(2.-self.params['gamma'])-(self.rmin_star*pc)**(2.-self.params['gamma']))
+			return 4.*np.pi*self.rho_0*(r**(2.-self.params['gamma'])-(self.rmin_star*pc)**(2.-self.params['gamma']))/(2.-self.params['gamma'])
 
 	@memoize
 	def phi_s(self,r):
-		return (-G*self.M_enc(r)/r)-4.*np.pi*G*self.rho_0*((self.rmax_star*pc)**(1.-self.params['gamma'])-r**(1.-self.params['gamma']))
+		return (-G*self.M_enc(r)/r)-4.*np.pi*G*self.rho_0*((self.rmax_star*pc)**(1.-self.params['gamma'])-max(r,self.rmin_star*pc)**(1.-self.params['gamma']))/(1.-self.params['gamma'])
 
 	@property
 	def rinf(self):
