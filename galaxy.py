@@ -510,9 +510,6 @@ class Galaxy(object):
 	def vw_extra_500(self):
 		return self.vw_extra/5.E7
 
-	def sigma(self, r):
-		return 0.
-
 	def phi_s(self, r):
 		return 0.
 
@@ -542,7 +539,7 @@ class Galaxy(object):
 
 	@property
 	def sigma_grid(self):
-		return G*(self.params['M']+self.M_enc_grid)/self.radii
+		return (G*(self.params['M']+self.M_enc_grid)/self.radii)**0.5
 
 	@property
 	def phi_s_grid(self):
@@ -1750,13 +1747,6 @@ class NukerGalaxy(Galaxy):
 		rpc=r/pc
 		return (-G*self.M_enc(r)/r)+4.*G*self.params['Uv']*M_sun*integrate.quad(lambda r1:nuker_prime(r1, **self.params)*(r1**2-rpc**2)**0.5, rpc, self.rmax_star)[0]/pc
 		
-	@memoize
-	def sigma(self, r):
-		'''Velocity dispersion of galaxy
-		:param r: radius 
-		'''
-		return (G*(self.M_enc(r)+self.params['M'])/(r))**0.5
-
 	def q(self, r):
 		'''Source term representing mass loss from stellar winds'''
 		return self.eta*self.rho_stars(r)/th
