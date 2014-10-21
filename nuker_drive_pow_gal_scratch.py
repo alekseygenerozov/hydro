@@ -34,7 +34,7 @@ def main():
 	# gal.set_param('mu',0.62)
 	# gal.solve()
 	gal.re_grid(0.005*rinf, 100*rinf)
-	gal.solve()
+	gal.solve(5.*gal.tcross)
 
 if __name__ == '__main__':
 	main()
