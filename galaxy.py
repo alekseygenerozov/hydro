@@ -540,7 +540,7 @@ class Galaxy(object):
 
 	@property
 	def sigma_grid(self):
-		return np.array([self.sigma(r) for r in self.radii])
+		return G*(self.params['M']+self.M_enc_grid)/self.radii
 
 	@property
 	def phi_s_grid(self):
@@ -558,19 +558,9 @@ class Galaxy(object):
 	def grad_phi_grid(self):
 		return G*(self.params['M']+self.eps*self.M_enc_grid)/self.radii**2
 
-	def vw_func(self, r):
-		if not self.sigma_heating:
-			return self.vw_extra
-		else:
-			return (self.sigma(r)**2+(self.vw_extra)**2)**0.5
-
 	@property 
 	def vw(self):
-		try:
-			return self.cache['vw']
-		except KeyError:
-			self.cache['vw']=np.array([self.vw_func(r) for r in self.radii])
-			return self.cache['vw']
+		return np.sqrt(self.sigma_grid**2+self.vw_extra**2)
 		
 	@property
 	def rho(self):
@@ -1205,12 +1195,12 @@ class Galaxy(object):
 			except KeyError:
 				print 'This Nuker parameter does not exist'
 				return
+			self.cache={}
 		else:
 			setattr(self,param,value)
 
 		if param!='outdir':
 			self.non_standard[param]=value
-		self.cache={}
 
 		self.log=self.log+param+' old:'+str(old)+' new:'+str(value)+' time:'+str(self.total_time)+'\n'
 		# self.cache={}
@@ -1746,6 +1736,7 @@ class NukerGalaxy(Galaxy):
 			return self.M_enc(self.rmax_star*pc)
 		else:
 			return integrate.quad(lambda r1:4.*np.pi*r1**2*self._rho_stars_interp(r1*pc)*pc**3, self.rmin_star, rpc)[0]
+
 	@memoize
 	def phi_s(self,r):
 		'''Potential from the stars
@@ -1764,6 +1755,18 @@ class NukerGalaxy(Galaxy):
 	def q(self, r):
 		'''Source term representing mass loss from stellar winds'''
 		return self.eta*self.rho_stars(r)/th
+
+	@property
+	def rho_stars_grid(self):
+		try:
+			return self.cache['rho_stars_grid']
+		except KeyError:
+			self.cache['rho_stars_grid']=np.array([self.rho_stars(r) for r in self.radii])
+			return self.cache['rho_stars_grid']
+
+	@property
+	def q_grid(self):
+		return self.eta*self.rho_stars_grid/th
 
 	@property
 	def sigma_200(self):
