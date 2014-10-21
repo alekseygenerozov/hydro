@@ -1379,8 +1379,10 @@ class Galaxy(object):
 			self._sub_step(gamma[substep], zeta[substep])
 			if not self.isot:
 				self._update_temp()
+			self._update_aux()
 			self._update_ghosts()
 			self._update_aux()
+
 		grid_prims=[getattr(self, field) for field in self.fields]
 		if np.any(np.isnan(grid_prims)):
 			print 'nan detected in solution'
