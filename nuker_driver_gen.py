@@ -61,7 +61,7 @@ class Driver(object):
 		self.config_file=config_file
 		self.__parse_config()
 		if self.model:
-			self.gal=galaxy.NukerGalaxy.from_dir(self.name, self.model, **self.grid_params_dict)
+			self.gal=galaxy.NukerGalaxy.from_dir(args=[self.name], loc=self.model, **self.grid_params_dict)
 		else:
 			self.gal=galaxy.NukerGalaxy(self.name, init=self.grid_params_dict)
 

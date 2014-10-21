@@ -410,14 +410,14 @@ class Galaxy(object):
 		first_deriv_weights=np.array([-1., 9., -45., 0., 45., -9., 1.])/60.
 		second_deriv_weights=np.array([2., -27., 270., -490., 270., -27., 2.])/(180.)
 		if not self._logr:
-			self.first_deriv_coeffs=first_deriv_weights/self.delta[0]
-			self.second_deriv_coeffs=second_deriv_weights/self.delta[0]**2
+			self.first_deriv_coeffs=np.array([first_deriv_weights/delta for delta in self.delta])
+			self.second_deriv_coeffs=np.array([second_deriv_weights/delta**2 for delta in self.delta])
 		else: 
 			self.first_deriv_coeffs=np.array([first_deriv_weights/(r*self.delta_log[0]) for r in self.radii])
 			self.second_deriv_coeffs=np.array([(1./r**2)*(second_deriv_weights/(self.delta_log[0]**2)-(first_deriv_weights)/(self.delta_log[0]))\
 				for r in self.radii])
-		self.first_deriv_matrix=np.zeros([70, 70])
-		self.second_deriv_matrix=np.zeros([70,70])
+		self.first_deriv_matrix=np.zeros([self.length,self.length])
+		self.second_deriv_matrix=np.zeros([self.length,self.length])
 		for i in range(self.start,self.end+1):
 			self.first_deriv_matrix[i,i-3:i+4]=self.first_deriv_coeffs[i]
 			self.second_deriv_matrix[i,i-3:i+4]=self.second_deriv_coeffs[i]
@@ -459,7 +459,6 @@ class Galaxy(object):
 			print 'Unable to initialize grid--check input and try again'
 			raise
 
-		gal._update_aux()
 		if rmin and rmax:
 			gal.re_grid(rmin, rmax,extrap=extrap)
 		elif rmin:
@@ -470,8 +469,11 @@ class Galaxy(object):
 			pass
 
 		if rescale=='auto':
-			tmp=cls(name, gdata=gdata)
-			rescale=tmp.rinf/init_array[0,0]/96.5
+			tmp=cls(*args,**kwargs)
+			try:
+				rescale=tmp.rinf/init_array[0,0]/96.5
+			except AttributeError:
+				rescale=1.
 
 		if not np.allclose(rescale,1.):
 			gal.radii=rescale*gal.radii
@@ -560,7 +562,10 @@ class Galaxy(object):
 
 	@property 
 	def vw(self):
-		return np.sqrt(self.sigma_grid**2+self.vw_extra**2)
+		if self.sigma_heating:
+			return np.sqrt(self.sigma_grid**2+self.vw_extra**2)
+		else:
+			return np.array([self.vw_extra for i in range(self.length)])
 		
 	@property
 	def rho(self):
