@@ -34,6 +34,7 @@ def main():
 	gal.set_param('mu', 0.5)
 	# gal.set_param('tinterval', None)
 	gal.set_param('outdir', 'quataert')
+	gal.set_param('sigma_heating', False)
 
 	gal.set_param('isot', True)
 	gal.solve(gal.tcross)
