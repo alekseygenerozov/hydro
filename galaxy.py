@@ -572,28 +572,28 @@ class Galaxy(object):
 			self.cache['vw']=np.array([self.vw_func(r) for r in self.radii])
 			return self.cache['vw']
 		
-	# @property
-	# def rho(self):
-	# 	return np.exp(self.log_rho)
+	@property
+	def rho(self):
+		return np.exp(self.log_rho)
 
 	@property 
 	def r2vel(self):
 		return self.radii**2*self.vel
 
-	# @property 
-	# def frho(self):
-	# 	return self.radii**2*self.vel*self.rho
+	@property 
+	def frho(self):
+		return self.radii**2*self.vel*self.rho
 
 	@property
 	def pres(self):
 		return (kb*self.temp*self.rho)/(self.mu*mp)
 
-	# @property
-	# def cs(self):
-	# 	if not self.isot:
-	# 		return np.sqrt(self.gamma*kb*self.temp/(self.mu*mp))
-	# 	else:                                                                                                     
-	# 		return np.sqrt(kb*self.temp/(self.mu*mp))
+	@property
+	def cs(self):
+		if not self.isot:
+			return np.sqrt(self.gamma*kb*self.temp/(self.mu*mp))
+		else:                                                                                                     
+			return np.sqrt(kb*self.temp/(self.mu*mp))
 
 	@property
 	def mach(self):
@@ -1379,7 +1379,7 @@ class Galaxy(object):
 			self._sub_step(gamma[substep], zeta[substep])
 			if not self.isot:
 				self._update_temp()
-			self._update_aux()
+			# self._update_aux()
 			self._update_ghosts()
 			self._update_aux()
 
@@ -1644,12 +1644,13 @@ class Galaxy(object):
 		return kappa
 
 	def _update_aux(self):
-		if not self.isot:
-			self.cs=np.sqrt(self.gamma*kb*self.temp/(self.mu*mp))
-		else:
-			self.cs=np.sqrt(kb*self.temp/(self.mu*mp))
-		self.rho=np.exp(self.log_rho)
-		self.frho=self.radii**2*self.vel*self.rho
+		pass
+		# if not self.isot:
+		# 	self.cs=np.sqrt(self.gamma*kb*self.temp/(self.mu*mp))
+		# else:
+		# 	self.cs=np.sqrt(kb*self.temp/(self.mu*mp))
+		# self.rho=np.exp(self.log_rho)
+		# self.frho=self.radii**2*self.vel*self.rho
 
 	@property 
 	def temp_deriv_signs(self):
