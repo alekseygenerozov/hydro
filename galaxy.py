@@ -1205,22 +1205,12 @@ class Galaxy(object):
 			except KeyError:
 				print 'This Nuker parameter does not exist'
 				return
-			self.cache={}
-		elif param=='eta':
-			try:
-				del self.cache['q_grid']
-			except KeyError:
-				pass
-		elif param=='vw_extra':
-			try:
-				del self.cache['vw']
-			except KeyError:
-				pass
 		else:
 			setattr(self,param,value)
 
 		if param!='outdir':
 			self.non_standard[param]=value
+		self.cache={}
 
 		self.log=self.log+param+' old:'+str(old)+' new:'+str(value)+' time:'+str(self.total_time)+'\n'
 		# self.cache={}
