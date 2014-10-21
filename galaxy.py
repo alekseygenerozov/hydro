@@ -258,6 +258,17 @@ def nuker_params(skip=False):
 
 	return galaxies
 
+def quataert_q(r):
+	r1=2.4e17
+	r2=1.2e18
+	mdotw=6.7*10.**22
+	eta=-2.
+
+	a=mdotw/(4.*np.pi)/((r2**(eta+3)-r1**(eta+3))/(eta+3))
+	if r<r2 and r>r1:
+		return a*(r)**(eta)
+	else:
+		return 0.
 
 #Compute logarithmic slope given values and radii
 def get_slope(r1, r2, f1, f2):
@@ -490,18 +501,6 @@ class Galaxy(object):
 	def M_enc(self,r):
 		return 0.
 
-	def q(self, r):
-		r1=2.4e17
-		r2=1.2e18
-		mdotw=6.7*10.**22
-		eta=-2.
-
-		a=mdotw/(4.*np.pi)/((r2**(eta+3)-r1**(eta+3))/(eta+3))
-		if r<r2 and r>r1:
-			return a*(r)**(eta)
-		else:
-			return 0.
-
 	@property
 	def M_bh_8(self):
 		return self.params['M']/1.E8/M_sun
@@ -526,7 +525,7 @@ class Galaxy(object):
 		try:
 			return self.cache['q_grid']
 		except KeyError:
-			self.cache['q_grid']=np.array([self.q(r) for r in self.radii])
+			self.cache['q_grid']=np.array([quataert_q(r) for r in self.radii])
 			return self.cache['q_grid']
 
 	@property
