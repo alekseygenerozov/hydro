@@ -26,14 +26,13 @@ pc=const.pc.cgs.value
 
 def main():
 	rinf=gal_properties.rinf(1.E7*M_sun)
-	gal=galaxy.NukerGalaxy.from_dir(args=['NGC4551'],loc='batch_collected/NGC4551/vw_500.0/',rmin=0.005*rinf, rmax=100*rinf)
-
+	gal=galaxy.PowGalaxy.from_dir(loc='batch_collected/NGC4551/vw_500.0/')
 	gal.set_param('mu', 0.62)
 	gal.set_param('params[gamma]', 0.8)
 	gal.set_param('vw_extra', 6.E7)
-	
 	gal.set_param('outdir', gal.name+'/vw_'+str(gal.vw_extra/1.E5))
-	gal.solve(10.*gal.tcross)
+	gal.solve()
+	gal.re_grid(0.005*rinf, 100*rinf)
 
 if __name__ == '__main__':
 	main()
