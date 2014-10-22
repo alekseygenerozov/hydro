@@ -60,10 +60,21 @@ class Driver(object):
 	def __init__(self, config_file):
 		self.config_file=config_file
 		self.__parse_config()
-		if self.model:
-			self.gal=galaxy.NukerGalaxy.from_dir(args=[self.name], loc=self.model, **self.grid_params_dict)
+		if self.name=='quataert':
+			if self.model:
+				self.gal=galaxy.Galaxy.from_dir(loc=self.model, **self.grid_params_dict)
+			else:
+				self.gal=galaxy.Galaxy(init=self.grid_params_dict)
+		elif self.name=='pow':
+			if self.model:
+				self.gal=galaxy.PowGalaxy.from_dir(loc=self.model, **self.grid_params_dict)
+			else:
+				self.gal=galaxy.PowGalaxy(init=self.grid_params_dict)
 		else:
-			self.gal=galaxy.NukerGalaxy(self.name, init=self.grid_params_dict)
+			if self.model:
+				self.gal=galaxy.NukerGalaxy.from_dir(args=[self.name], loc=self.model, **self.grid_params_dict)
+			else:
+				self.gal=galaxy.NukerGalaxy(args=[self.name], init=self.grid_params_dict)
 
 		for param in self.model_params_dict:
 			self.gal.set_param(param,self.model_params_dict[param])
