@@ -35,7 +35,7 @@ def main():
 	gal.solve_adjust(gal.tcross,'mu',0.62)
 
 	gal.re_grid(gal.radii[0], 100*rinf)
-	gal.solve()
+	gal.solve(5.*gal.tcross)
 
 
 	gal.solve()
