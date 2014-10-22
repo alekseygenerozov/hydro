@@ -1412,7 +1412,10 @@ class Galaxy(object):
 		stags=np.empty(len(self.saved))
 		for i in range(len(self.saved)):
 			self.reset(i)
-			stags[i]=self.rs[0]
+			if self.stag_unique:
+				stags[i]=self.rs[0]
+			else:
+				stags[i]=None
 
 		return [self.time_stamps, stags]
 
