@@ -340,7 +340,7 @@ class Galaxy(object):
 		# self.init_array=init_array
 		self._init_grid()
 
-		self.tinterval=0.05*self.tcross
+		self.tinterval=0.05
 		self.sinterval=100
 
 		self.visc_scheme='default'
@@ -1251,7 +1251,7 @@ class Galaxy(object):
 				print 'Conservation check satisfied!'
 				break
 
-			if (self.tinterval>0 and (self.time_cur/self.tinterval)>=self.ninterval) or (self.tinterval<=0 and self.num_steps%self.sinterval==0):
+			if (self.tinterval>0 and (self.time_cur/(self.tcross*self.tinterval))>=self.ninterval) or (self.tinterval<=0 and self.num_steps%self.sinterval==0):
 				pbar.update(self.time_cur)
 				self.save()
 
