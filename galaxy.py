@@ -21,6 +21,7 @@ from astropy.io import ascii
 import astropy.table as table
 from astropy.table import Table,Column
 import astropy.units as u
+import brewer2mpl
 
 from latex_exp import latex_exp
 
@@ -894,8 +895,8 @@ class Galaxy(object):
 		n=(len(self.saved)-1)/7
 		saved=self.saved[::n]
 		for i in range(len(saved)-1):
-			for k in range(4):
-		    	ax1[k].loglog(self.radii, saved[i,:,k],color=cols[i])
+			for k in range(1,4):
+				ax1[k-1].loglog(self.radii, abs(saved[i,:,k]),color=cols[i])
 
 	@property 
 	def plot_marker(self):
