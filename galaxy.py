@@ -1278,7 +1278,7 @@ class Galaxy(object):
 		param_cur=getattr(self, param)
 		self.max_steps=max_steps
 
-		if type(param_cur, float):
+		if type(param_cur)==float:
 			interval=time/float(n)
 			delta_param=(target-param_cur)/float(n)
 			while not np.allclose(param_cur, target):
