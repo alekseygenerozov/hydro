@@ -886,6 +886,17 @@ class Galaxy(object):
 		plt.close()
 		return fig1
 
+	def sol_plot_seq(self):
+		cols=brewer2mpl.get_map('PuOr', 'diverging',  8).mpl_colors
+		fig1,ax1=plt.subplots(3, sharex=True, figsize=(10,24))
+		ax1[2].set_xlabel('Radius [cm]')
+
+		n=(len(self.saved)-1)/7
+		saved=self.saved[::n]
+		for i in range(len(saved)-1):
+			for k in range(4):
+		    	ax1[k].loglog(self.radii, saved[i,:,k],color=cols[i])
+
 	@property 
 	def plot_marker(self):
 		if self.params['gamma']<0.2:

@@ -30,11 +30,14 @@ def main():
 	gal.set_param('params[gamma]', 0.8)
 	gal.set_param('outdir', gal.name+'/vw_'+str(gal.vw_extra/1.E5))
 	gal.solve()
-	gal.re_grid(0.005*rinf, 100*rinf)
-	gal.solve(0.5*gal.tcross)
 	gal.set_param('vw_extra', 6.E7)
 	gal.solve(0.5*gal.tcross)
 	gal.solve_adjust(gal.tcross,'mu',0.62)
+
+	gal.re_grid(0.005*rinf, 100*rinf)
+	gal.solve(0.5*gal.tcross)
+
+
 	gal.solve()
 
 if __name__ == '__main__':
