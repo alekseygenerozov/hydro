@@ -1143,8 +1143,13 @@ class Galaxy(object):
 
 	#Evaluating the partial derivative of entropy with respect to time
 	def ds_dt(self):
+		if not hasattr(eps_cool):
+			self.eps_cool=0.
+		if not hasattr(eps_cond):
+			self.eps_cond=0.
+
 		ds_dr=self.get_spatial_deriv('s')
-		ds_dt=self.q_grid*self.sp_heating/(self.rho*self.temp)-self.vel*ds_dr+self.art_visc_s+self.cond_grid
+		ds_dt=(self.q_grid*self.sp_heating+self.eps_cool*self.cooling+self.eps_cond*self.cond_grid)/(self.rho*self.temp)-self.vel*ds_dr+self.art_visc_s
 		return ds_dt
 
 	def isot_off(self):
@@ -1604,18 +1609,13 @@ class Galaxy(object):
 	def kappa_cond(self):
 		if not hasattr(self, 'cond_scheme'):
 			self.set_param('cond_scheme','spitzer')
-		if not hasattr(self, 'eps_cond'):
-			self.eps_cond=0.
 
 		if self.cond_scheme=='shcherba':
-			return self.eps_cond*self.shcherba
+			return self.shcherba
 		elif self.cond_scheme=='simple':
-			return self.eps_cond*np.array([(2.*10**-6)*(1.E7)**(5./2.) for i in range(self.length)])
+			return np.array([(2.*10**-6)*(1.E7)**(5./2.) for i in range(self.length)])
 		else:
-			return self.eps_cond*self.spitzer
-		# else:
-		# 	return np.zeros(self.length) 
-
+			return self.spitzer
 
 	@property
 	def f_cond_unsat(self):
@@ -1640,12 +1640,6 @@ class Galaxy(object):
 
 	def _update_aux(self):
 		pass
-		# if not self.isot:
-		# 	self.cs=np.sqrt(self.gamma*kb*self.temp/(self.mu*mp))
-		# else:
-		# 	self.cs=np.sqrt(kb*self.temp/(self.mu*mp))
-		# self.rho=np.exp(self.log_rho)
-		# self.frho=self.radii**2*self.vel*self.rho
 
 	@property 
 	def temp_deriv_signs(self):
