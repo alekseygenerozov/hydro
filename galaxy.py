@@ -1297,7 +1297,8 @@ class Galaxy(object):
 			param_cur=getattr(self, param)
 		except AttributeError:
 			if type(target)==float:
-				setattr(self,param,0)
+				param_cur=0.
+				setattr(self,param,0.)
 		self.max_steps=max_steps
 
 		if type(param_cur)==float:
