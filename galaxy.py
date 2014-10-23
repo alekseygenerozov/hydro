@@ -1144,9 +1144,9 @@ class Galaxy(object):
 
 	#Evaluating the partial derivative of entropy with respect to time
 	def ds_dt(self):
-		if not hasattr(eps_cool):
+		if not hasattr(self,'eps_cool'):
 			self.eps_cool=0.
-		if not hasattr(eps_cond):
+		if not hasattr(self,'eps_cond'):
 			self.eps_cond=0.
 
 		ds_dr=self.get_spatial_deriv('s')
