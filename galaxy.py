@@ -897,6 +897,7 @@ class Galaxy(object):
 		for i in range(len(saved)-1):
 			for k in range(1,4):
 				ax1[k-1].loglog(self.radii, abs(saved[i,:,k]),color=cols[i])
+		return fig1
 
 	@property 
 	def plot_marker(self):
@@ -1292,7 +1293,11 @@ class Galaxy(object):
 		:param int n: Number of time intervals to divide time into for the purposes of parameter adjustment
 		:param int max_steps: Maximum number of steps for solver to take
 		'''
-		param_cur=getattr(self, param)
+		try:
+			param_cur=getattr(self, param)
+		except AttributeError:
+			if type(target)==float:
+				setattr(self,param,0)
 		self.max_steps=max_steps
 
 		if type(param_cur)==float:

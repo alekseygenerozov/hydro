@@ -33,6 +33,7 @@ def main():
 	gal.set_param('vw_extra', 6.E7)
 	gal.solve(0.5*gal.tcross)
 	gal.solve_adjust(gal.tcross,'mu',0.62)
+	gal.solve()
 
 	gal.re_grid(gal.radii[0], 100*rinf)
 	gal.solve(5.*gal.tcross)
