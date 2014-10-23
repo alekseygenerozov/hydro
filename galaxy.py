@@ -1150,7 +1150,7 @@ class Galaxy(object):
 			self.eps_cond=0.
 
 		ds_dr=self.get_spatial_deriv('s')
-		ds_dt=(self.q_grid*self.sp_heating+self.eps_cool*self.cooling+self.eps_cond*self.cond_grid)/(self.rho*self.temp)-self.vel*ds_dr+self.art_visc_s
+		ds_dt=(self.q_grid*self.sp_heating-self.eps_cool*self.cooling+self.eps_cond*self.cond_grid)/(self.rho*self.temp)-self.vel*ds_dr+self.art_visc_s
 		return ds_dt
 
 	def isot_off(self):
