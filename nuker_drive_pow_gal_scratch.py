@@ -26,11 +26,19 @@ pc=const.pc.cgs.value
 
 def main():
 	rinf=gal_properties.rinf(1.E7*M_sun)
-	gal=galaxy.PowGalaxy.from_dir(loc='pow_gal_M1.0e+07_gamma8.0e-01/vw_600.0', init={'rmax':7.E19})
-	gal.solve_adjust('params[gamma]',0.1)
+	gal=galaxy.PowGalaxy.from_dir(loc='batch_collected/NGC4551/vw_500.0/')
+	gal.set_param('params[gamma]', 0.8)
+	gal.set_param('outdir', +'pow_gal_M1.0e+07_gamma8.0e-01/vw_'+str(6.E7/1.E5))
 	gal.solve()
+	gal.set_param('vw_extra', 6.E7)
+	gal.solve(0.5*gal.tcross)
+	gal.solve_adjust(gal.tcross,'mu',0.62)
+	gal.solve()
+
 	gal.re_grid(gal.radii[0], 100*rinf)
 	gal.solve(5.*gal.tcross)
+
+
 	gal.solve()
 
 if __name__ == '__main__':
