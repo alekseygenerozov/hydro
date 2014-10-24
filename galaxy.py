@@ -637,7 +637,7 @@ class Galaxy(object):
 			self.eps_cool=0.
 		if not hasattr(self,'eps_cond'):
 			self.eps_cond=0.
-			
+
 		return self.radii**2.*self.q_grid*(self.vw**2/2.+self.phi_grid)+self.eps_cond*self.cond_grid+self.eps_cool*self.cooling
 
 	@property
@@ -2027,7 +2027,7 @@ class NukerGalaxy(Galaxy):
 class PowGalaxy(NukerGalaxy):
 	def __init__(self, init={}):
 		self.params={'M':1.E7*M_sun, 'gamma':0.8}
-		name='pow_gal_M{0:2.1e}_gamma{1:2.1e}'.format(self.params['M']/M_sun, self.params['gamma'])
+		name='pow'
 		NukerGalaxy.__init__(self, name, gdata={name:self.params}, init=init)
 
 	@memoize
