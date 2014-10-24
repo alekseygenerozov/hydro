@@ -28,7 +28,7 @@ def main():
 	rinf=gal_properties.rinf(1.E7*M_sun)
 	gal=galaxy.PowGalaxy.from_dir(loc='batch_collected/NGC4551/vw_500.0/')
 	gal.set_param('params[gamma]', 0.8)
-	gal.set_param('outdir', gal.name+'/vw_'+str(gal.vw_extra/1.E5))
+	gal.set_param('outdir', +'/vw_'+str(6.E7/1.E5))
 	gal.solve()
 	gal.set_param('vw_extra', 6.E7)
 	gal.solve(0.5*gal.tcross)

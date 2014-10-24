@@ -2058,7 +2058,7 @@ class PowGalaxy(NukerGalaxy):
 
 	@property
 	def rho_0(self):
-		return self.params['M']/(4.*np.pi*(self.rinf**(2.-self.params['gamma'])-(self.rmin_star*pc)**(2.-self.params['gamma'])))
+		return self.params['M']/(4.*np.pi*(self.rinf**(2.-self.params['gamma'])-(self.rmin_star*pc)**(2.-self.params['gamma'])))*(2.-self.params['gamma'])
 
 
 
