@@ -1304,7 +1304,7 @@ class Galaxy(object):
 		:param int max_steps: Maximum number of steps for solver to take
 		'''
 		try:
-			param_cur=getattr(self, param)
+			param_cur=self.get_param(param)
 		except AttributeError:
 			if type(target)==float:
 				param_cur=0.
