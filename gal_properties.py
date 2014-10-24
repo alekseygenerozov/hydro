@@ -18,8 +18,12 @@ def rinf(M):
 	return 14.*(M/(1.E8*M_sun))**0.6*pc
 
 def sigma_200(M):
-	'''M-sigma relationship taken from Wang and Merritt 2004'''
-	return ((M)/(1.48E8*M_sun))**(1./4.65)
+	'''M-sigma relationship taken from Wang and Merritt 2004; should be updated to a more modern version (e.g. the one from Gulletkin)'''
+	return ((M)/(2.E8*M_sun))**(1./5.1)
+
+def M_sigma(sigma_200):
+	'''Inverse of the above M-sigma relationship'''
+	return (2.E8*M_sun)*(sigma_200)**5.1
 
 def r_Ia(t,M):
 	return (G/(sigma_200(M)*2.E7*rate_Ia(t)))**0.5
@@ -110,9 +114,10 @@ def vw_eff_stars(t):
 	else:
 		return 1.E7
 
-def tcool_tff_rs(M, vw):
-	return 34*(xi(M,vw))**3*(vw/(5.E7))**3*(M/(1.E8*M_sun))**(-0.43)
-
+def tcool_tff_rs(t, M):
+	#return 10.*(xi(M,vw_eff(t,M)))**5.4*(vw_eff(t, M)/(5.E7))**5.4*(M/(1.E8*M_sun))**(-0.43)
+	return 10.*(vw_eff(t, M)/(5.E7))**5.4*(M/(1.E8*M_sun))**(-0.43)
+	
 def rho_rs(M, vw):
 	return 3.95E-24*(vw/5.E7)*(M/(1.E8*M_sun))**-0.56
 
