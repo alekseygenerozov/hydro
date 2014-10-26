@@ -28,20 +28,16 @@ def M_sigma(sigma_200):
 def r_Ia(t,M):
 	return (G/(sigma_200(M)*2.E7*rate_Ia(t)))**0.5
 
-def rs_approx(M, vw, correction=False):
+def rs_approx(M, vw):
 	'''Simplified analytic expression for the stagnation radius--given a particular bh mass and particular vw (not including sigma)'''
-	if correction:
-		rs=7./4.*G*M/(xi(M,vw)**2.*(vw)**2./2.)
-	else:
-		rs=7./4.*G*M/((vw)**2./2.)
+	return 7./4.*G*M/(xi(M,vw)**2.*(vw)**2./2.)
 
-	return rs
 
-def rs_approx_t(t,M,correction=False):
-	return rs_approx(M, vw_eff(t, M, correction), correction)
+def rs_approx_t(t,M):
+	return rs_approx(M, vw_eff(t, M))
 
 def rs_r_Ia(t,M, correction=False):
-	return rs_approx_t(t,M,correction)/r_Ia(t,M)
+	return rs_approx_t(t,M)/r_Ia(t,M)
 
 # def rs_approx_2(M, vw):
 # 	return (7./4.)*G*M/(xi(M,vw)*vw**2./2.-2.*(sigma_200(M))**2.*(2.E7)**2)
@@ -115,10 +111,6 @@ def vw_eff_stars(t):
 		return 1.E8
 	else:
 		return 1.E7
-
-def tcool_tff_rs(t, M,correction=False):
-	return 10.*(xi(M,vw_eff(t,M,correction)))**5.4*(vw_eff(t, M,correction)/(5.E7))**5.4*(M/(1.E8*M_sun))**(-0.4)
-	#return 10.*(vw_eff(t, M)/(5.E7))**5.4*(M/(1.E8*M_sun))**(-0.43)
 	
 def rho_rs(M, vw):
 	return 3.95E-24*(vw/5.E7)*(M/(1.E8*M_sun))**-0.56
@@ -127,27 +119,30 @@ def vw_eff_Ia(t):
 	eps1a=0.4
 	return ((2.*th*rate_Ia(t)*(eps1a*1.E51))/eta(t))**0.5
 
-def vw_eff(t, M, correction=False):
+def vw_eff(t, M):
 	r_Ia_0=r_Ia(t,M)
 	vw_eff=np.array([vw_eff_stars(t), (vw_eff_Ia(t)**2+vw_eff_stars(t)**2)**0.5])
-	rs=np.array([rs_approx(M, vw, correction) for vw in vw_eff])
+	rs=np.array([rs_approx(M, vw) for vw in vw_eff])
 	if rs[0]<r_Ia_0:
 		return vw_eff[0]
 	elif rs[1]>r_Ia_0:
 		return vw_eff[1]
 	else:
-		return vw_from_rs(M, r_Ia_0)
+		return vw_eff[0]
+		# return vw_from_rs(M, r_Ia_0)
 
 def t_sigma_Ia(M, eps1a=0.4):
 	return 4.5E12*(M/1.E8/M_sun)**2.8/eps1a**7.1
 
 def t_rs_Ia(M, eps1a=0.4):
-	return 4.73E16*(M/1.E8/M_sun)**-1.57*eps1a**-1.43
+	return 4.73E16*(M/1.E8/M_sun)**1.57*eps1a**-1.43
+
+def tcool_tff_rs(t, M,correction=False):
+	return 10.*(xi(M,vw_eff(t,M)))**5.4*(vw_eff(t, M)/(5.E7))**5.4*(M/(1.E8*M_sun))**(-0.4)
 
 def be(r, rs=1.E18, M_bh=1.E8*M_sun, vw0=1.E8, M_enc0=0., rho0=0., beta=1.8, sigma=True, shell=True):
 	'''Analytic expression for the Bernoulli parameter note the non-trivial gauge condition here.'''
 	x=r/rs
-	#from_s=4.*np.pi*G*rs**2*rho0*(3.-beta)*(x**(4.-2.*beta)-1.)/((1.-beta)*(4.-2.*beta)*(x**(3.-beta)-1.))
 	if shell:
 		from_s=-4.*np.pi*G*rs**2*rho0*(3.-beta)/(2.-beta)*(1./(x**(3.-beta)-1.))*((x**(3.-beta)-1.)/(3.-beta)-(x**(5.-2.*beta)-1)/(5.-2.*beta))
 	else:

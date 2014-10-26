@@ -940,11 +940,14 @@ class Galaxy(object):
 		'''Interpolate field between zone with indices i1 and i2'''
 		rad1=self.radii[i1]
 		rad2=self.radii[i2]
-
 		field_arr=getattr(self, field)
 		val1=field_arr[i1]
 		val2=field_arr[i2]
-		return np.interp(np.log(rad), [np.log(rad1), np.log(rad2)], [val1, val2])
+		order=np.argsort([np.log(rad1), np.log(rad2)])
+		rad_list=np.array([np.log(rad1), np.log(rad2)])[order]
+		val_list=np.array([val1, val2])[order]
+
+		return np.interp(np.log(rad), rad_list, val_list)
 		
 	def inwards(self, idx, n):
 		'''Go n zones towards the middle of the grid'''
@@ -982,6 +985,8 @@ class Galaxy(object):
 				self._update_ghosts_non_cond()
 			elif bdry=='mdot_fixed':
 				self._update_ghosts_mdot_fixed()
+			elif bdry=='ss':
+				self._update_ghosts_ss()
 			else:
 				self._update_ghosts_default()
 			
@@ -1014,6 +1019,18 @@ class Galaxy(object):
 		self.s[last_ghost]=s(self.temp[last_ghost],self.rho[last_ghost],self.mu)
 		self._bdry_interp('s')
 
+	def _update_ghosts_ss(self):
+		self._extrapolate('rho')
+		self._extrapolate('s')
+		self._extrapolate('vel')
+
+		ghost_idx=self.outwards(self._end_zone,3)
+		if abs(self.mach[ghost_idx])>1.5:
+			pass
+		else:
+			self.vel[ghost_idx]=np.sign(self.vel[ghost_idx])*1.5*self.cs[ghost_idx]
+			self._bdry_interp('vel')
+
 	def _update_ghosts_non_cond(self):
 		self._extrapolate('rho')
 		self._extrapolate('vel')
@@ -1025,7 +1042,8 @@ class Galaxy(object):
 		field_arr=getattr(self, field)
 		for i in range(1, 3):
 			ghost_idx=self.outwards(self._end_zone,i)
-			field_arr[i]=self._interp_zones(self.radii[i], self._end_zone, self.outwards(self._end_zone, 3), field)
+			#print self.radii[ghost_idx],self._end_zone, self.outwards(self._end_zone, 3),self._interp_zones(self.radii[ghost_idx], self._end_zone, self.outwards(self._end_zone, 3), field)
+			field_arr[ghost_idx]=self._interp_zones(self.radii[ghost_idx], self._end_zone, self.outwards(self._end_zone, 3), field)
 
 	#Constant entropy across the ghost zones
 	def _s_adjust_bp(self):
