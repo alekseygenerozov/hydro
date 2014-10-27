@@ -1234,10 +1234,10 @@ class Galaxy(object):
 			else:
 				print 'Warning! Invalid value for the passed for parameter isot'
 		elif re.findall(pat, param):
-			param=param[7:-1]
+			key=param[7:-1]
 			try:
-				old=self.params[param]
-				self.params[param]=value
+				old=self.params[key]
+				self.params[key]=value
 			except KeyError:
 				print 'This Nuker parameter does not exist'
 				return
