@@ -1508,6 +1508,10 @@ class Galaxy(object):
 					
 		return [src, sol, src_out, sol_out]
 
+	def max_series_change(self):
+		[np.max((self.saved[i+1]-self.saved[i])/self.saved[i],axis=1) for i in range(1,len(self.saved))]
+
+
 	def convergence_plot(self):
 		fig,ax=plt.subplots(nrows=2, ncols=2, figsize=(10,8))
 		series=[self.convergence('frho'),self.convergence('fen')]
@@ -1523,6 +1527,11 @@ class Galaxy(object):
 		
 		plt.close()
 		return fig
+
+	def conv_plot_sol(self):
+		fig,ax=plt.subplots(nrows=2, ncols=2, figsize=(10,8))
+		fig.suptitle(self.name+','+str(self.vw_extra/1.E5)) 
+
 
 	@property
 	def mdot(self):
