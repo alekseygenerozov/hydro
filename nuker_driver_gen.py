@@ -130,7 +130,7 @@ class Driver(object):
 		except:
 			time=None
 		if time:
-			self.gal.solve(time*gal.tcross)
+			self.gal.solve(time*self.gal.tcross)
 		else:
 			self.gal.solve()
 
