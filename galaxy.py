@@ -1460,6 +1460,7 @@ class Galaxy(object):
 				zeros=[]
 		return zeros
 
+	@property
 	def rs_series(self):
 		stags=np.empty(len(self.saved))
 		for i in range(len(self.saved)):
@@ -1469,7 +1470,7 @@ class Galaxy(object):
 			else:
 				stags[i]=None
 
-		return [self.time_stamps, stags]
+		return stags
 
 	#Get accretion rate  for galaxy by integrating source from stagnation radius
 	@property
@@ -1492,7 +1493,7 @@ class Galaxy(object):
 		except KeyError:
 			return None
 	
-	def convergence(self, cons_field):
+	def conv_cons(self, cons_field):
 		'''Check for convergence of conserved quantity'''
 		cons_idx=self.cons_index(cons_field)
 		if cons_idx==None:
@@ -1509,13 +1510,17 @@ class Galaxy(object):
 					
 		return [src, sol, src_out, sol_out]
 
+	@property
 	def max_series_change(self):
-		[np.max((self.saved[i+1]-self.saved[i])/self.saved[i],axis=1) for i in range(1,len(self.saved))]
+		return np.array([np.max(np.abs((self.saved[i]-self.saved[i-1])/self.saved[i-1]),axis=0) for i in range(1,len(self.saved))])
 
+	@property
+	def rs_series_change(self):
+		return np.array([np.max(np.abs((self.rs_series[i]-self.rs_series[i-1])/self.rs_series[i-1]),axis=0) for i in range(1,len(self.saved))])
 
-	def convergence_plot(self):
+	def conv_plot_cons(self):
 		fig,ax=plt.subplots(nrows=2, ncols=2, figsize=(10,8))
-		series=[self.convergence('frho'),self.convergence('fen')]
+		series=[self.conv_cons('frho'),self.conv_cons('fen')]
 		fig.suptitle(self.name+','+str(self.vw_extra/1.E5)) 
 		
 		ax[0,0].set_yscale('log')
@@ -1530,9 +1535,11 @@ class Galaxy(object):
 		return fig
 
 	def conv_plot_sol(self):
-		fig,ax=plt.subplots(nrows=2, ncols=2, figsize=(10,8))
+		fig,ax=plt.subplots(4, figsize=(8,32))
 		fig.suptitle(self.name+','+str(self.vw_extra/1.E5)) 
-
+		for i in range(3):
+			ax[i].loglog(self.max_series_change[:,i+1])
+		ax[3].loglog(self.rs_series)
 
 	@property
 	def mdot(self):

@@ -357,6 +357,13 @@ class Catalog(object):
 
 		return Table(cols)
 
+	def gen_plot(self, field1, field2):
+		'''Generate plot of field1 vs. field2 for galaxies in catalog. Field1 and field2 are 2 galaxy properties'''
+		fig=plt.figure()
+		for i, gal in enumerate(self.gals):
+			plt.loglog(gal.get_param(field2), gal.get_param(field1),'ks',label=gal.name)
+		return fig
+
 	def cond_plots(self):
 		bc('mkdir -p conduction')
 		for gal in self.gals:
@@ -471,7 +478,7 @@ class Catalog(object):
 			tab=Table([[d+'/grid.p'], [param], [target], [d2]], names=col_names)
 			ascii.write(tab,'input/input_{0}'.format(idx))
 
-	def plot_gen(self, outdir):
+	def paper_plot_gen(self, outdir):
 		'''Generate plots for our sample'''
 		fig_rs=self.rs()
 		fig_rs.savefig(outdir+'/rs.eps')
