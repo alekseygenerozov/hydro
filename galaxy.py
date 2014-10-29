@@ -488,6 +488,7 @@ class Galaxy(object):
 
 		if not np.allclose(rescale,1.):
 			gal.radii=rescale*gal.radii
+			gal.re_grid(gal.radii[0], gal.radii[-1])
 		if model_params:
 			try:
 				model_params_dict=dill.load(open(loc+'/non_standard.p','rb'))
@@ -1520,10 +1521,10 @@ class Galaxy(object):
 		ax[0,0].set_yscale('log')
 		ax[0,1].set_yscale('log')
 		for j in range(2):
-			ax[j,0].plot(self.time_stamps, series[j][0])
-			ax[j,0].plot(self.time_stamps, series[j][1])
-			ax[j,1].plot(self.time_stamps, series[j][2])
-			ax[j,1].plot(self.time_stamps, series[j][3])
+			ax[j,0].plot(series[j][0])
+			ax[j,0].plot(series[j][1])
+			ax[j,1].plot(series[j][2])
+			ax[j,1].plot(series[j][3])
 		
 		plt.close()
 		return fig
