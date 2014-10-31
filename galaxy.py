@@ -48,7 +48,6 @@ eV=u.eV.to('erg')
 th=4.35*10**17
 year=3.15569E7
 
-
 def pow_slope(r1, r2, field1, field2):
 	return np.log(field2/field1)/np.log(r2/r1)
 
@@ -177,6 +176,25 @@ def _check_format(vals):
 		check_str=check_str+s+'\n'
 	check_str=check_str+'____________________________________\n\n'
 	return check_str
+
+def sol_plot_compare(dirs):
+	'''Compare solution to another'''
+	fig1,ax1=plt.subplots(3, sharex=True, figsize=(10,24))
+	plot_fields=['rho','mach','temp']
+	for d in dirs:
+		gal=dill.load(open(d+'/grid.p'))
+		for k,field in enumerate(plot_fields):
+			ax1[k-1].loglog(gal.radii, abs(getattr(gal,field)))
+
+def convergence_plots(sol_dir):
+	gal=dill.load(open(sol_dir+'/grid.p'))
+	fig1=gal.sol_plot_seq()
+	fig2=gal.conv_plot_sol()
+	fig3=gal.conv_plot_cons()
+
+	fig1.savefig(sol_dir+'/sol_plot_seq.png')
+	fig2.savefig(sol_dir+'/conv_plot_sol.png')
+	fig3.savefig(sol_dir+'/conv_plot_cons.png')
 
 def bash_command(cmd):
 	'''Run command from the bash shell'''
@@ -910,12 +928,14 @@ class Galaxy(object):
 				ax1[k-1].loglog(self.radii, abs(saved[i,:,k]),color=cols[i])
 		return fig1
 
-	@property 
-	def plot_marker(self):
-		if self.params['gamma']<0.2:
-			return '<'
-		else:
-			return 's'
+	# def sol_plot_compare(self, sol_dir,dict1={}, dict2={}, index=-1):
+	# 	'''Compare solution to another'''
+	# 	fig1,ax1=plt.subplots(3, sharex=True, figsize=(10,24))
+	# 	gal=dill.load(open(sol_dir+'grid.p'))
+	# 	plot_fields=['rho','mach','temp']
+	# 	for k,field in enumerate(plot_fields):
+	# 		ax1[k-1].loglog(self.radii, abs(getattr(self,field)), **dict1)
+	# 		ax1[k-1].loglog(gal.radii, abs(getattr(gal,field)), **dict2)
 
 	def _power_zones_slope(self, i1, i2, field):
 		r1=self.radii[i1]
@@ -1540,6 +1560,7 @@ class Galaxy(object):
 		for i in range(3):
 			ax[i].loglog(self.max_series_change[:,i+1])
 		ax[3].loglog(self.rs_series)
+		return fig
 
 	@property
 	def mdot(self):
