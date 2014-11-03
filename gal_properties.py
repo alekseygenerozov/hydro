@@ -32,7 +32,6 @@ def rs_approx(M, vw):
 	'''Simplified analytic expression for the stagnation radius--given a particular bh mass and particular vw (not including sigma)'''
 	return 7./4.*G*M/(xi(M,vw)**2.*(vw)**2./2.)
 
-
 def rs_approx_t(t,M):
 	return rs_approx(M, vw_eff(t, M))
 
@@ -59,7 +58,7 @@ def xi(M, vw):
 	'''Correction to wind velocity to account for the contribution of the stellar velocity dispersion'''
 	M8=(M/(1.E8*M_sun))
 	vw500=vw/5.E7
-	return (1.+(0.14*M8**0.43/vw500**2.))**0.5
+	return (1.+(0.12*M8**0.4/vw500**2.))**0.5
 
 def menc_rs_analytic(M, vw):
 	Menc=9.41E40*(M/(1.E8*M_sun))**1.43*(vw/5.E7)**-2.
@@ -71,13 +70,13 @@ def menc_rs_analytic_core(M, vw):
 	Menc=Menc*xi(M,vw)**-4.
 	return Menc
 
-def eddr_analytic(M, vw, eta=0.1):
+def eddr_analytic(M, vw, gamma=1.):
 	'''Analytic expression for the Eddington ratio--for cuspy galaxies'''
-	eddr=1.56E-3*(M/(1.E8*M_sun))**0.43*(vw/5.E7)**-2.
-	eddr=eddr*xi(M,vw)**-2.
+	eddr=3.3E-3*0.473**(2.-gamma)*(M/(1.E8*M_sun))**(0.4*(2.-gamma))*(vw/5.E7)**(-2.*(2.-gamma))
+	eddr=eddr*xi(M,vw)**(-2.*(2-gamma))
 	return eddr
 
-def eddr_analytic_core(M, vw, eta=0.1):
+def eddr_analytic_core(M, vw):
 	eddr=7.4E-4*(M/(1.E8*M_sun))**0.86*(vw/5.E7)**-4.
 	eddr=eddr*xi(M,vw)**-4.
 	return eddr

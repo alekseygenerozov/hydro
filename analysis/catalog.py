@@ -27,6 +27,8 @@ from custom_collections import LastUpdatedOrderedDict as od
 from latex_exp import latex_exp
 
 import sys
+import shlex
+
 
 #Constants
 G=const.G.cgs.value
@@ -61,7 +63,8 @@ class Catalog(object):
 		self.index_full={}
 		self.dirs=[]
 
-		for idx,name in enumerate(gal_dict.keys()):
+		names=shlex.split(bc('ls '+base_d))
+		for idx,name in enumerate(names):
 			for j,vw in enumerate(vws):
 				d=base_d+'/'+name+'/vw_'+str(vw)
 				try:
@@ -143,8 +146,8 @@ class Catalog(object):
 	def mdot_mass(self):
 		fig,ax=plt.subplots(figsize=(10,8))
 		mass_anal=np.logspace(6,9.3,30)
-		# for idx0,vw in enumerate(np.array(self.vws)):
-		# 	ax.loglog(mass_anal, [gp.eddr_analytic(m*M_sun, vw*1.E5) for m in mass_anal], color=self.cols[idx0])
+		for idx0,vw in enumerate(np.array(self.vws)):
+			ax.loglog(mass_anal, [gp.eddr_analytic(m*M_sun, vw*1.E5) for m in mass_anal], color=self.cols[idx0])
 		# 	ax.loglog(mass_anal, [gp.eddr_analytic(m*M_sun, vw*1.E5, correction=False) for m in mass_anal],color=self.cols[idx0],linestyle='--')
 		for idx, gal in enumerate(self.gals):
 			ax.set_xlabel(r'$\mathbf{M_{\bullet}/M_{\odot}}$')
