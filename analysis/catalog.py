@@ -41,8 +41,8 @@ year=3.15569E7
 
 class Catalog(object):
 	def __init__(self, base_d, vws=[200., 500., 1000.],bad_gals=False):
-		gal_dict=galaxy.nuker_params()
-		self.base_names=gal_dict.keys()
+		# gal_dict=galaxy.nuker_params()
+		# self.base_names=gal_dict.keys()
 		self.vws=vws
 		if len(vws)<3:
 			len_cols=3

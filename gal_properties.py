@@ -61,29 +61,25 @@ def xi(M, vw):
 	vw500=vw/5.E7
 	return (1.+(0.14*M8**0.43/vw500**2.))**0.5
 
-def menc_rs_analytic(M, vw, correction=True):
+def menc_rs_analytic(M, vw):
 	Menc=9.41E40*(M/(1.E8*M_sun))**1.43*(vw/5.E7)**-2.
-	if correction:
-		Menc=Menc*xi(M,vw)**-2.
+	Menc=Menc*xi(M,vw)**-2.
 	return Menc
 
-def menc_rs_analytic_core(M, vw, correction=True):
+def menc_rs_analytic_core(M, vw):
 	Menc=4.45E40*(M/(1.E8*M_sun))**1.86*(vw/5.E7)**-4.
-	if correction:
-		Menc=Menc*xi(M,vw)**-4.
+	Menc=Menc*xi(M,vw)**-4.
 	return Menc
 
-def eddr_analytic(M, vw, eta=1., correction=True):
+def eddr_analytic(M, vw, eta=0.1):
 	'''Analytic expression for the Eddington ratio--for cuspy galaxies'''
 	eddr=1.56E-3*(M/(1.E8*M_sun))**0.43*(vw/5.E7)**-2.
-	if correction:
-		eddr=eddr*xi(M,vw)**-2.
+	eddr=eddr*xi(M,vw)**-2.
 	return eddr
 
-def eddr_analytic_core(M, vw, eta=1., correction=True):
+def eddr_analytic_core(M, vw, eta=0.1):
 	eddr=7.4E-4*(M/(1.E8*M_sun))**0.86*(vw/5.E7)**-4.
-	if correction:
-		eddr=eddr*xi(M,vw)**-2.
+	eddr=eddr*xi(M,vw)**-4.
 	return eddr
 
 def rb(M, cs):
