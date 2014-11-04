@@ -388,7 +388,7 @@ class Galaxy(object):
 		self.time_cur=0
 		self.total_time=0
 		self.time_target=0
-		self.tmax=20.*self.tcross
+		self.tmax=100.*self.tcross
 
 		self.saved=np.empty([0, self.length, len(self.out_fields)])
 		self.fdiff=np.empty([0, self.length-1, 2*len(self.cons_fields)+1])
