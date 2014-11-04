@@ -76,10 +76,10 @@ def eddr_analytic(M, vw, gamma=1.):
 	eddr=eddr*xi(M,vw)**(-2.*(2-gamma))
 	return eddr
 
-def eddr_analytic_core(M, vw):
-	eddr=7.4E-4*(M/(1.E8*M_sun))**0.86*(vw/5.E7)**-4.
-	eddr=eddr*xi(M,vw)**-4.
-	return eddr
+# def eddr_analytic_core(M, vw):
+# 	eddr=7.4E-4*(M/(1.E8*M_sun))**0.86*(vw/5.E7)**-4.
+# 	eddr=eddr*xi(M,vw)**-4.
+# 	return eddr
 
 def rb(M, cs):
 	'''Bondi radius from the mass M and sound speed cs'''
