@@ -1168,7 +1168,8 @@ class Galaxy(object):
 		if self.visc_scheme=='const_visc':
 			pass
 		elif self.visc_scheme=='cap_visc':
-			art_visc=art_visc*min(1., (self.delta/np.mean(self.delta)))
+			print art_visc.shape,np.min([np.ones(self.length),self.delta/np.mean(self.delta)],axis=0)
+			art_visc=art_visc*np.min([np.ones(self.length),self.delta/np.mean(self.delta)],axis=0)
 		else:
 			art_visc=art_visc*(self.delta/np.mean(self.delta))
 		return art_visc
@@ -1179,7 +1180,7 @@ class Galaxy(object):
 		if self.visc_scheme=='const_visc':
 			pass
 		elif self.visc_scheme=='cap_visc':
-			art_visc=art_visc*min(1., (self.delta/np.mean(self.delta)))
+			art_visc=art_visc*np.min([np.ones(self.length),self.delta/np.mean(self.delta)],axis=0)
 		else:
 			art_visc=art_visc*(self.delta/np.mean(self.delta))
 		return art_visc
