@@ -464,10 +464,7 @@ class Galaxy(object):
 		else:
 			self.init['f_initial']=self.profile
 		self._init_grid()
-		
-		self.saved=np.empty([0, self.length, len(self.out_fields)])
-		self.fdiff=np.empty([0, self.length-1, 2*len(self.cons_fields)+1])
-		self.cache={}
+		self.clear_saved()
 
 	@classmethod
 	def from_dir(cls, args=[], loc='.', index=-1, rescale=1., rmin=None, rmax=None, gdata=None, length=None, extrap='default', model_params=True, **kwargs):
