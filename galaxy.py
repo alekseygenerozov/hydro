@@ -907,8 +907,12 @@ class Galaxy(object):
 		
 	def sol_plot(self, init=False, dict1={}, dict2={}, index=-1):
 		fig1,ax1=plt.subplots(3, sharex=True, figsize=(10,24))
+		labels=[r'$\rho$ [g/cm$^{-3}$]', r'v/c$_s$', 'T [K]']
 
 		for k in range(1,4):
+			ax1[k-1].set_ylabel(labels[k-1])
+			ax1[k-1].set_xlabel('Radius [cm]')
+
 			ax1[k-1].loglog(self.saved[index,:,0], abs(self.saved[index,:,k]), **dict1)
 			if init:
 				ax1[k-1].loglog(self.saved[0,:,0], abs(self.saved[0,:,k]), **dict2)
@@ -1165,7 +1169,7 @@ class Galaxy(object):
 		if self.visc_scheme=='const_visc':
 			pass
 		elif self.visc_scheme=='cap_visc':
-			print art_visc.shape,np.min([np.ones(self.length),self.delta/np.mean(self.delta)],axis=0)
+			#print art_visc.shape,np.min([np.ones(self.length),self.delta/np.mean(self.delta)],axis=0)
 			art_visc=art_visc*np.min([np.ones(self.length),self.delta/np.mean(self.delta)],axis=0)
 		else:
 			art_visc=art_visc*(self.delta/np.mean(self.delta))
