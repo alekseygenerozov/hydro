@@ -38,12 +38,6 @@ def rs_approx_t(t,M):
 def rs_r_Ia(t,M, correction=False):
 	return rs_approx_t(t,M)/r_Ia(t,M)
 
-# def rs_approx_2(M, vw):
-# 	return (7./4.)*G*M/(xi(M,vw)*vw**2./2.-2.*(sigma_200(M))**2.*(2.E7)**2)
-
-# def rs_approx_nond(eta):
-# 	return 7./4.*eta**-2.
-
 def vw_from_rs(M, rs):
 	'''Inverse of rs_approx'''
 	return ((7./2.)*G*M/(rs))**0.5
@@ -60,26 +54,27 @@ def xi(M, vw):
 	vw500=vw/5.E7
 	return (1.+(0.12*M8**0.4/vw500**2.))**0.5
 
-def menc_rs_analytic(M, vw):
-	Menc=9.41E40*(M/(1.E8*M_sun))**1.43*(vw/5.E7)**-2.
-	Menc=Menc*xi(M,vw)**-2.
-	return Menc
+def M_enc_rs_analytic(M, vw, gamma=1.):
+	return M*(rs_approx(M, vw)/rinf(M))**(2.-gamma)
 
-def menc_rs_analytic_core(M, vw):
-	Menc=4.45E40*(M/(1.E8*M_sun))**1.86*(vw/5.E7)**-4.
-	Menc=Menc*xi(M,vw)**-4.
-	return Menc
+def mdot_analytic(M, vw, gamma=1.,eta=1.):
+	return eta*M_enc_rs_analytic(M, vw, gamma)/th
 
-def eddr_analytic(M, vw, gamma=1.):
+def eddr_analytic(M, vw, gamma=1., eta=1.):
 	'''Analytic expression for the Eddington ratio--for cuspy galaxies'''
-	eddr=3.3E-3*0.473**(2.-gamma)*(M/(1.E8*M_sun))**(0.4*(2.-gamma))*(vw/5.E7)**(-2.*(2.-gamma))
-	eddr=eddr*xi(M,vw)**(-2.*(2-gamma))
-	return eddr
+	return mdot_analytic(M, vw, gamma, eta)/mdot_edd(M)
 
-# def eddr_analytic_core(M, vw):
-# 	eddr=7.4E-4*(M/(1.E8*M_sun))**0.86*(vw/5.E7)**-4.
-# 	eddr=eddr*xi(M,vw)**-4.
-# 	return eddr
+def vff_rs(M,vw):
+	return (G*M/rs_approx(M,vw))**0.5
+
+def cs_rs_analytic(M, vw):
+	return 2.9E7*(vw/5.E7)*xi(M,vw)
+
+def rho_rs_analytic(M, vw, gamma=1,eta=1.):
+	return mdot_analytic(M, vw, gamma,eta)/(4./3.*np.pi*rs_approx(M,vw)**2*vff_rs(M,vw))
+
+def rho_stars_rs_analytic(M, vw, gamma=1):
+	return M*(2.-gamma)/(4.*np.pi*rinf(M)**3.)*(rs_approx(M,vw)/rinf(M))**(-1.-gamma)
 
 def rb(M, cs):
 	'''Bondi radius from the mass M and sound speed cs'''

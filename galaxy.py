@@ -1925,6 +1925,11 @@ class NukerGalaxy(Galaxy):
 
 	@property
 	def vw_rs_analytic(self):
+		'''Analytic estimate for the wind velocity at the stagnation radius'''
+		return self.vw_extra*gal_properties.xi(self.params['M'],self.vw_extra)
+
+	@property
+	def vw_rs_analytic(self):
 		'''Approximation for the effective wind velocity at rs'''
 		return self.vw_extra*(1.+(0.4**2*self.sigma_200**2/self.vw_extra_500**2))**0.5
 
@@ -1951,46 +1956,45 @@ class NukerGalaxy(Galaxy):
 		if self.stag_unique:
 			return self.M_enc_interp(self.rs[0])
 
-	@property
-	def temp_rs_analytic(self):
-		'''Analytic expression for the temperature at the stagnation radius'''
-		if self.stag_unique:
-			return ((self.gamma-1.)/self.gamma)*0.5*self.vw_rs**2*self.mu*mp/kb
+	# @property
+	# def temp_rs_analytic(self):
+	# 	'''Analytic expression for the temperature at the stagnation radius'''
+	# 	if self.stag_unique:
+	# 		return ((self.gamma-1.)/self.gamma)*0.5*self.vw_rs**2*self.mu*mp/kb
+
+	# @property
+	# def temp_rs_residual(self):
+	# 	'''Residual of the temperature at the stagnation radius compared to the analytic result'''
+	# 	if self.stag_unique:
+	# 		return (self.temp_rs_analytic-self.temp_interp(self.rs))/self.temp_rs_analytic
 
 	@property
-	def temp_rs_residual(self):
-		'''Residual of the temperature at the stagnation radius compared to the analytic result'''
-		if self.stag_unique:
-			return (self.temp_rs_analytic-self.temp_interp(self.rs))/self.temp_rs_analytic
+	def cs_rs_analytic(self):
+		return gal_properties.cs_rs_analytic(self.params['M'],self.vw_extra)
 
 	@property
 	def rho_rs_analytic(self):
 		'''Analytic estimate for the density at the stagnation radius'''
-		if self.params['gamma']<0.2:
-			return 2.5E-24*self.eta/(self.M_bh_8)**0.13/(self.vw_extra_500)
-		else:
-			return 5.5E-24*self.eta*self.vw_extra_500/(self.M_bh_8)**0.57
+		return gal_properties.rho_rs_analytic(self.params['M'],self.vw_extra,self.params['gamma'], self.eta)
 
 	@property
-	def heating_pos_rs_analytic(self):
-		if self.params['gamma']<0.2:
-			return 3.2E-21*self.vw_extra_500**4.*self.eta/self.M_bh_8**1.14
-		else:
-			return 3.4E-21*self.vw_extra_500**6*self.eta/self.M_bh_8**1.57
+	def rho_stars_rs_analytic(self):
+		return gal_properties.rho_stars_rs_analytic(self.params['M'],self.vw_extra)
+		
+	# @property
+	# def heating_pos_rs_analytic(self):
+	# 	if self.params['gamma']<0.2:
+	# 		return 3.2E-21*self.vw_extra_500**4.*self.eta/self.M_bh_8**1.14
+	# 	else:
+	# 		return 3.4E-21*self.vw_extra_500**6*self.eta/self.M_bh_8**1.57
 
 	@property
 	def menc_rs_analytic(self):
-		if self.params['gamma']<0.2:
-			return gal_properties.menc_rs_analytic_core(self.params['M'],self.vw_extra)
-		else:
-			return gal_properties.menc_rs_analytic(self.params['M'],self.vw_extra)
+		return gal_properties.M_enc_rs_analytic(self.params['M'],self.vw_extra, self.params['gamma'])
 
 	@property 
 	def eddr_analytic(self):
-		if self.params['gamma']<0.2:
-			return gal_properties.eddr_analytic_core(self.params['M'], self.vw_extra)
-		else:
-			return gal_properties.eddr_analytic(self.params['M'], self.vw_extra)
+		return gal_properties.eddr_analytic(self.params['M'], self.vw_extra, self.params['gamma'], self.eta)
 
 	@property
 	def heating_pos_rs(self):
@@ -2006,13 +2010,13 @@ class NukerGalaxy(Galaxy):
 		if self.stag_unique:
 			return self.heating_pos_rs/self.cooling_rs
 
-	@property
-	def hc_rs_analytic(self):
-		'''Analytic estimate for the ratio of the heating and cooling rates at rs'''
-		if self.params['gamma']<0.2:
-			return 20.*(self.vw_rs_analytic/5.E7)**7.4*self.mu**2.7/self.M_bh_8**0.86
-		else: 
-			return 4.8*(self.vw_rs_analytic/5.E7)**5.4*self.mu**2.7/self.M_bh_8**0.43
+	# @property
+	# def hc_rs_analytic(self):
+	# 	'''Analytic estimate for the ratio of the heating and cooling rates at rs'''
+	# 	if self.params['gamma']<0.2:
+	# 		return 20.*(self.vw_rs_analytic/5.E7)**7.4*self.mu**2.7/self.M_bh_8**0.86
+	# 	else: 
+	# 		return 4.8*(self.vw_rs_analytic/5.E7)**5.4*self.mu**2.7/self.M_bh_8**0.43
 			
 	@property
 	def tde_table(self):
