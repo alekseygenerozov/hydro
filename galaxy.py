@@ -1695,7 +1695,7 @@ class Galaxy(object):
 
 	@property
 	def f_cond_unsat(self):
-		return self.kappa_cond*self.get_spatial_deriv('temp')
+		return -self.kappa_cond*self.get_spatial_deriv('temp')
 
 	@property 
 	def f_cond_sat(self):
@@ -1708,8 +1708,14 @@ class Galaxy(object):
 		return np.abs(self.f_cond_unsat/self.f_cond_sat)
 
 	@property
+	def f_cond(self):
+		'''conductive flux'''
+		return -self.temp_deriv_signs*(np.abs(self.f_cond_unsat)*self.f_cond_sat)/(np.abs(self.f_cond_unsat)+self.f_cond_sat)
+
+	@property
 	def kappa_cond_eff(self):
 		kappa=self.kappa_cond/(1.+self.sigma_cond)
+
 		kappa[0:self.start+1]=kappa[self.start]
 		kappa[self.end+1:self.length]=kappa[self.end]
 		return kappa
@@ -1721,11 +1727,6 @@ class Galaxy(object):
 	def temp_deriv_signs(self):
 		temp_derivs=self.get_spatial_deriv('temp') 
 		return np.sign(temp_derivs)
-
-	@property
-	def f_cond(self):
-		'''conductive flux'''
-		return self.temp_deriv_signs*(np.abs(self.f_cond_unsat)*self.f_cond_sat)/(np.abs(self.f_cond_unsat)+self.f_cond_sat)
 
 	@property 
 	def tcond_unsat(self):
@@ -1739,9 +1740,9 @@ class Galaxy(object):
 	@property 
 	def cond_grid(self):
 		if not(hasattr(self,'cond_simple')) or self.cond_simple==False:
-			return self.get_diffusion('kappa_cond_eff', 'temp')
+			return -self.get_diffusion('kappa_cond_eff', 'temp')
 		else:
-			return self.kappe_cond_eff*self.get_spatial_deriv('temp', second=True) 
+			return -self.kappe_cond_eff*self.get_spatial_deriv('temp', second=True) 
 
 	@property
 	def cond_plot(self):
