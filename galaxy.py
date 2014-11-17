@@ -49,6 +49,9 @@ eV=u.eV.to('erg')
 th=4.35*10**17
 year=3.15569E7
 
+def interrupt_handler(signum, frame):
+	print 'Cannot interrupt run while saving'
+
 def pow_slope(r1, r2, field1, field2):
 	return np.log(field2/field1)/np.log(r2/r1)
 
@@ -1280,7 +1283,7 @@ class Galaxy(object):
 	#Method to write solution info to file
 	def write_sol(self):
 		#Disabling the keyboard interrupt
-		s = signal.signal(signal.SIGINT, signal.SIG_IGN)
+		s = signal.signal(signal.SIGINT, interrupt_handler)
 
 		np.savez(self.outdir+'/save', a=self.saved, b=self.time_stamps)
 		np.savez(self.outdir+'/cons', a=self.fdiff)
