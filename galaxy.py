@@ -33,6 +33,7 @@ import progressbar as progress
 import os.path
 import re
 import functools
+import signal
 
 #Constants
 G=const.G.cgs.value
@@ -900,8 +901,8 @@ class Galaxy(object):
 		for i in range(4):
 			src=[self.src_integral(self.src_fields[i], j, j+1) for j in range(self.length-1)]
 			fdiff=[self.fdiff_seg(self.cons_fields[i], j, j+1) for j in range(self.length-1)]
-			ax1[i].loglog(self.radii[1:],src)
-			ax1[i].loglog(self.radii[1:],fdiff)
+			ax1[i].loglog(self.radii[1:],src, **dict1)
+			ax1[i].loglog(self.radii[1:],fdiff, **dict2)
 		plt.close()
 		return fig1
 		
@@ -1278,12 +1279,18 @@ class Galaxy(object):
 			
 	#Method to write solution info to file
 	def write_sol(self):
+		#Disabling the keyboard interrupt
+		s = signal.signal(signal.SIGINT, signal.SIG_IGN)
+
 		np.savez(self.outdir+'/save', a=self.saved, b=self.time_stamps)
 		np.savez(self.outdir+'/cons', a=self.fdiff)
 		log=open(self.outdir+'/log', 'w')
 		log.write(self.log)
 		dill.dump(self.non_standard, open(self.outdir+'/non_standard.p','wb'))
 		self.backup()
+
+		#Reenable it. 
+		signal.signal(signal.SIGINT, s)
 
 	def backup(self):
 		bash_command('mkdir -p '+self.outdir)
