@@ -9,6 +9,8 @@ import argparse
 import ast
 import sys
 
+from bash_command import bash_command as bc
+
 
 def config_items_section(config,sec):
 		'''Return items in a section w/o the defaults'''
@@ -122,9 +124,9 @@ class Driver(object):
 
 	def solve(self):
 		'''Find solution for given galaxy'''
+		bc('cp '+self.config_file+' '+self.gal.outdir)
 		for param in self.adjust_params_dict:
 			self.gal.solve_adjust(5.*self.gal.tcross, param, self.adjust_params_dict[param])
-		
 		try:
 			time=self.config.getfloat('time','time')
 		except:
