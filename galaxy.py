@@ -184,10 +184,14 @@ def _check_format(vals):
 def sol_plot_compare(dirs):
 	'''Compare solution to another'''
 	fig1,ax1=plt.subplots(3, sharex=True, figsize=(10,24))
+	labels=[r'$\rho$ [g/cm$^{-3}$]', r'v/c$_s$', 'T [K]']
 	plot_fields=['rho','mach','temp']
 	for d in dirs:
 		gal=dill.load(open(d+'/grid.p'))
 		for k,field in enumerate(plot_fields):
+			ax1[k-1].set_ylabel(labels[k-1])
+			ax1[k-1].set_xlabel('Radius [cm]')
+
 			ax1[k-1].loglog(gal.radii, abs(getattr(gal,field)))
 
 def convergence_plots(sol_dir):
