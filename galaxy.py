@@ -1510,6 +1510,14 @@ class Galaxy(object):
 
 		return stags
 
+	@property
+	def conv_plot_rs(self):
+		fig=plt.figure()
+		diff=np.diff(self.rs_series)/self.rs_series[1:]
+		plt.loglog(self.time_stamps[1:]/self.tcross, diff)
+		plt.loglog(self.time_stamps[1:]/self.tcross, diff[0]*(self.time_stamps[1]/np.array(self.time_stamps[1:])),'r--')
+		return fig
+
 	#Get accretion rate  for galaxy by integrating source from stagnation radius
 	@property
 	def mdot_from_v(self):
@@ -1552,9 +1560,9 @@ class Galaxy(object):
 	def max_series_change(self):
 		return np.array([np.max(np.abs((self.saved[i]-self.saved[i-1])/self.saved[i-1]),axis=0) for i in range(1,len(self.saved))])
 
-	@property
-	def rs_series_change(self):
-		return np.array([np.max(np.abs((self.rs_series[i]-self.rs_series[i-1])/self.rs_series[i-1]),axis=0) for i in range(1,len(self.saved))])
+	# @property
+	# def rs_series_change(self):
+	# 	return np.array([np.max(np.abs((self.rs_series[i]-self.rs_series[i-1])/self.rs_series[i-1]),axis=0) for i in range(1,len(self.saved))])
 
 	def conv_plot_cons(self):
 		fig,ax=plt.subplots(nrows=2, ncols=2, figsize=(10,8))
