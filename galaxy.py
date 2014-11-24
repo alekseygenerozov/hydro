@@ -189,10 +189,10 @@ def sol_plot_compare(dirs):
 	for d in dirs:
 		gal=dill.load(open(d+'/grid.p'))
 		for k,field in enumerate(plot_fields):
-			ax1[k-1].set_ylabel(labels[k-1])
-			ax1[k-1].set_xlabel('Radius [cm]')
+			ax1[k].set_ylabel(labels[k])
+			ax1[k].set_xlabel('Radius [cm]')
 
-			ax1[k-1].loglog(gal.radii, abs(getattr(gal,field)))
+			ax1[k].loglog(gal.radii, abs(getattr(gal,field)))
 
 def convergence_plots(sol_dir):
 	gal=dill.load(open(sol_dir+'/grid.p'))
@@ -927,6 +927,7 @@ class Galaxy(object):
 		plt.close()
 		return fig1
 
+	@property
 	def sol_plot_seq(self):
 		cols=brewer2mpl.get_map('PuOr', 'diverging',  8).mpl_colors
 		fig1,ax1=plt.subplots(3, sharex=True, figsize=(10,24))
@@ -1563,7 +1564,7 @@ class Galaxy(object):
 	# @property
 	# def rs_series_change(self):
 	# 	return np.array([np.max(np.abs((self.rs_series[i]-self.rs_series[i-1])/self.rs_series[i-1]),axis=0) for i in range(1,len(self.saved))])
-
+	@property
 	def conv_plot_cons(self):
 		fig,ax=plt.subplots(nrows=2, ncols=2, figsize=(10,8))
 		series=[self.conv_cons('frho'),self.conv_cons('fen')]
@@ -1580,6 +1581,7 @@ class Galaxy(object):
 		plt.close()
 		return fig
 
+	@property
 	def conv_plot_sol(self):
 		fig,ax=plt.subplots(4, figsize=(8,32))
 		fig.suptitle(self.name+','+str(self.vw_extra/1.E5)) 

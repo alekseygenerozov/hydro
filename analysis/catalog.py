@@ -43,6 +43,7 @@ year=3.15569E7
 
 class Catalog(object):
 	def __init__(self, base_d, vws=[200., 500., 1000.],bad_gals=False):
+		self.base_d=base_d
 		# gal_dict=galaxy.nuker_params()
 		# self.base_names=gal_dict.keys()
 		self.vws=vws
@@ -443,22 +444,16 @@ class Catalog(object):
 		return fig, ax
 
 	def convergence(self):
-		bc('mkdir -p series/')
+		props=['sol_plot_seq', 'conv_plot_cons', 'conv_plot_sol']
+		for prop in props:
+			bc('mkdir -p '+self.base_d+'/'+prop)
+		
 		for idx, gal in enumerate(self.gals):
-			fig,ax=plt.subplots(nrows=2, ncols=2, figsize=(10,8))
-			series=[gal.convergence('frho'),gal.convergence('fen')]
-			fig.suptitle(gal.name+','+str(gal.vw_extra/1.E5)) 
-			
-			ax[0,0].set_yscale('log')
-			ax[0,1].set_yscale('log')
-			for j in range(2):
-				ax[j,0].plot(gal.time_stamps, series[j][0])
-				ax[j,0].plot(gal.time_stamps, series[j][1])
-				ax[j,1].plot(gal.time_stamps, series[j][2])
-				ax[j,1].plot(gal.time_stamps, series[j][3])
-			
-			plt.savefig('series/'+gal.name+'_'+str(gal.vw_extra/1.E5)+'_series.pdf')
-			plt.close()
+			for prop in props:
+				fig=getattr(gal, prop)
+				fig.suptitle(gal.name+'_gamma{0}_M{1:2.1e}_vw{2:2.1e}'.format(gal.params['gamma'],\
+					gal.params['M'], gal.vw_extra)) 
+				fig.savefig(self.base_d+'/'+prop+'/'+str(idx)+'.pdf')
 
 	def chandra_compare(self):
 		fig, ax = plt.subplots(ncols=2, figsize=(10,5))
