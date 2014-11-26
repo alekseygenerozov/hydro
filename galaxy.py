@@ -1855,6 +1855,11 @@ class NukerGalaxy(Galaxy):
 		rpc=r/pc
 		return (-G*self.M_enc(r)/r)+4.*G*self.params['Uv']*M_sun*integrate.quad(lambda r1:nuker_prime(r1, **self.params)*(r1**2-rpc**2)**0.5, rpc, self.rmax_star)[0]/pc
 		
+	@memoize
+	def phi_s_gen(self, r):
+		rpc=r/pc
+		return (-G*self.M_enc(r)/r)-4.*np.pi*G*integrate.quad(lambda r1:self._rho_stars_interp(r1*pc)*r1*pc**3, rpc, self.rmax_star)[0]/pc
+
 	def q(self, r):
 		'''Source term representing mass loss from stellar winds'''
 		return self.eta*self.rho_stars(r)/th
@@ -2127,15 +2132,15 @@ class PowGalaxy(NukerGalaxy):
 		else:
 			return self.rho_0*r**(-1.-self.params['gamma'])
 
-	@memoize
-	def M_enc(self, r):
-		rpc=r/pc
-		if rpc<self.rmin_star:
-			return 0.
-		elif rpc>self.rmax_star:
-			return self.M_enc(self.rmax_star*pc)
-		else:
-			return 4.*np.pi*self.rho_0*(r**(2.-self.params['gamma'])-(self.rmin_star*pc)**(2.-self.params['gamma']))/(2.-self.params['gamma'])
+	# @memoize
+	# def M_enc(self, r):
+	# 	rpc=r/pc
+	# 	if rpc<self.rmin_star:
+	# 		return 0.
+	# 	elif rpc>self.rmax_star:
+	# 		return self.M_enc(self.rmax_star*pc)
+	# 	else:
+	# 		return 4.*np.pi*self.rho_0*(r**(2.-self.params['gamma'])-(self.rmin_star*pc)**(2.-self.params['gamma']))/(2.-self.params['gamma'])
 
 	@memoize
 	def phi_s(self,r):
