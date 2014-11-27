@@ -1847,16 +1847,21 @@ class NukerGalaxy(Galaxy):
 		else:
 			return integrate.quad(lambda r1:4.*np.pi*r1**2*self._rho_stars_interp(r1*pc)*pc**3, self.rmin_star, rpc)[0]
 
-	@memoize
-	def phi_s(self,r):
-		'''Potential from the stars
-		:param r: radius 
-		'''
-		rpc=r/pc
-		return (-G*self.M_enc(r)/r)+4.*G*self.params['Uv']*M_sun*integrate.quad(lambda r1:nuker_prime(r1, **self.params)*(r1**2-rpc**2)**0.5, rpc, self.rmax_star)[0]/pc
+	# @memoize
+	# def phi_s(self,r):
+	# 	'''Potential from the stars
+	# 	:param r: radius 
+	# 	'''
+	# 	rpc=r/pc
+	# 	return (-G*self.M_enc(r)/r)+4.*G*self.params['Uv']*M_sun*integrate.quad(lambda r1:nuker_prime(r1, **self.params)*(r1**2-rpc**2)**0.5, rpc, self.rmax_star)[0]/pc
 		
 	@memoize
-	def phi_s_gen(self, r):
+	def phi_s(self, r):
+		rpc=r/pc
+		return (-G*self.M_enc(r)/r)-4.*np.pi*G*integrate.quad(lambda r1:self.rho_stars(r1*pc)*r1*pc**3, rpc, self.rmax_star)[0]/pc
+
+	@memoize
+	def phi_s_gen2(self, r):
 		rpc=r/pc
 		return (-G*self.M_enc(r)/r)-4.*np.pi*G*integrate.quad(lambda r1:self._rho_stars_interp(r1*pc)*r1*pc**3, rpc, self.rmax_star)[0]/pc
 
@@ -2120,7 +2125,7 @@ class NukerGalaxy(Galaxy):
 
 class PowGalaxy(NukerGalaxy):
 	def __init__(self, init={}):
-		self.params={'M':1.E7*M_sun, 'gamma':0.8}
+		self.params={'M':1.E7*M_sun, 'gamma':0.8, 'rb':100., 'beta':2.}
 		name='pow'
 		NukerGalaxy.__init__(self, name, gdata={name:self.params}, init=init)
 
@@ -2129,22 +2134,10 @@ class PowGalaxy(NukerGalaxy):
 		rpc=r/pc
 		if rpc<self.rmin_star or rpc>self.rmax_star:
 			return 0.
+		elif rpc<self.params['rb']:
+			return self.rho_0*(r/self.rinf)**(-1.-self.params['gamma'])
 		else:
-			return self.rho_0*r**(-1.-self.params['gamma'])
-
-	# @memoize
-	# def M_enc(self, r):
-	# 	rpc=r/pc
-	# 	if rpc<self.rmin_star:
-	# 		return 0.
-	# 	elif rpc>self.rmax_star:
-	# 		return self.M_enc(self.rmax_star*pc)
-	# 	else:
-	# 		return 4.*np.pi*self.rho_0*(r**(2.-self.params['gamma'])-(self.rmin_star*pc)**(2.-self.params['gamma']))/(2.-self.params['gamma'])
-
-	@memoize
-	def phi_s(self,r):
-		return (-G*self.M_enc(r)/r)-4.*np.pi*G*self.rho_0*((self.rmax_star*pc)**(1.-self.params['gamma'])-max(r,self.rmin_star*pc)**(1.-self.params['gamma']))/(1.-self.params['gamma'])
+			return self.rho_0*(self.params['rb']*pc/self.rinf)**(-1.-self.params['gamma'])*(rpc/self.params['rb'])**(-1.-beta)
 
 	@property
 	def rinf(self):
@@ -2152,7 +2145,7 @@ class PowGalaxy(NukerGalaxy):
 
 	@property
 	def rho_0(self):
-		return self.params['M']/(4.*np.pi*(self.rinf**(2.-self.params['gamma'])-(self.rmin_star*pc)**(2.-self.params['gamma'])))*(2.-self.params['gamma'])
+		return self.params['M']*self.rinf**(-1.-self.params['gamma'])/(4.*np.pi*(self.rinf**(2.-self.params['gamma'])-(self.rmin_star*pc)**(2.-self.params['gamma'])))*(2.-self.params['gamma'])
 
 
 

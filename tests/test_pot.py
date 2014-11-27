@@ -34,7 +34,8 @@ def test_phi():
 		max_diff_gal=max(abs((grad_phi-explicit_diff)/grad_phi)*100.)
 		max_diff=max(max_diff, max_diff_gal)
 
-	assert max_diff<1.
+		print name
+		assert max_diff<1.
 
 	
 
