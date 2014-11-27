@@ -1828,11 +1828,11 @@ class NukerGalaxy(Galaxy):
 	def _get_rho_stars_interp(self):
 		_rho_stars_rad=np.logspace(np.log10(self.rmin_star), np.log10(self.rmax_star),1000)*pc
 		_rho_stars_grid=[self.rho_stars(r) for r in _rho_stars_rad]
-		return interp1d(_rho_stars_rad,_rho_stars_grid)
+		return interp1d(np.log(_rho_stars_rad),np.log(_rho_stars_grid))
 
-	@property
-	def _rho_stars_interp(self):
-		return self._get_rho_stars_interp()
+	def _rho_stars_interp(self,r):
+		interp=self._get_rho_stars_interp()
+		return np.exp(interp(np.log(r)))
 
 	@memoize
 	def M_enc(self,r):
@@ -1847,28 +1847,10 @@ class NukerGalaxy(Galaxy):
 		else:
 			return integrate.quad(lambda r1:4.*np.pi*r1**2*self._rho_stars_interp(r1*pc)*pc**3, self.rmin_star, rpc)[0]
 
-	# @memoize
-	# def phi_s(self,r):
-	# 	'''Potential from the stars
-	# 	:param r: radius 
-	# 	'''
-	# 	rpc=r/pc
-	# 	return (-G*self.M_enc(r)/r)+4.*G*self.params['Uv']*M_sun*integrate.quad(lambda r1:nuker_prime(r1, **self.params)*(r1**2-rpc**2)**0.5, rpc, self.rmax_star)[0]/pc
-		
 	@memoize
 	def phi_s(self, r):
 		rpc=r/pc
-		return (-G*self.M_enc(r)/r)-4.*np.pi*G*integrate.quad(lambda r1:self.rho_stars(r1*pc)*r1*pc**3, rpc, self.rmax_star)[0]/pc
-
-	@memoize
-	def phi_s_gen2(self, r):
-		rpc=r/pc
 		return (-G*self.M_enc(r)/r)-4.*np.pi*G*integrate.quad(lambda r1:self._rho_stars_interp(r1*pc)*r1*pc**3, rpc, self.rmax_star)[0]/pc
-
-	@memoize
-	def phi_s_gen3(self, r):
-		rpc=r/pc
-		return (-G*self.M_enc(r)/r)-4.*np.pi*G*integrate.quad(lambda u:self._rho_stars_interp(np.exp(u)*pc)*np.exp(2*u)*pc**3, np.log(rpc), np.log(self.rmax_star))[0]/pc
 
 	def q(self, r):
 		'''Source term representing mass loss from stellar winds'''

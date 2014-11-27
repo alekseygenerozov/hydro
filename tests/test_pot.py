@@ -35,7 +35,7 @@ def test_phi():
 		max_diff=max(max_diff, max_diff_gal)
 
 		print name
-		assert max_diff<1.
+		assert max_diff<5.
 
 	
 
