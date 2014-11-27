@@ -1865,6 +1865,11 @@ class NukerGalaxy(Galaxy):
 		rpc=r/pc
 		return (-G*self.M_enc(r)/r)-4.*np.pi*G*integrate.quad(lambda r1:self._rho_stars_interp(r1*pc)*r1*pc**3, rpc, self.rmax_star)[0]/pc
 
+	@memoize
+	def phi_s_gen3(self, r):
+		rpc=r/pc
+		return (-G*self.M_enc(r)/r)-4.*np.pi*G*integrate.quad(lambda u:self._rho_stars_interp(np.exp(u)*pc)*np.exp(2*u)*pc**3, np.log(rpc), np.log(self.rmax_star))[0]/pc
+
 	def q(self, r):
 		'''Source term representing mass loss from stellar winds'''
 		return self.eta*self.rho_stars(r)/th
@@ -2137,7 +2142,7 @@ class PowGalaxy(NukerGalaxy):
 		elif rpc<self.params['rb']:
 			return self.rho_0*(r/self.rinf)**(-1.-self.params['gamma'])
 		else:
-			return self.rho_0*(self.params['rb']*pc/self.rinf)**(-1.-self.params['gamma'])*(rpc/self.params['rb'])**(-1.-beta)
+			return self.rho_0*(self.params['rb']*pc/self.rinf)**(-1.-self.params['gamma'])*(rpc/self.params['rb'])**(-1.-self.params['beta'])
 
 	@property
 	def rinf(self):
