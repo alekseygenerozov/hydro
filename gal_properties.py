@@ -28,6 +28,10 @@ def M_sigma(sigma_200):
 def r_Ia(t,M):
 	return (G/(sigma_200(M)*2.E7*rate_Ia(t)))**0.5
 
+def temp_rs(M, vw, mu=0.62):
+	gamma=5./3.
+	return (gamma-1.)/gamma*mu*mp*vw**2*xi(M,vw)**2
+
 def rs_approx(M, vw):
 	'''Simplified analytic expression for the stagnation radius--given a particular bh mass and particular vw (not including sigma)'''
 	return 7./4.*G*M/(xi(M,vw)**2.*(vw)**2./2.)
@@ -67,8 +71,8 @@ def eddr_analytic(M, vw, gamma=1., eta=1.):
 def vff_rs(M,vw):
 	return (G*M/rs_approx(M,vw))**0.5
 
-def cs_rs_analytic(M, vw):
-	return 2.9E7*(vw/5.E7)*xi(M,vw)
+# def cs_rs_analytic(M, vw):
+# 	return 2.9E7*(vw/5.E7)*xi(M,vw)
 
 def rho_rs_analytic(M, vw, gamma=1,eta=1.):
 	return mdot_analytic(M, vw, gamma,eta)/(4./3.*np.pi*rs_approx(M,vw)**2*vff_rs(M,vw))

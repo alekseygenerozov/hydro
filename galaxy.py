@@ -904,13 +904,12 @@ class Galaxy(object):
 	def cons_plot(self, dict1={}, dict2={}):
 		'''Plot integrated source vs. flux difference for pairs of grid points'''
 		self._update_aux()
-		fig1,ax1=plt.subplots(4, sharex=True, figsize=(10,32))
-		for i in range(4):
+		fig1,ax1=plt.subplots(3, sharex=True, figsize=(10,24))
+		for i in range(3):
 			src=[self.src_integral(self.src_fields[i], j, j+1) for j in range(self.length-1)]
 			fdiff=[self.fdiff_seg(self.cons_fields[i], j, j+1) for j in range(self.length-1)]
 			ax1[i].loglog(self.radii[1:],src, **dict1)
 			ax1[i].loglog(self.radii[1:],fdiff, **dict2)
-		plt.close()
 		return fig1
 		
 	def sol_plot(self, init=False, dict1={}, dict2={}, index=-1):
@@ -1561,33 +1560,40 @@ class Galaxy(object):
 	def max_series_change(self):
 		return np.array([np.max(np.abs((self.saved[i]-self.saved[i-1])/self.saved[i-1]),axis=0) for i in range(1,len(self.saved))])
 
-	# @property
-	# def rs_series_change(self):
-	# 	return np.array([np.max(np.abs((self.rs_series[i]-self.rs_series[i-1])/self.rs_series[i-1]),axis=0) for i in range(1,len(self.saved))])
-	@property
+	def conv_plots(self):
+		plots=['conv_plot_cons', 'conv_plot_sol', 'cons_plot']
+		for idx,plot in enumerate(plots):
+			fig=getattr(self,plot)()
+			fig.savefig('conv_plot'+str(idx)+'.pdf')
+
+		bash_command('pdftk conv_plot*pdf output conv_plot.pdf')
+
 	def conv_plot_cons(self):
 		fig,ax=plt.subplots(nrows=2, ncols=2, figsize=(10,8))
-		series=[self.conv_cons('frho'),self.conv_cons('fen')]
-		fig.suptitle(self.name+','+str(self.vw_extra/1.E5)) 
+		plt.tight_layout()
+		#series=np.array([[self.conv_cons('frho')[0,1],self.conv_cons('frho')[2,3]],self.conv_cons('fen')[0,1],])
+		series=np.array([[self.conv_cons('frho')[0:2],self.conv_cons('frho')[2:4]],[self.conv_cons('fen')[0:2],self.conv_cons('fen')[2:4]]])
+		ax[0,0].set_title(self.name+','+str(self.vw_extra/1.E5)) 
 		
-		ax[0,0].set_yscale('log')
-		ax[0,1].set_yscale('log')
 		for j in range(2):
-			ax[j,0].plot(series[j][0])
-			ax[j,0].plot(series[j][1])
-			ax[j,1].plot(series[j][2])
-			ax[j,1].plot(series[j][3])
-		
+			for k in range(2):
+				ax[j,k].set_xscale('log')
+				if j==0:
+					ax[j,k].set_yscale('log')
+				ax[j,k].plot(self.time_stamps/self.tcross,series[j,k,0])
+				ax[j,k].plot(self.time_stamps/self.tcross,series[j,k,1])
 		plt.close()
 		return fig
 
-	@property
 	def conv_plot_sol(self):
-		fig,ax=plt.subplots(4, figsize=(8,32))
-		fig.suptitle(self.name+','+str(self.vw_extra/1.E5)) 
+		fig,ax=plt.subplots(nrows=2, ncols=2, figsize=(10,8))
+		plt.tight_layout()
+		ax[0,0].set_title(self.name+','+str(self.vw_extra/1.E5)) 
+
+		indices=[(0,0), (0,1), (1,0), (1,1)]
 		for i in range(3):
-			ax[i].loglog(self.max_series_change[:,i+1])
-		ax[3].loglog(self.rs_series)
+			ax[indices[i]].loglog(self.time_stamps/self.tcross, self.max_series_change[:,i+1])
+		ax[1,1].loglog(self.rs_series)
 		return fig
 
 	@property
