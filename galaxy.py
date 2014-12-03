@@ -194,16 +194,6 @@ def sol_plot_compare(dirs):
 
 			ax1[k].loglog(gal.radii, abs(getattr(gal,field)))
 
-def convergence_plots(sol_dir):
-	gal=dill.load(open(sol_dir+'/grid.p'))
-	fig1=gal.sol_plot_seq()
-	fig2=gal.conv_plot_sol()
-	fig3=gal.conv_plot_cons()
-
-	fig1.savefig(sol_dir+'/sol_plot_seq.png')
-	fig2.savefig(sol_dir+'/conv_plot_sol.png')
-	fig3.savefig(sol_dir+'/conv_plot_cons.png')
-
 def bash_command(cmd):
 	'''Run command from the bash shell'''
 	process=subprocess.Popen(['/bin/bash', '-c',cmd],  stdin=subprocess.PIPE, stdout=subprocess.PIPE)
@@ -1592,8 +1582,8 @@ class Galaxy(object):
 
 		indices=[(0,0), (0,1), (1,0), (1,1)]
 		for i in range(3):
-			ax[indices[i]].loglog(self.time_stamps/self.tcross, self.max_series_change[:,i+1])
-		ax[1,1].loglog(self.rs_series)
+			ax[indices[i]].loglog((self.time_stamps/self.tcross)[1:], self.max_series_change[:,i+1])
+		ax[1,1].loglog(self.time_stamps/self.tcross,self.rs_series)
 		return fig
 
 	@property
@@ -1838,7 +1828,10 @@ class NukerGalaxy(Galaxy):
 
 	def _rho_stars_interp(self,r):
 		interp=self._get_rho_stars_interp()
-		return np.exp(interp(np.log(r)))
+		try:
+			return np.exp(interp(np.log(r)))
+		except ValueError:
+			return 0.
 
 	@memoize
 	def M_enc(self,r):
