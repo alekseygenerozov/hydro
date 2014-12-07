@@ -194,6 +194,13 @@ def sol_plot_compare(dirs):
 
 			ax1[k].loglog(gal.radii, abs(getattr(gal,field)))
 
+def conv_plots(dirs):
+	'''Generate convergence plots for a series of models'''
+	for d in dirs:
+		gal=dill.load(open(d+'/grid.p'))
+		gal.conv_plots()
+		bash_command('mv conv_plot*pdf '+d)
+
 def bash_command(cmd):
 	'''Run command from the bash shell'''
 	process=subprocess.Popen(['/bin/bash', '-c',cmd],  stdin=subprocess.PIPE, stdout=subprocess.PIPE)
@@ -1556,6 +1563,7 @@ class Galaxy(object):
 			fig=getattr(self,plot)()
 			fig.savefig('conv_plot'+str(idx)+'.pdf')
 
+		bash_command('rm conv_plot.pdf')
 		bash_command('pdftk conv_plot*pdf output conv_plot.pdf')
 
 	def conv_plot_cons(self):
