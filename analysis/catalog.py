@@ -76,7 +76,7 @@ class Catalog(object):
 				if not hasattr(gal, 'check_partial'):
 					gal.cons_check(write=False)
 
-				if (not bad_gals and not gal.check_partial) or (bad_gals and gal.check_partial):
+				if (not bad_gals and not gal.check_partial):
 					continue
 				if gal.vw_extra!=vw*1.E5:
 					print gal.name
@@ -467,14 +467,15 @@ class Catalog(object):
 
 		return fig
 
-	def input_gen(self, param, target):
-		bc('mkdir -p input/')
-		col_names=['pickle', 'param', 'target', 'outdir']
-		for idx, gal in enumerate(self.gals):
-			d=gal.name+'/vw_{0}'.format(gal.vw_extra/1.E5)
-			d2=gal.name+'/vw_{0}_{1}_{2}'.format(gal.vw_extra/1.E5, param, target)
-			tab=Table([[d+'/grid.p'], [param], [target], [d2]], names=col_names)
-			ascii.write(tab,'input/input_{0}'.format(idx))
+
+	# def input_gen(self, param, target):
+	# 	bc('mkdir -p input/')
+	# 	col_names=['pickle', 'param', 'target', 'outdir']
+	# 	for idx, gal in enumerate(self.gals):
+	# 		d=gal.name+'/vw_{0}'.format(gal.vw_extra/1.E5)
+	# 		d2=gal.name+'/vw_{0}_{1}_{2}'.format(gal.vw_extra/1.E5, param, target)
+	# 		tab=Table([[d+'/grid.p'], [param], [target], [d2]], names=col_names)
+	# 		ascii.write(tab,'input/input_{0}'.format(idx))
 
 	def paper_plot_gen(self, outdir):
 		'''Generate plots for our sample'''
