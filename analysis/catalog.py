@@ -144,12 +144,11 @@ class Catalog(object):
 	def gal_vws(self):
 		return self.gal_vws_full[self.filt]
 
-	def mdot_mass(self):
+	def mdot_mass(self, gamma=1., eta=0.1):
 		fig,ax=plt.subplots(figsize=(10,8))
 		mass_anal=np.logspace(6,9.3,30)
 		for idx0,vw in enumerate(np.array(self.vws)):
-			ax.loglog(mass_anal, [gp.eddr_analytic(m*M_sun, vw*1.E5) for m in mass_anal], color=self.cols[idx0])
-		# 	ax.loglog(mass_anal, [gp.eddr_analytic(m*M_sun, vw*1.E5, correction=False) for m in mass_anal],color=self.cols[idx0],linestyle='--')
+			ax.loglog(mass_anal, [gp.eddr_analytic(m*M_sun, vw*1.E5, gamma=0.1, eta=eta) for m in mass_anal], color=self.cols[idx0])
 		for idx, gal in enumerate(self.gals):
 			ax.set_xlabel(r'$\mathbf{M_{\bullet}/M_{\odot}}$')
 			ax.set_ylabel(r'$\mathbf{\dot{M}/\dot{M}_{Edd}}$')
@@ -158,13 +157,11 @@ class Catalog(object):
 		plt.close()
 		return fig
 
-	def rs_mass(self):
+	def rs_mass(self, gamma=1., eta=0.1):
 		fig,ax=plt.subplots(figsize=(10,8))
 		mass_anal=np.logspace(6,9.3,30)
 		for idx0,vw in enumerate(np.array(self.vws)):
 			ax.loglog(mass_anal, [gp.rs_approx(m*M_sun, vw*1.E5) for m in mass_anal], color=self.cols[idx0], linestyle='--')
-			ax.loglog(mass_anal, [gp.rs_approx(m*M_sun, vw*1.E5, correction=True) for m in mass_anal],color=self.cols[idx0])
-			ax.loglog(mass_anal, [gp.rs_approx_2(m*M_sun, vw*1.E5) for m in mass_anal], color=self.cols[idx0], linestyle='-.')
 		for idx, gal in enumerate(self.gals):
 			ax.set_xlabel(r'$M_{\bullet}/M_{\odot}$')
 			ax.set_ylabel(r'$r_s$ [cm]')

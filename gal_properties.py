@@ -42,6 +42,10 @@ def rs_approx(M, vw):
 def rs_approx_t(t,M):
 	return rs_approx(M, vw_eff(t, M))
 
+def rs_approx_rinf(zeta):
+	'''Analytic approximation for the ratio of rs to rinf'''
+	return 5./(4.*zeta**2)
+
 def rs_r_Ia(t,M, correction=False):
 	return rs_approx_t(t,M)/r_Ia(t,M)
 
