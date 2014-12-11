@@ -69,11 +69,11 @@ def M_enc_rs_analytic(M, vw, gamma=1.):
 	return M*(rs_approx(M, vw)/rinf(M))**(2.-gamma)
 
 def mdot_analytic(M, vw, gamma=1.,eta=0.1):
-	return eta*M_enc_rs_analytic(M, vw, gamma)/th
+	return eta*M_enc_rs_analytic(M, vw, gamma=gamma)/th
 
 def eddr_analytic(M, vw, gamma=1., eta=0.1):
 	'''Analytic expression for the Eddington ratio--for cuspy galaxies'''
-	return mdot_analytic(M, vw, gamma, eta)/mdot_edd(M)
+	return mdot_analytic(M, vw, gamma=gamma, eta=eta)/mdot_edd(M)
 
 def vff_rs(M,vw):
 	return (G*M/rs_approx(M,vw))**0.5

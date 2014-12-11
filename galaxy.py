@@ -2125,6 +2125,11 @@ class PowGalaxy(NukerGalaxy):
 
 	@memoize
 	def rho_stars(self,r):
+		try:
+			rb=self.params['rb']
+		except KeyError:
+			rb=np.inf
+
 		rpc=r/pc
 		if rpc<self.rmin_star or rpc>self.rmax_star:
 			return 0.

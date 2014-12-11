@@ -182,8 +182,8 @@ class Catalog(object):
 		ax[1].set_ylabel('Frational difference\n from  analytic prediction')
 		#ax[1].set_ylim(-0.1, 0.8)
 
-		#eta_analytic=[10.,0.3]
-		#ax[0].loglog(eta_analytic, [gp.rs_approx_nond(eta) for eta in eta_analytic])
+		eta_analytic=[10.,0.3]
+		ax[0].loglog(eta_analytic, [gp.rs_approx_rinf(eta) for eta in eta_analytic])
 		for idx, gal in enumerate(self.gals):
 				x=gal.rs[0]/gal.rinf
 				vw_eff=(gal.sigma_inf**2.+(gal.vw_extra*1.E5)**2.)**0.5
