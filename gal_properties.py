@@ -86,7 +86,7 @@ def temp_rs(M, vw, mu=0.62):
 	return (gamma-1.)/gamma*mu*mp*vw**2*xi(M,vw)**2
 
 def rho_rs_analytic(M, vw, gamma=1,eta=0.1):
-	return mdot_analytic(M, vw, gamma, eta)/(4./3.*np.pi*rs_approx(M,vw)**2*vff_rs(M,vw))
+	return mdot_analytic(M, vw, gamma=gamma, eta=eta)/(4./3.*np.pi*rs_approx(M,vw)**2*vff_rs(M,vw))
 
 def rho_stars_rs_analytic(M, vw, gamma=1):
 	return M*(2.-gamma)/(4.*np.pi*rinf(M)**3.)*(rs_approx(M,vw)/rinf(M))**(-1.-gamma)
