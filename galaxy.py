@@ -1985,17 +1985,17 @@ class NukerGalaxy(Galaxy):
 		if self.stag_unique:
 			return self.M_enc_interp(self.rs[0])
 
-	# @property
-	# def temp_rs_analytic(self):
-	# 	'''Analytic expression for the temperature at the stagnation radius'''
-	# 	if self.stag_unique:
-	# 		return ((self.gamma-1.)/self.gamma)*0.5*self.vw_rs**2*self.mu*mp/kb
+	@property
+	def temp_rs_analytic(self):
+		'''Analytic expression for the temperature at the stagnation radius'''
+		if self.stag_unique:
+			return ((self.gamma-1.)/self.gamma)*0.5*self.vw_rs**2*self.mu*mp/kb
 
-	# @property
-	# def temp_rs_residual(self):
-	# 	'''Residual of the temperature at the stagnation radius compared to the analytic result'''
-	# 	if self.stag_unique:
-	# 		return (self.temp_rs_analytic-self.temp_interp(self.rs))/self.temp_rs_analytic
+	@property
+	def temp_rs_residual(self):
+		'''Residual of the temperature at the stagnation radius compared to the analytic result'''
+		if self.stag_unique:
+			return (self.temp_rs_analytic-self.temp_interp(self.rs))/self.temp_rs_analytic
 
 	@property
 	def cs_rs_analytic(self):

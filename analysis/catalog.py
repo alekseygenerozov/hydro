@@ -82,7 +82,7 @@ class Catalog(object):
 					print gal.name
 					continue
 				if len(gal.rs)!=1:
-					print gal.name+' '+str(gal.vw_extra/1.E5)+' has more than 1 stagnation point'
+					print gal.name+' '+str(gal.params['M'])+' '+str(gal.vw_extra/1.E5)+' has more than 1 stagnation point'
 					continue
 
 				self.gals_full.append(gal)
@@ -195,17 +195,15 @@ class Catalog(object):
 		plt.close()
 		return fig
 
-	def cooling(self):
+	def cooling(self, eta=0.1):
 		fig,ax=plt.subplots(1, sharex=True, figsize=(10, 8))
 		ax.set_xlabel('Radius [cm]')
 		ax.set_ylabel('H/C')
 
 		for idx, gal in enumerate(self.gals):
-			heating=gal.q_grid*(0.5*gal.vel**2+0.5*(gal.vw_extra)**2+0.5*gal.sigma_grid**2)
-			cooling=gal.cooling
-
-			ax.loglog(gal.radii, heating/cooling, label=gal.name, color=self.cols[self.gal_vws[idx]])
-
+			ax.loglog(gal.radii, (gal.eta/eta)*gal.heating_pos/gal.cooling, label=gal.name, color=self.cols[self.gal_vws[idx]])
+			ax.loglog(gal.radii, (gal.eta/eta)*gal.tcool_tff, '--',label=gal.name, color=self.cols[self.gal_vws[idx]])
+			ax.loglog(gal.rs[0], (gal.eta/eta)*gal.tcool_tff_rs, 's', color=self.cols[self.gal_vws[idx]])
 		datacursor(formatter='{label}'.format)
 		plt.close()
 		return fig
