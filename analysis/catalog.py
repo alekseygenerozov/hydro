@@ -178,7 +178,7 @@ class Catalog(object):
 			labelbottom='off')
 
 		ax[0].set_xlabel(r'$\mathbf{v_w/\sigma}$')
-		ax[0].set_ylabel(r'$\mathbf{r_{stag}/r_{soi}}$')
+		ax[0].set_ylabel(r'$\mathbf{r_{s}/r_{soi}}$')
 		ax[1].set_ylabel('Frational difference\n from  analytic prediction')
 		#ax[1].set_ylim(-0.1, 0.8)
 
@@ -187,7 +187,7 @@ class Catalog(object):
 		for idx, gal in enumerate(self.gals):
 				x=gal.rs[0]/gal.rinf
 				vw_eff=(gal.sigma_inf**2.+(gal.vw_extra*1.E5)**2.)**0.5
-				eta=gal.vw_extra/gal.sigma_inf
+				eta=vw_eff/gal.sigma_inf
 
 				ax[0].loglog(eta, x, marker=self.symbols[self.gal_symbols[idx]], label=gal.name, color=self.cols[self.gal_vws[idx]])
 				ax[1].plot(idx, gal.rs_residual,  marker=self.symbols[self.gal_symbols[idx]], label=gal.name, color=self.cols[self.gal_vws[idx]])
@@ -472,14 +472,14 @@ class Catalog(object):
 	# 		tab=Table([[d+'/grid.p'], [param], [target], [d2]], names=col_names)
 	# 		ascii.write(tab,'input/input_{0}'.format(idx))
 
-	def paper_plot_gen(self, outdir):
+	def paper_plot_gen(self, outdir, gamma=1., eta=0.1):
 		'''Generate plots for our sample'''
 		fig_rs=self.rs()
 		fig_rs.savefig(outdir+'/rs.eps')
-		fig_cooling=self.cooling()
+		fig_cooling=self.cooling(eta=eta)
 		fig_cooling.savefig(outdir+'/cooling.eps')
-		fig_mdot=self.mdot_mass()
+		fig_mdot=self.mdot_mass(gamma=gamma, eta=eta)
 		fig_mdot.savefig(outdir+'/mdot_mass.eps')
-		fig_bh_xray=self.bh_xray()
-		fig_bh_xray.savefig(outdir+'/bh_xray.eps')
+		# fig_bh_xray=self.bh_xray()
+		# fig_bh_xray.savefig(outdir+'/bh_xray.eps')
 

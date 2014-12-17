@@ -76,7 +76,7 @@ def eddr_analytic(M, vw, gamma=1., eta=0.1):
 	return mdot_analytic(M, vw, gamma=gamma, eta=eta)/mdot_edd(M)
 
 def vff_rs(M,vw):
-	return (G*M/rs_approx(M,vw))**0.5
+	return (2.*G*M/rs_approx(M,vw))**0.5
 
 def tff_rs(M,vw):
 	rs_approx(M,vw)/vff_rs(M,vw)
