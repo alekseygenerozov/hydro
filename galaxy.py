@@ -1267,10 +1267,10 @@ class Galaxy(object):
 			key=param[7:-1]
 			try:
 				old=self.params[key]
-				self.params[key]=value
 			except KeyError:
-				print 'This Nuker parameter does not exist'
-				return
+				print 'New structural parameter introduced'
+				old=''	
+			self.params[key]=value
 			self.cache={}
 		else:
 			setattr(self,param,value)
