@@ -199,7 +199,7 @@ def conv_plots(dirs):
 	for d in dirs:
 		gal=dill.load(open(d+'/grid.p'))
 		gal.conv_plots()
-		bash_command('mv conv_plot*pdf '+d)
+		bash_command('cp conv_plot*pdf '+d)
 
 def bash_command(cmd):
 	'''Run command from the bash shell'''
@@ -1272,6 +1272,9 @@ class Galaxy(object):
 				old=''	
 			self.params[key]=value
 			self.cache={}
+		elif param=='rmin_star' or param=='rmax_star':
+			setattr(self, param, value)
+			self.cache={}
 		else:
 			setattr(self,param,value)
 
@@ -1586,8 +1589,8 @@ class Galaxy(object):
 	def conv_plot_sol(self):
 		fig,ax=plt.subplots(nrows=2, ncols=2, figsize=(10,8))
 		plt.tight_layout()
-		ax[0,0].set_title(self.name+','+str(self.vw_extra/1.E5)) 
-
+		ax[0,0].set_title(str(self.params)+'\n'+r' $v_{w,500}$:'+str(self.vw_extra_500), fontsize=12)
+	
 		indices=[(0,0), (0,1), (1,0), (1,1)]
 		for i in range(3):
 			ax[indices[i]].loglog((self.time_stamps/self.tcross)[1:], self.max_series_change[:,i+1])
@@ -1768,9 +1771,9 @@ class Galaxy(object):
 	@property 
 	def cond_grid(self):
 		if not(hasattr(self,'cond_simple')) or self.cond_simple==False:
-			return -self.get_diffusion('kappa_cond_eff', 'temp')
+			return self.get_diffusion('kappa_cond_eff', 'temp')
 		else:
-			return -self.kappe_cond_eff*self.get_spatial_deriv('temp', second=True) 
+			return self.kappa_cond_eff*self.get_spatial_deriv('temp', second=True) 
 
 	@property
 	def cond_plot(self):
