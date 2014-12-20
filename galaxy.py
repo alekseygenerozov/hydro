@@ -196,8 +196,13 @@ def sol_plot_compare(dirs):
 
 def conv_plots(dirs):
 	'''Generate convergence plots for a series of models'''
-	for d in dirs:
-		gal=dill.load(open(d+'/grid.p'))
+	for idx,d in enumerate(dirs):
+		print idx,len(dirs)
+		try:
+			gal=dill.load(open(d+'/grid.p'))
+		except IOError:
+			print 'Could not open galaxy pickle'
+			continue
 		try:
 			gal.conv_plots()
 		except:
