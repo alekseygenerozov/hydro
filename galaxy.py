@@ -198,7 +198,11 @@ def conv_plots(dirs):
 	'''Generate convergence plots for a series of models'''
 	for d in dirs:
 		gal=dill.load(open(d+'/grid.p'))
-		gal.conv_plots()
+		try:
+			gal.conv_plots()
+		except:
+			print 'Could not generate convergence plots'
+			continue
 		bash_command('cp conv_plot*pdf '+d)
 
 def bash_command(cmd):
@@ -831,21 +835,25 @@ class Galaxy(object):
 			return flux[i2]-flux[i1]
 
 	def src_integral_outside(self, src_field):
+		'''Integral of source term outside of the stagnation radius'''
 		if self.stag_unique and src_field in self.src_fields:
 			src=getattr(self, src_field)
 			return 4.*np.pi*np.trapz(src[self.rs_outside:self.end+1], x=self.radii[self.rs_outside:self.end+1])
 	
 	def src_integral_inside(self, src_field):
+		'''Integral of source term inside of the stagnation radius'''
 		if self.stag_unique and src_field in self.src_fields:
 			src=getattr(self, src_field)
 			return 4.*np.pi*np.trapz(src[self.start:self.rs_inside+1], x=self.radii[self.start:self.rs_inside+1])
 
 	def fdiff_inside(self, cons_field):
+		'''Flux of conserved qty out of region inside of rs'''
 		if self.stag_unique and  cons_field in self.cons_fields:
 			flux=4.*np.pi*getattr(self, cons_field)
 			return flux[self.rs_inside]-flux[self.start]	
 
 	def fdiff_outside(self, cons_field):
+		'''Flux of conserved qty out of region outside of rs'''
 		if self.stag_unique and cons_field in self.cons_fields:
 			flux=4.*np.pi*getattr(self, cons_field)
 			return flux[self.end]-flux[self.rs_outside]	
