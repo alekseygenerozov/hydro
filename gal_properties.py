@@ -126,7 +126,7 @@ def vw_eff_stars(t):
 	
 def rho_rs(M, vw):
 	return 3.95E-24*(vw/5.E7)*(M/(1.E8*M_sun))**-0.56
-
+ 
 def vw_eff_Ia(t):
 	eps1a=0.4
 	return ((2.*th*rate_Ia(t)*(eps1a*1.E51))/eta(t))**0.5

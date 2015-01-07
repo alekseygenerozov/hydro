@@ -1241,7 +1241,10 @@ class Galaxy(object):
 		pat=re.compile('params\[\w+\]')
 		if re.findall(pat, param):
 			param=param[7:-1]
-			return self.params[param]
+			try:
+				return self.params[param]
+			except KeyError:
+				return None
 		else:
 			try:
 				return getattr(self, param)
@@ -1578,6 +1581,7 @@ class Galaxy(object):
 		for idx,plot in enumerate(plots):
 			fig=getattr(self,plot)()
 			fig.savefig('conv_plot'+str(idx)+'.pdf')
+		plt.close()
 
 		bash_command('rm conv_plot.pdf')
 		bash_command('pdftk conv_plot*pdf output conv_plot.pdf')

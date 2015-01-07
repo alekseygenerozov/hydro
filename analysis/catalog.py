@@ -42,7 +42,13 @@ th=4.35*10**17
 year=3.15569E7
 
 class Catalog(object):
-	def __init__(self, base_d, vws=[200., 500., 1000.],bad_gals=False):
+	def __init__(self, base_d, vws=[200., 500., 1000.],bad_gals=False, extra_dirs=[]):
+		'''Catalog of designed to store group of galaxy solutions
+
+		:param vws: list of vws to include in our grid
+		:param bad_gals: flag specifying whether or not to include galaxies which did not satisfy energy/mass conservation.
+		:param extra_dirs: list of manually specified extra directories to include. 
+		'''
 		self.base_d=base_d
 		# gal_dict=galaxy.nuker_params()
 		# self.base_names=gal_dict.keys()
@@ -91,11 +97,34 @@ class Catalog(object):
 				self.dirs.append(d)
 
 
+		for name in extra_dirs:
+			d=base_d+'/'+name
+			try:
+				gal=dill.load(open(d+'/grid.p', 'rb'))
+			except:
+				continue
+
+			if not hasattr(gal, 'check_partial'):
+				gal.cons_check(write=False)
+
+			if (not bad_gals and not gal.check_partial):
+				continue
+			if len(gal.rs)!=1:
+				print gal.name+' '+str(gal.params['M'])+' '+str(gal.vw_extra/1.E5)+' has more than 1 stagnation point'
+				continue
+
+			self.gals_full.append(gal)
+			try:
+				j=np.where(np.isclose(vws,gal.vw_extra/1.E5))[0][0]
+			except IndexError:
+				j=len(vws)-1
+			self.gal_vws_full.append(j)
+			self.index_full[(gal.name,vw)]=len(self.gals_full)-1
+			self.dirs.append(d)
+
 		self.gals_full=np.array(self.gals_full)
 		self.gal_vws_full=np.array(self.gal_vws_full)
 		self.filt=np.array(range(len(self.gals_full)))
-		print self.filt
-
 		self.restore_saved()
 
 	@property 
@@ -346,14 +375,14 @@ class Catalog(object):
 	def gen_table(self, fields):
 		'''Generate table of properties for catalog'''
 		cols=od({})
-		cols['name']=[]
-		cols['vw_extra']=[]
+		cols[r'$M_{\bullet,8}$']=[]
+		cols[r'$v_{w,0}$']=[]
 		for field in fields:
 			cols[field]=[]
 
 		for i, gal in enumerate(self.gals):
-			cols['name'].append(gal.name)
-			cols['vw_extra'].append(gal.vw_extra)
+			cols[r'$M_{\bullet,8}$'].append(gal.M_bh_8)
+			cols[r'$v_{w,0}$'].append(gal.vw_extra/10.**5)
 			for j,field in enumerate(fields):
 				cols[field].append(gal.get_param(field))
 
