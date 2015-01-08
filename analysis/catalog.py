@@ -201,7 +201,7 @@ class Catalog(object):
 		return fig
 
 	def rs(self):
-		fig,ax=plt.subplots(3, sharex=False, figsize=(10,24))
+		fig,ax=plt.subplots(2, sharex=False, figsize=(10,16))
 		ax[1].tick_params(\
 			axis='x',          # changes apply to the x-axis
 			which='both',      # both major and minor ticks are affected
@@ -220,12 +220,12 @@ class Catalog(object):
 		for idx, gal in enumerate(self.gals):
 				x=gal.rs[0]/gal.rinf
 				vw_eff=(gal.sigma_inf**2.+gal.vw_extra**2.)**0.5
-				eta=vw_eff/gal.sigma_inf
-				eta2=gal.vw_extra/gal.sigma_inf
+				#eta=vw_eff/gal.sigma_inf
+				eta=gal.vw_extra/gal.sigma_inf
 
 				ax[0].loglog(eta, x, marker=self.symbols[self.gal_symbols[idx]], label=gal.name, color=self.cols[self.gal_vws[idx]])
 				ax[1].plot(idx, gal.rs_residual,  marker=self.symbols[self.gal_symbols[idx]], label=gal.name, color=self.cols[self.gal_vws[idx]])
-				ax[2].loglog(eta2, x, marker=self.symbols[self.gal_symbols[idx]], label=gal.name, color=self.cols[self.gal_vws[idx]])
+				#ax[2].loglog(eta2, x, marker=self.symbols[self.gal_symbols[idx]], label=gal.name, color=self.cols[self.gal_vws[idx]])
 		datacursor(formatter='{label}'.format)
 		plt.close()
 		return fig
