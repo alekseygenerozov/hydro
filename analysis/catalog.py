@@ -506,13 +506,13 @@ class Catalog(object):
 	# 		tab=Table([[d+'/grid.p'], [param], [target], [d2]], names=col_names)
 	# 		ascii.write(tab,'input/input_{0}'.format(idx))
 
-	def paper_plot_gen(self, outdir, gamma=1., eta=0.1):
+	def paper_plot_gen(self, outdir, gammas=[1.], eta=0.1, lines=['-']):
 		'''Generate plots for our sample'''
 		fig_rs=self.rs()
 		fig_rs.savefig(outdir+'/rs.eps')
 		fig_cooling=self.cooling(eta=eta)
 		fig_cooling.savefig(outdir+'/cooling.eps')
-		fig_mdot=self.mdot_mass(gamma=gamma, eta=eta)
+		fig_mdot=self.mdot_mass(gammas=gammas, eta=eta, lines=lines)
 		fig_mdot.savefig(outdir+'/mdot_mass.eps')
 		# fig_bh_xray=self.bh_xray()
 		# fig_bh_xray.savefig(outdir+'/bh_xray.eps')
