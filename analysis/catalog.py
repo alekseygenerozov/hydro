@@ -173,11 +173,14 @@ class Catalog(object):
 	def gal_vws(self):
 		return self.gal_vws_full[self.filt]
 
-	def mdot_mass(self, gamma=1., eta=0.1):
+	def mdot_mass(self, gammas=[1.], eta=0.1, lines=['-']):
 		fig,ax=plt.subplots(figsize=(10,8))
 		mass_anal=np.logspace(6,9.3,30)
+
+		gammas=np.array([gammas]).flatten()
 		for idx0,vw in enumerate(np.array(self.vws)):
-			ax.loglog(mass_anal, [gp.eddr_analytic(m*M_sun, vw*1.E5, gamma=gamma, eta=eta) for m in mass_anal], color=self.cols[idx0])
+			for g,gamma in enumerate(gammas):
+				ax.loglog(mass_anal, [gp.eddr_analytic(m*M_sun, vw*1.E5, gamma=gamma, eta=eta) for m in mass_anal], lines[g%len(lines)], color=self.cols[idx0])
 		for idx, gal in enumerate(self.gals):
 			ax.set_xlabel(r'$\mathbf{M_{\bullet}/M_{\odot}}$')
 			ax.set_ylabel(r'$\mathbf{\dot{M}/\dot{M}_{Edd}}$')
