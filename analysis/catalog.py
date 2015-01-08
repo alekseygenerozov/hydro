@@ -216,7 +216,6 @@ class Catalog(object):
 
 		eta_analytic=[15.,0.3]
 		ax[0].loglog(eta_analytic, [gp.rs_approx_rinf(eta) for eta in eta_analytic])
-		ax[2].loglog(eta_analytic, [gp.rs_approx_rinf(eta) for eta in eta_analytic])
 		for idx, gal in enumerate(self.gals):
 				x=gal.rs[0]/gal.rinf
 				vw_eff=(gal.sigma_inf**2.+gal.vw_extra**2.)**0.5
