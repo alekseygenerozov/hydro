@@ -193,6 +193,11 @@ def sol_plot_compare(dirs):
 			ax1[k].set_xlabel('Radius [cm]')
 
 			ax1[k].loglog(gal.radii, abs(getattr(gal,field)))
+	return fig1
+
+def get_gals(dirs):
+	gals=[dill.load(open(d+'/grid.p')) for d in dirs]
+	return gals
 
 def conv_plots(dirs):
 	'''Generate convergence plots for a series of models'''
