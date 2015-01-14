@@ -675,7 +675,7 @@ class Galaxy(object):
 		if not hasattr(self,'eps_cond'):
 			self.eps_cond=0.
 
-		return self.radii**2.*self.q_grid*(self.vw**2/2.+self.phi_grid)+self.eps_cond*self.cond_grid+self.eps_cool*self.cooling
+		return self.radii**2.*(self.q_grid*(self.vw**2/2.+self.phi_grid)+self.eps_cond*self.cond_grid-self.eps_cool*self.cooling)
 
 	@property
 	def src_v(self):
@@ -695,7 +695,7 @@ class Galaxy(object):
 		else:
 			with warnings.catch_warnings():
 				warnings.simplefilter("ignore")
-				src_s=(self.q_grid*self.sp_heating+self.eps_cond*self.cond_grid+self.eps_cool*self.cooling)/(self.rho*self.vel*self.temp)
+				src_s=(self.q_grid*self.sp_heating+self.eps_cond*self.cond_grid-self.eps_cool*self.cooling)/(self.rho*self.vel*self.temp)
 				# src_s=(self.q_grid*self.sp_heating)/(self.rho*self.vel*self.temp)
 		return src_s
 
