@@ -927,6 +927,7 @@ class Galaxy(object):
 			ax1[i].loglog(self.radii[1:],fdiff, **dict2)
 		return fig1
 		
+	@property
 	def sol_plot(self, init=False, dict1={}, dict2={}, index=-1):
 		fig1,ax1=plt.subplots(3, sharex=True, figsize=(10,24))
 		labels=[r'$\rho$ [g/cm$^{-3}$]', r'v/c$_s$', 'T [K]']
@@ -945,23 +946,17 @@ class Galaxy(object):
 	def sol_plot_seq(self):
 		cols=brewer2mpl.get_map('PuOr', 'diverging',  8).mpl_colors
 		fig1,ax1=plt.subplots(3, sharex=True, figsize=(10,24))
+		labels=[r'$\rho$ [g/cm$^{-3}$]', r'v/c$_s$', 'T [K]']
 		ax1[2].set_xlabel('Radius [cm]')
 
 		n=(len(self.saved)-1)/7
 		saved=self.saved[::n]
 		for i in range(len(saved)-1):
 			for k in range(1,4):
+				ax1[k-1].set_ylabel(labels[k-1])
 				ax1[k-1].loglog(self.radii, abs(saved[i,:,k]),color=cols[i])
+		plt.close()
 		return fig1
-
-	# def sol_plot_compare(self, sol_dir,dict1={}, dict2={}, index=-1):
-	# 	'''Compare solution to another'''
-	# 	fig1,ax1=plt.subplots(3, sharex=True, figsize=(10,24))
-	# 	gal=dill.load(open(sol_dir+'grid.p'))
-	# 	plot_fields=['rho','mach','temp']
-	# 	for k,field in enumerate(plot_fields):
-	# 		ax1[k-1].loglog(self.radii, abs(getattr(self,field)), **dict1)
-	# 		ax1[k-1].loglog(gal.radii, abs(getattr(gal,field)), **dict2)
 
 	def _power_zones_slope(self, i1, i2, field):
 		r1=self.radii[i1]
