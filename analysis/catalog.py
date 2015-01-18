@@ -42,7 +42,7 @@ th=4.35*10**17
 year=3.15569E7
 
 class Catalog(object):
-	def __init__(self, base_d, vws=[200., 500., 1000.],bad_gals=False, extra_dirs=[]):
+	def __init__(self, base_d, vws=[200., 500., 1000.],bad_gals=False, extra_dirs=[],exclude_dirs=[]):
 		'''Catalog of designed to store group of galaxy solutions
 
 		:param vws: list of vws to include in our grid
@@ -77,6 +77,8 @@ class Catalog(object):
 				try:
 					gal=dill.load(open(d+'/grid.p', 'rb'))
 				except:
+					continue
+				if d in exclude_dirs:
 					continue
 
 				if not hasattr(gal, 'check_partial'):
@@ -125,7 +127,7 @@ class Catalog(object):
 		self.gals_full=np.array(self.gals_full)
 		self.gal_vws_full=np.array(self.gal_vws_full)
 		self.filt=np.array(range(len(self.gals_full)))
-		self.restore_saved()
+		# self.restore_saved()
 
 	@property 
 	def gal_symbols_full(self):
@@ -175,12 +177,12 @@ class Catalog(object):
 
 	def mdot_mass(self, gammas=[1.], eta=0.1, lines=['-']):
 		fig,ax=plt.subplots(figsize=(10,8))
-		mass_anal=np.logspace(6,9.3,30)
+		mass_anal=np.logspace(5.,9.,30)
 
 		gammas=np.array([gammas]).flatten()
 		for idx0,vw in enumerate(np.array(self.vws)):
 			for g,gamma in enumerate(gammas):
-				ax.loglog(mass_anal, [gp.eddr_analytic(m*M_sun, vw*1.E5, gamma=gamma, eta=eta) for m in mass_anal], lines[g%len(lines)], color=self.cols[idx0])
+				ax.loglog(mass_anal, [gp.eddr_analytic(m*M_sun, vw*1.E5, gamma=gamma, eta=eta) for m in mass_anal], lines[g%len(lines)], color=self.cols[idx0], linewidth=5)
 		for idx, gal in enumerate(self.gals):
 			ax.set_xlabel(r'$\mathbf{M_{\bullet}/M_{\odot}}$')
 			ax.set_ylabel(r'$\mathbf{\dot{M}/\dot{M}_{Edd}}$')
@@ -235,10 +237,10 @@ class Catalog(object):
 		ax.set_ylabel('H/C')
 
 		for idx, gal in enumerate(self.gals):
-			ax.loglog(gal.radii, (gal.eta/eta)*gal.heating_pos/gal.cooling, label=gal.name, color=self.cols[self.gal_vws[idx]])
-			ax.loglog(gal.radii, (gal.eta/eta)*gal.tcool_tff, '--',label=gal.name, color=self.cols[self.gal_vws[idx]])
-			ax.loglog(gal.rs[0], (gal.eta/eta)*gal.tcool_tff_rs, 's', color=self.cols[self.gal_vws[idx]])
-		datacursor(formatter='{label}'.format)
+			ax.loglog(gal.radii, (gal.eta/eta)*gal.heating_pos/gal.cooling, color=self.cols[self.gal_vws[idx]],linewidth=5)
+			ax.loglog(gal.radii, (gal.eta/eta)*gal.tcool_tff, '--', color=self.cols[self.gal_vws[idx]], linewidth=5)
+			ax.loglog(gal.rs[0], (gal.eta/eta)*gal.tcool_tff_rs, 's', color=self.cols[self.gal_vws[idx]], linewidth=5, label=r'$v_{w,0}$='+str(gal.vw_extra/1.E5)+'km/s')
+		ax.legend()
 		plt.close()
 		return fig
 
