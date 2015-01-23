@@ -181,7 +181,7 @@ def _check_format(vals):
 	check_str=check_str+'____________________________________\n\n'
 	return check_str
 
-def sol_plot_compare(dirs):
+def sol_plot_compare(dirs,rg=False):
 	'''Compare solution to another'''
 	fig1,ax1=plt.subplots(3, sharex=True, figsize=(10,24))
 	labels=[r'$\rho$ [g/cm$^{-3}$]', r'v/c$_s$', 'T [K]']
@@ -190,9 +190,12 @@ def sol_plot_compare(dirs):
 		gal=dill.load(open(d+'/grid.p'))
 		for k,field in enumerate(plot_fields):
 			ax1[k].set_ylabel(labels[k])
-			ax1[k].set_xlabel('Radius [cm]')
-
-			ax1[k].loglog(gal.radii, abs(getattr(gal,field)))
+			if rg:
+				ax1[k].set_xlabel(r'Radius [$r_g$]')
+				ax1[k].loglog(gal.radii/(G*gal.params['M']/c**2), abs(getattr(gal,field)))
+			else:
+				ax1[k].set_xlabel(r'Radius [cm]')
+				ax1[k].loglog(gal.radii, abs(getattr(gal,field)))
 	return fig1
 
 def get_gals(dirs):
@@ -251,6 +254,12 @@ def inverse_abel(i_prime, r, **kwargs):
 	'''
 	f=lambda y: i_prime(y, **kwargs)/np.sqrt(y**2-r**2)
 	return -(1/np.pi)*integrate.quad(f, r, np.inf)[0]
+
+def rho_stars(r, Ib=17.16, alpha=1.26, beta=1.75, rb=343.3, gamma=0, Uv=7.):
+	M_sun*Uv*inverse_abel(nuker_prime, r)/pc**3
+
+def M_enc(r, Ib=17.16, alpha=1.26, beta=1.75, rb=343.3, gamma=0, Uv=7.):
+	inegrate.quad(4.*np.pi*r**2*rho_stars(r, Ib, alpha, beta, rb, gamma, Uv), 1.E-3, r)
 
 ##Convert from magnitudes per arcsec^2 to luminosities per parsec^2
 def mub_to_Ib(mub):
@@ -1583,8 +1592,8 @@ class Galaxy(object):
 			fig.savefig('conv_plot'+str(idx)+'.pdf')
 		plt.close()
 
-		bash_command('rm conv_plot.pdf')
-		bash_command('pdftk conv_plot*pdf output conv_plot.pdf')
+		bash_command('rm conv_plot[012].pdf')
+		bash_command('pdftk conv_plot0.pdf conv_plot1.pdf conv_plot2.pdf output conv_plot.pdf')
 
 	def conv_plot_cons(self):
 		fig,ax=plt.subplots(nrows=2, ncols=2, figsize=(10,8))
