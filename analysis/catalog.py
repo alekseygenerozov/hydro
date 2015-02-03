@@ -42,7 +42,7 @@ th=4.35*10**17
 year=3.15569E7
 
 class Catalog(object):
-	def __init__(self, base_d, vws=[200., 500., 1000.],bad_gals=False, extra_dirs=[],exclude_dirs=[]):
+	def __init__(self, base_d, masses=[1.E6, 1.E7, 1.E8], vws=[200., 500., 1000.], gammas=[0.1,0.8], rbs=[100.], bad_gals=False, extra_dirs=[],exclude_dirs=[]):
 		'''Catalog of designed to store group of galaxy solutions
 
 		:param vws: list of vws to include in our grid
@@ -70,33 +70,36 @@ class Catalog(object):
 		self.index_full={}
 		self.dirs=[]
 
-		names=shlex.split(bc('ls '+base_d))
-		for idx,name in enumerate(names):
+		for mass in masses: 
 			for j,vw in enumerate(vws):
-				d=base_d+'/'+name+'/vw_'+str(vw)
-				try:
-					gal=dill.load(open(d+'/grid.p', 'rb'))
-				except:
-					continue
-				if d in exclude_dirs:
-					continue
+				for gamma in gammas:
+					for rb in rbs:
+						d=base_d+'/M{0:2.1g}_vw{1}_gamma{2:.1f}_rb{3}'.format(mass, vw, gamma, rb)
+						print d
+						try:
+							gal=dill.load(open(d+'/grid.p', 'rb'))
+						except:
+							continue
+						if d in exclude_dirs:
+							print d
+							continue
 
-				if not hasattr(gal, 'check_partial'):
-					gal.cons_check(write=False)
+						if not hasattr(gal, 'check_partial'):
+							gal.cons_check(write=False)
 
-				if (not bad_gals and not gal.check_partial):
-					continue
-				if gal.vw_extra!=vw*1.E5:
-					print gal.name
-					continue
-				if len(gal.rs)!=1:
-					print gal.name+' '+str(gal.params['M'])+' '+str(gal.vw_extra/1.E5)+' has more than 1 stagnation point'
-					continue
+						if (not bad_gals and not gal.check_partial):
+							continue
+						if gal.vw_extra!=vw*1.E5:
+							print gal.name
+							continue
+						if len(gal.rs)!=1:
+							print gal.name+' '+str(gal.params['M'])+' '+str(gal.vw_extra/1.E5)+' has more than 1 stagnation point'
+							continue
 
-				self.gals_full.append(gal)
-				self.gal_vws_full.append(j)
-				self.index_full[(gal.name,vw)]=len(self.gals_full)-1
-				self.dirs.append(d)
+						self.gals_full.append(gal)
+						self.gal_vws_full.append(j)
+						self.index_full[(gal.name,vw)]=len(self.gals_full)-1
+						self.dirs.append(d)
 
 
 		for name in extra_dirs:
