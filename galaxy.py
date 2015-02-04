@@ -181,11 +181,16 @@ def _check_format(vals):
 	check_str=check_str+'____________________________________\n\n'
 	return check_str
 
-def sol_plot_compare(dirs,rg=False):
+def sol_plot_compare(dirs,rg=False, eta_scale=False):
 	'''Compare solution to another'''
 	fig1,ax1=plt.subplots(3, sharex=True, figsize=(10,24))
-	labels=[r'$\rho$ [g/cm$^{-3}$]', r'v/c$_s$', 'T [K]']
-	plot_fields=['rho','mach','temp']
+	
+	if eta_scale:
+		labels=[r'$\rho/\eta$ [g/cm$^{-3}$]', r'v/c$_s$', 'T [K]']
+		plot_fields=['rho_eta','mach','temp']
+	else:
+		labels=[r'$\rho$ [g/cm$^{-3}$]', r'v/c$_s$', 'T [K]']
+		plot_fields=['rho','mach','temp']
 	for d in dirs:
 		gal=dill.load(open(d+'/grid.p'))
 		for k,field in enumerate(plot_fields):
@@ -612,6 +617,10 @@ class Galaxy(object):
 	@property
 	def rho(self):
 		return np.exp(self.log_rho)
+
+	@property 
+	def rho_eta(self):
+		return self.rho/self.eta
 
 	@property 
 	def r2vel(self):
@@ -1987,11 +1996,6 @@ class NukerGalaxy(Galaxy):
 		return self.vw_extra*gal_properties.xi(self.params['M'],self.vw_extra)
 
 	@property
-	def vw_rs_analytic(self):
-		'''Approximation for the effective wind velocity at rs'''
-		return self.vw_extra*(1.+(0.4**2*self.sigma_200**2/self.vw_extra_500**2))**0.5
-
-	@property
 	def rho_rs(self):
 		'''Density at rs'''
 		if self.stag_unique:
@@ -2017,14 +2021,17 @@ class NukerGalaxy(Galaxy):
 	@property
 	def temp_rs_analytic(self):
 		'''Analytic expression for the temperature at the stagnation radius'''
-		if self.stag_unique:
-			return ((self.gamma-1.)/self.gamma)*0.5*self.vw_rs**2*self.mu*mp/kb
+		return gal_properties.temp_rs(self.params['M'], self.vw_rs_analytic, self.mu)
 
 	@property
 	def temp_rs_residual(self):
 		'''Residual of the temperature at the stagnation radius compared to the analytic result'''
 		if self.stag_unique:
 			return (self.temp_rs_analytic-self.temp_interp(self.rs))/self.temp_rs_analytic
+
+	@property 
+	def rho_rs_analytic(self):
+		return gal_properties.rho_rs_analytic(self.params['M'], self.vw_rs_analytic, gamma=self.params['gamma'], eta=self.eta)
 
 	@property
 	def cs_rs_analytic(self):
