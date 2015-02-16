@@ -85,8 +85,11 @@ def eddr_analytic(M, vw, gamma=1., eta=0.1):
 	'''Analytic expression for the Eddington ratio--for cuspy galaxies'''
 	return mdot_analytic(M, vw, gamma=gamma, eta=eta)/mdot_edd(M)
 
+def vff(M, r):
+	return (2*G*M/r)**0.5
+
 def vff_rs(M,vw):
-	return (2.*G*M/rs_approx(M,vw))**0.5
+	return vff(M, rs_approx(M,vw))
 
 def tff_rs(M,vw):
 	rs_approx(M,vw)/vff_rs(M,vw)
@@ -94,6 +97,23 @@ def tff_rs(M,vw):
 def temp_rs(M, vw, mu=0.62):
 	gamma=5./3.
 	return (gamma-1.)/gamma*mu*mp*vw**2*xi(M,vw)**2
+
+def temp_approx(M, vw, r, mu=0.62):
+	return 0.4*(mu*mp)*(vw**2/2.+G*M/2./r)/kb
+
+def vel_approx(M, vw, r, gamma=1., rs=None):
+	if not rs:
+		rs=rs_approx(M,vw)
+	x=r/rs
+	v_ff=(G*M/r)**0.5
+	return v_ff*(1-(2.-gamma)/(1.-gamma)*(x**(1-gamma)-1)/(x**(1-gamma)-1/x))
+
+def mach_approx(M, vw, r, gamma=1., rs=None):
+	if not rs:
+		rs=rs_approx(M,vw)
+	x=r/rs
+	v_ff=(G*M/r)**0.5
+	return v_ff*(1-(2.-gamma)/(1.-gamma)*(x**(1-gamma)-1)/(x**(1-gamma)-1/x))/((2./3.)**0.5*(vw**2/2.+v_ff**2)**0.5)
 
 def rho_rs_analytic(M, vw, gamma=1,eta=0.1):
 	return mdot_analytic(M, vw, gamma=gamma, eta=eta)/(4./3.*np.pi*rs_approx(M,vw)**2*vff_rs(M,vw))

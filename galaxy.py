@@ -1837,6 +1837,17 @@ class Galaxy(object):
 		if self.stag_unique:
 			return self.field_interp('tcool_tff')(self.rs[0])
 
+	def is_thermally_unstable(self,  global_ti=1., local_ti=10., eta_diag=None):
+		if not eta_diag:
+			eta_diag=self.eta
+		tcool_tff=min(self.tcool_tff)*(self.eta/eta_diag)
+		hc=min(self.heating_pos/self.cooling)*(self.eta/eta_diag)
+
+		if tcool_tff<local_ti or hc<global_ti:
+			return True
+		else:
+			return False
+
 
 class NukerGalaxy(Galaxy):
 	'''Sub-classing galaxy above to represent Nuker parameterized galaxies'''

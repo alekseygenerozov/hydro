@@ -382,13 +382,13 @@ class Catalog(object):
 	def gen_table(self, fields):
 		'''Generate table of properties for catalog'''
 		cols=od({})
-		cols[r'$M_{\bullet,8}$']=[]
+		cols[r'$M_{bh}$']=[]
 		cols[r'$v_{w,0}$']=[]
 		for field in fields:
 			cols[field]=[]
 
 		for i, gal in enumerate(self.gals):
-			cols[r'$M_{\bullet,8}$'].append(gal.M_bh_8)
+			cols[r'$M_{bh}$'].append(gal.params['M']/M_sun)
 			cols[r'$v_{w,0}$'].append(gal.vw_extra/10.**5)
 			for j,field in enumerate(fields):
 				cols[field].append(gal.get_param(field))
