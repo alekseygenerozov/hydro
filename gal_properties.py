@@ -120,17 +120,17 @@ def vel_approx(M, vw, r, gamma=1., rs=None):
 	x=r/rs
 	v0=vff(M,r)/2.
 	gammaf=(2.-gamma)/(1.-gamma)
-	f=1.-gammaf*(x**(1.-gamma)-1)/(x**(1.-gamma)-1./x)
-	v0=vff(M,r)/2.
+	f=(1.-gammaf*(x**(1.-gamma)-1)/(x**(1.-gamma)-1./x))
+	v0=vff(M,r)/(2.)**0.5
 
-	return v0*f
+	return v0*(f**2)**0.5
 
-def mach_approx(M, vw, r, gamma=1., rs=None):
-	if not rs:
-		rs=rs_approx(M,vw)
-	x=r/rs
-	v_ff=(2*G*M/r)**0.5
-	return v_ff*(1-(2.-gamma)/(1.-gamma)*(x**(1-gamma)-1)/(x**(1-gamma)-1/x))/((2./3.)**0.5*(vw**2/2.+v_ff**2)**0.5)
+# def mach_approx(M, vw, r, gamma=1., rs=None):
+# 	if not rs:
+# 		rs=rs_approx(M,vw)
+# 	x=r/rs
+# 	v_ff=(2*G*M/r)**0.5
+# 	return v_ff*(1-(2.-gamma)/(1.-gamma)*(x**(1-gamma)-1)/(x**(1-gamma)-1/x))/((2./3.)**0.5*(vw**2/2.+v_ff**2)**0.5)
 
 def rho_rs_analytic(M, vw, gamma=1,eta=0.1):
 	return mdot_analytic(M, vw, gamma=gamma, eta=eta)/(4./3.*np.pi*rs_approx(M,vw)**2*vff_rs(M,vw))
