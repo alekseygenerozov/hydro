@@ -45,6 +45,10 @@ def zeta(x, dens_slope=1., gamma=1.):
 	'''Above solve implicit equation for rs/rinf given a zeta. This function explicitly calculates zeta given an x'''
 	return ((x**(2.-gamma)*(4.5-0.5*gamma-0.5*dens_slope)+(3.5-dens_slope))/(2.*dens_slope*x))**0.5
 
+def dens_slope(gamma):
+	'''Approximate expression for the density slope at the stagnation radius'''
+	return -(1./6.*(1.-4.*(1+gamma)))
+
 def rs_approx(M, vw):
 	'''Simplified analytic expression for the stagnation radius--given a particular bh mass and particular vw (not including sigma)'''
 	return 7./4.*G*M/(xi(M,vw)**2.*(vw)**2./2.)
@@ -98,8 +102,17 @@ def temp_rs(M, vw, mu=0.62):
 	gamma=5./3.
 	return (gamma-1.)/gamma*mu*mp*vw**2*xi(M,vw)**2
 
-def temp_approx(M, vw, r, mu=0.62):
-	return 0.4*(mu*mp)*(vw**2/2.+G*M/2./r)/kb
+def temp_approx(M, vw, r, mu=0.62, gamma=1., rs=None):
+	if not rs:
+		rs=rs_approx(M,vw)
+	x=r/rs
+	gammaf=(2.-gamma)/(1.-gamma)
+
+	cs2_approx=(vw**2./2.+G*M/r-G*M/2./rs*gammaf*(x**(1.-gamma)-1)/(x**(2.-gamma)-1.))
+	#cs2_approx=cs2_approx-(G*M/2./rs/x)*(1.-gammaf*(x**(1.-gamma)-1)/(x**(2.-gamma)-1./x))**2.
+	#cs2_approx=cs2_approx+(G*M/2./rs/x)*(1.-gammaf*(x**(1.-gamma)-1)/(x**(2.-gamma)-1./x))**3.
+
+	return 0.4*cs2_approx*(mu*mp)/kb
 
 def vel_approx(M, vw, r, gamma=1., rs=None):
 	if not rs:
@@ -112,7 +125,7 @@ def mach_approx(M, vw, r, gamma=1., rs=None):
 	if not rs:
 		rs=rs_approx(M,vw)
 	x=r/rs
-	v_ff=(G*M/r)**0.5
+	v_ff=(2*G*M/r)**0.5
 	return v_ff*(1-(2.-gamma)/(1.-gamma)*(x**(1-gamma)-1)/(x**(1-gamma)-1/x))/((2./3.)**0.5*(vw**2/2.+v_ff**2)**0.5)
 
 def rho_rs_analytic(M, vw, gamma=1,eta=0.1):
