@@ -107,10 +107,10 @@ def temp_approx(M, vw, r, mu=0.62, gamma=1., rs=None):
 		rs=rs_approx(M,vw)
 	x=r/rs
 	gammaf=(2.-gamma)/(1.-gamma)
+	f=1.-gammaf*(x**(1.-gamma)-1)/(x**(1.-gamma)-1./x)
+	v0=vff(M,r)/2.
 
-	cs2_approx=(vw**2./2.+G*M/r-G*M/2./rs*gammaf*(x**(1.-gamma)-1)/(x**(2.-gamma)-1.))
-	#cs2_approx=cs2_approx-(G*M/2./rs/x)*(1.-gammaf*(x**(1.-gamma)-1)/(x**(2.-gamma)-1./x))**2.
-	#cs2_approx=cs2_approx+(G*M/2./rs/x)*(1.-gammaf*(x**(1.-gamma)-1)/(x**(2.-gamma)-1./x))**3.
+	cs2_approx=vw**2./2.+v0**2*(1+f)
 
 	return 0.4*cs2_approx*(mu*mp)/kb
 
@@ -118,8 +118,12 @@ def vel_approx(M, vw, r, gamma=1., rs=None):
 	if not rs:
 		rs=rs_approx(M,vw)
 	x=r/rs
-	v_ff=(G*M/r)**0.5
-	return v_ff*(1-(2.-gamma)/(1.-gamma)*(x**(1-gamma)-1)/(x**(1-gamma)-1/x))
+	v0=vff(M,r)/2.
+	gammaf=(2.-gamma)/(1.-gamma)
+	f=1.-gammaf*(x**(1.-gamma)-1)/(x**(1.-gamma)-1./x)
+	v0=vff(M,r)/2.
+
+	return v0*f
 
 def mach_approx(M, vw, r, gamma=1., rs=None):
 	if not rs:
