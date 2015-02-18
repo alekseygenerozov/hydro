@@ -102,6 +102,19 @@ def temp_rs(M, vw, mu=0.62):
 	gamma=5./3.
 	return (gamma-1.)/gamma*mu*mp*vw**2*xi(M,vw)**2
 
+
+def temp_approx_0(M, vw, r, mu=0.62, gamma=1., rs=None):
+	if not rs:
+		rs=rs_approx(M,vw)
+	x=r/rs
+	gammaf=(2.-gamma)/(1.-gamma)
+	f=1.-gammaf*(x**(1.-gamma)-1)/(x**(1.-gamma)-1./x)
+	v0=vff(M,r)/2.
+
+	cs2_approx=vw**2./2.+v0**2*(1+f)
+
+	return 0.4*cs2_approx*(mu*mp)/kb
+
 def temp_approx(M, vw, r, mu=0.62, gamma=1., rs=None):
 	if not rs:
 		rs=rs_approx(M,vw)
