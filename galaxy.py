@@ -310,15 +310,12 @@ def nuker_params(skip=False):
 
 	return galaxies
 
-def quataert_q(r):
-	r1=2.4e17
-	r2=1.2e18
-	mdotw=6.7*10.**22
-	eta=-2.
+def quataert_q(r, r1=2.4e17, r2=1.2e18, gamma=1., mdotw=6.7*10.**22):
+	beta=gamma+1
 
-	a=mdotw/(4.*np.pi)/((r2**(eta+3)-r1**(eta+3))/(eta+3))
+	a=mdotw/(4.*np.pi)/((r2**(-beta+3)-r1**(-beta+3))/(-beta+3))
 	if r<r2 and r>r1:
-		return a*(r)**(eta)
+		return a*(r)**(-beta)
 	else:
 		return 0.
 
@@ -376,7 +373,7 @@ class Galaxy(object):
 	'''
 
 	def __init__(self, init={}):
-		self.params={'M':3.6E6*M_sun}
+		self.params={'M':3.6E6*M_sun, 'r1':2.4E17, 'r2':1.2E18, 'gamma':1., 'mdotw':6.7*10.**22}
 		self.isot=False
 		self.gamma=5./3.
 		self.fields=['log_rho', 'vel', 's']
@@ -574,7 +571,7 @@ class Galaxy(object):
 		try:
 			return self.cache['q_grid']
 		except KeyError:
-			self.cache['q_grid']=np.array([quataert_q(r) for r in self.radii])
+			self.cache['q_grid']=np.array([quataert_q(r, r1=self.params['r1'], r2=self.params['r2'], gamma=self.params['gamma'], mdotw=self.params['mdotw']) for r in self.radii])
 			return self.cache['q_grid']
 
 	@property
@@ -2057,13 +2054,6 @@ class NukerGalaxy(Galaxy):
 	def rho_stars_rs_analytic(self):
 		return gal_properties.rho_stars_rs_analytic(self.params['M'],self.vw_extra)
 		
-	# @property
-	# def heating_pos_rs_analytic(self):
-	# 	if self.params['gamma']<0.2:
-	# 		return 3.2E-21*self.vw_extra_500**4.*self.eta/self.M_bh_8**1.14
-	# 	else:
-	# 		return 3.4E-21*self.vw_extra_500**6*self.eta/self.M_bh_8**1.57
-
 	@property
 	def menc_rs_analytic(self):
 		return gal_properties.M_enc_rs_analytic(self.params['M'],self.vw_extra, self.params['gamma'])
@@ -2085,71 +2075,6 @@ class NukerGalaxy(Galaxy):
 		'''Ratio of heating to cooling at the stagnation radius'''
 		if self.stag_unique:
 			return self.heating_pos_rs/self.cooling_rs
-
-	# @property
-	# def hc_rs_analytic(self):
-	# 	'''Analytic estimate for the ratio of the heating and cooling rates at rs'''
-	# 	if self.params['gamma']<0.2:
-	# 		return 20.*(self.vw_rs_analytic/5.E7)**7.4*self.mu**2.7/self.M_bh_8**0.86
-	# 	else: 
-	# 		return 4.8*(self.vw_rs_analytic/5.E7)**5.4*self.mu**2.7/self.M_bh_8**0.43
-			
-	@property
-	def tde_table(self):
-		'''Get crossing radius for jet'''
-		m6=self.params['M']/(1.E6*M_sun)
-		jet=tde_jet.Jet()
-		jet.m6=m6
-
-		r=integrate.ode(jet.vj)
-
-		r.set_integrator('vode')
-		r.set_initial_value(0., t=jet.delta).set_f_params(self.rho_profile)
-		time=0.
-		try:
-			while r.y<r.t:
-				old=r.y[0]
-				r.integrate(r.t+0.01*pc)
-				new=r.y[0]
-				time+=(new-old)/(jet.beta_j*c)
-			rc=r.y[0]
-		except Exception as inst:
-			print inst
-			rc=np.nan
-
-		f=jet.rho(rc)/self.rho_profile(rc)
-		gamma=jet.gamma_j*(1.+2.*jet.gamma_j*f**(-0.5))**(-0.5)   
-
-		rc_col=Column([rc/pc], name=r'$r_c$', format=latex_exp.latex_exp)
-		n_rc_col=Column([self.rho_profile(rc)/(self.mu*mp)], name=r'$n_{rc}$',format=latex_exp.latex_exp)
-		gamma_rc_col=Column([gamma], name=r'$\Gamma_{rc}$',format=latex_exp.latex_exp)
-		t_rc_col=Column([time/year], name=r't$_{rc}$',format=latex_exp.latex_exp)
-		M_col=self.params_table['M']
-
-		type_col=self.params_table['Type']
-		name_col=self.params_table['Name']
-
-		tde_table=Table([name_col, M_col, type_col, rc_col, n_rc_col, gamma_rc_col, t_rc_col])
-
-		return tde_table
-
-
-	@property 
-	def summary(self):
-		'''Summary of galaxy properties'''
-		return table.hstack([self.params_table, self.tde_table, Table([[self.rs/pc]], names=['$r_{s}$']), Table([[self.eddr]],\
-			names=[r'$\dot{M}/\dot{M_{\rm edd}}$'])])
-
-	@property 
-	def vsig(self):
-		vsig=ascii.read('vsig.csv', delimiter=',',names=['gal', 'vsig', 'eps','log_re'])
-		vsig_idx=np.where(vsig['gal']==self.name)[0]
-		if vsig['vsig'][vsig_idx] and vsig['eps'][vsig_idx] and vsig['log_re'][vsig_idx]:
-			eps=vsig['eps'][vsig_idx[0]]
-			re=10.**vsig['log_re'][vsig_idx[0]]*pc
-			return vsig['vsig'][vsig_idx[0]]*(eps/(1.-eps))**0.5*(self.rs[0]/(0.5*re))**0.6
-		else:
-			return None
 
 	@property
 	def rcirc(self):
