@@ -49,19 +49,20 @@ def dens_slope(gamma):
 	'''Approximate expression for the density slope at the stagnation radius'''
 	return -(1./6.*(1.-4.*(1+gamma)))
 
-def rs_approx(M, vw):
-	'''Simplified analytic expression for the stagnation radius--given a particular bh mass and particular vw (not including sigma)'''
-	return 7./4.*G*M/(xi(M,vw)**2.*(vw)**2./2.)
+def rs_approx(M, vw, gamma=1.):
+	'''Simplified analytic expression for the stagnation radius--given a particular bh mass and particular vw.
+	This assumes sigma is dominated by black holem and hence one gets the funny looking 5/2 out front'''
+	return 5./2.*G*M/((vw)**2.*dens_slope(gamma))
 
-def rs_approx_t(t,M):
-	return rs_approx(M, vw_eff(t, M))
+def rs_approx_t(t, M, gamma=1.):
+	return rs_approx(M, vw_eff(t, M), gamma=gamma)
 
-def rs_approx_rinf(zeta):
-	'''Analytic approximation for the ratio of rs to rinf'''
-	return 5./(4.*zeta**2)
+# def rs_approx_rinf(zeta):
+# 	'''Analytic approximation for the ratio of rs to rinf'''
+# 	return 5./(4.*zeta**2)
 
-def rs_r_Ia(t,M, correction=False):
-	return rs_approx_t(t,M)/r_Ia(t,M)
+def rs_r_Ia(t, M, gamma=1.):
+	return rs_approx_t(t, M, gamma=gamma)/r_Ia(t,M)
 
 def vw_from_rs(M, rs):
 	'''Inverse of rs_approx'''
@@ -80,7 +81,7 @@ def xi(M, vw):
 	return (1.+(0.12*M8**0.4/vw500**2.))**0.5
 
 def M_enc_rs_analytic(M, vw, gamma=1.):
-	return M*(rs_approx(M, vw)/rinf(M))**(2.-gamma)
+	return M*(rs_approx(M, vw, gamma=gamma)/rinf(M))**(2.-gamma)
 
 def mdot_analytic(M, vw, gamma=1.,eta=0.1):
 	return eta*M_enc_rs_analytic(M, vw, gamma=gamma)/th
@@ -92,32 +93,33 @@ def eddr_analytic(M, vw, gamma=1., eta=0.1):
 def vff(M, r):
 	return (2*G*M/r)**0.5
 
-def vff_rs(M,vw):
-	return vff(M, rs_approx(M,vw))
+def tff(M, r):
+	return r/vff(M, r)
 
-def tff_rs(M,vw):
-	rs_approx(M,vw)/vff_rs(M,vw)
+# def vff_rs(M,vw):
+# 	return vff(M, rs_approx(M,vw))
+
+# def tff_rs(M,vw):
+# 	return rs_approx(M,vw)/vff_rs(M,vw)
 
 def temp_rs(M, vw, mu=0.62):
 	gamma=5./3.
 	return (gamma-1.)/gamma*mu*mp*vw**2*xi(M,vw)**2
 
+def temp_approx_0(M, vw, r, mu=0.62, gamma=1.):
+	rs=rs_approx(M, vw, gamma)
 
-def temp_approx_0(M, vw, r, mu=0.62, gamma=1., rs=None):
-	if not rs:
-		rs=rs_approx(M,vw)
 	x=r/rs
 	gammaf=(2.-gamma)/(1.-gamma)
 	f=1.-gammaf*(x**(1.-gamma)-1)/(x**(1.-gamma)-1./x)
 	v0=vff(M,r)/2.
-
 	cs2_approx=vw**2./2.+v0**2*(1+f)
 
 	return 0.4*cs2_approx*(mu*mp)/kb
 
-def temp_approx(M, vw, r, mu=0.62, gamma=1., rs=None):
-	if not rs:
-		rs=rs_approx(M,vw)
+def temp_approx(M, vw, r, mu=0.62, gamma=1.):
+	rs=rs_approx(M,vw,gamma=gamma)
+
 	x=r/rs
 	gammaf=(2.-gamma)/(1.-gamma)
 	f=1.-gammaf*(x**(1.-gamma)-1)/(x**(1.-gamma)-1./x)
@@ -128,8 +130,8 @@ def temp_approx(M, vw, r, mu=0.62, gamma=1., rs=None):
 	return 0.4*cs2_approx*(mu*mp)/kb
 
 def vel_approx(M, vw, r, gamma=1., rs=None):
-	if not rs:
-		rs=rs_approx(M,vw)
+	rs=rs_approx(M, vw, gamma=gamma)
+
 	x=r/rs
 	v0=vff(M,r)/2.
 	gammaf=(2.-gamma)/(1.-gamma)
@@ -138,18 +140,27 @@ def vel_approx(M, vw, r, gamma=1., rs=None):
 
 	return v0*(f**2)**0.5
 
-# def mach_approx(M, vw, r, gamma=1., rs=None):
-# 	if not rs:
-# 		rs=rs_approx(M,vw)
-# 	x=r/rs
-# 	v_ff=(2*G*M/r)**0.5
-# 	return v_ff*(1-(2.-gamma)/(1.-gamma)*(x**(1-gamma)-1)/(x**(1-gamma)-1/x))/((2./3.)**0.5*(vw**2/2.+v_ff**2)**0.5)
+def rho_approx(M, vw, r, gamma=1., rs=None, eta=0.1):
+	rs=rs_approx(M,vw,gamma=gamma)
+
+	x=r/rs
+	beta=1+gamma
+	##Note that the same approximation for the stagnation radius, rs, should be used everywhere (this is currently not the case!)
+	q0=q_rs_analytic(M,vw, gamma=gamma, eta=eta)
+	#q0=M*(2.-gamma)/(4.*np.pi*rinf(M)**3.)*(rs/rinf(M))**(-1.-gamma)
+
+	return q0*tff(M, rs)/(3.-beta)*(1./x**1.5)*((x**(3.-beta)-1.)**2*(2.-beta))/((2.-beta)*(x**(3.-beta)-1.)-(3.-beta)*x*(x**(2.-beta)-1.))
+
 
 def rho_rs_analytic(M, vw, gamma=1,eta=0.1):
-	return mdot_analytic(M, vw, gamma=gamma, eta=eta)/(4./3.*np.pi*rs_approx(M,vw)**2*vff_rs(M,vw))
+	rs=rs_approx(M, vw, gamma=gamma)
+	return mdot_analytic(M, vw, gamma=gamma, eta=eta)/(4./3.*np.pi*rs_approx(M,vw,gamma=gamma)**2*vff(M,rs))
 
 def rho_stars_rs_analytic(M, vw, gamma=1):
-	return M*(2.-gamma)/(4.*np.pi*rinf(M)**3.)*(rs_approx(M,vw)/rinf(M))**(-1.-gamma)
+	return M*(2.-gamma)/(4.*np.pi*rinf(M)**3.)*(rs_approx(M,vw,gamma=gamma)/rinf(M))**(-1.-gamma)
+
+def q_rs_analytic(M, vw, gamma=1., eta=0.1):
+	return eta*rho_stars_rs_analytic(M, vw, gamma)/th
 
 def tcool_rs(M, vw, mu=0.62, gamma=1., eta=0.1):
 	temp_rs=temp_rs(M, vw, mu)
@@ -194,7 +205,7 @@ def vw_eff_Ia(t):
 def vw_eff_imp(t, M):
 	r_Ia_0=r_Ia(t,M)
 	vw_eff=np.array([vw_eff_stars(t), (vw_eff_Ia(t)**2+vw_eff_stars(t)**2)**0.5])
-	rs=np.array([rs_approx(M, vw) for vw in vw_eff])
+	rs=np.array([rs_approx(M, vw, gamma=gamma) for vw in vw_eff])
 	if rs[0]<r_Ia_0:
 		return vw_eff[0]
 	elif rs[1]>r_Ia_0:
@@ -203,18 +214,18 @@ def vw_eff_imp(t, M):
 		return vw_eff[0]
 		# return vw_from_rs(M, r_Ia_0)
 
-def be(r, rs=1.E18, M_bh=1.E8*M_sun, vw0=1.E8, M_enc0=0., rho0=0., beta=1.8, sigma=True, shell=True):
-	'''Analytic expression for the Bernoulli parameter note the non-trivial gauge condition here.'''
-	x=r/rs
-	if shell:
-		from_s=-4.*np.pi*G*rs**2*rho0*(3.-beta)/(2.-beta)*(1./(x**(3.-beta)-1.))*((x**(3.-beta)-1.)/(3.-beta)-(x**(5.-2.*beta)-1)/(5.-2.*beta))
-	else:
-		from_s=0.
+# def be(r, rs=1.E18, M_bh=1.E8*M_sun, vw0=1.E8, M_enc0=0., rho0=0., beta=1.8, sigma=True, shell=True):
+# 	'''Analytic expression for the Bernoulli parameter note the non-trivial gauge condition here.'''
+# 	x=r/rs
+# 	if shell:
+# 		from_s=-4.*np.pi*G*rs**2*rho0*(3.-beta)/(2.-beta)*(1./(x**(3.-beta)-1.))*((x**(3.-beta)-1.)/(3.-beta)-(x**(5.-2.*beta)-1)/(5.-2.*beta))
+# 	else:
+# 		from_s=0.
 
-	if sigma:
-		return (vw0**2/2.)-(G*M_bh/(2.*rs))*(3.-beta)/(2.-beta)*(x**(2.-beta)-1)/(x**(3.-beta)-1)-(G*M_enc0/(2.*rs))*((x**(5.-2.*beta)-1)/(x**(3.-beta)-1))*(3-beta)/(5.-2.*beta)+from_s
-	else:
-		return (vw0**2/2.)-(G*M_bh/rs)*(3.-beta)/(2.-beta)*(x**(2.-beta)-1)/(x**(3.-beta)-1)-(G*M_enc0/rs)*((x**(5.-2.*beta)-1)/(x**(3.-beta)-1))*(3-beta)/(5.-2.*beta)+from_s
+# 	if sigma:
+# 		return (vw0**2/2.)-(G*M_bh/(2.*rs))*(3.-beta)/(2.-beta)*(x**(2.-beta)-1)/(x**(3.-beta)-1)-(G*M_enc0/(2.*rs))*((x**(5.-2.*beta)-1)/(x**(3.-beta)-1))*(3-beta)/(5.-2.*beta)+from_s
+# 	else:
+# 		return (vw0**2/2.)-(G*M_bh/rs)*(3.-beta)/(2.-beta)*(x**(2.-beta)-1)/(x**(3.-beta)-1)-(G*M_enc0/rs)*((x**(5.-2.*beta)-1)/(x**(3.-beta)-1))*(3-beta)/(5.-2.*beta)+from_s
 
 
 
