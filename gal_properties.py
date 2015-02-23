@@ -129,7 +129,7 @@ def temp_approx(M, vw, r, mu=0.62, gamma=1.):
 
 	return 0.4*cs2_approx*(mu*mp)/kb
 
-def vel_approx(M, vw, r, gamma=1., rs=None):
+def vel_approx(M, vw, r, gamma=1.):
 	rs=rs_approx(M, vw, gamma=gamma)
 
 	x=r/rs
@@ -140,7 +140,7 @@ def vel_approx(M, vw, r, gamma=1., rs=None):
 
 	return v0*(f**2)**0.5
 
-def rho_approx(M, vw, r, gamma=1., rs=None, eta=0.1):
+def rho_approx(M, vw, r, gamma=1., eta=0.1):
 	rs=rs_approx(M,vw,gamma=gamma)
 
 	x=r/rs
@@ -149,7 +149,7 @@ def rho_approx(M, vw, r, gamma=1., rs=None, eta=0.1):
 	q0=q_rs_analytic(M,vw, gamma=gamma, eta=eta)
 	#q0=M*(2.-gamma)/(4.*np.pi*rinf(M)**3.)*(rs/rinf(M))**(-1.-gamma)
 
-	return q0*tff(M, rs)/(3.-beta)*(1./x**1.5)*((x**(3.-beta)-1.)**2*(2.-beta))/((2.-beta)*(x**(3.-beta)-1.)-(3.-beta)*x*(x**(2.-beta)-1.))
+	return -q0*tff(M, rs)/(3.-beta)*(1./x**1.5)*((x**(3.-beta)-1.)**2*(2.-beta))/((2.-beta)*(x**(3.-beta)-1.)-(3.-beta)*x*(x**(2.-beta)-1.))
 
 
 def rho_rs_analytic(M, vw, gamma=1,eta=0.1):
