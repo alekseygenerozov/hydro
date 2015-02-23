@@ -1,5 +1,6 @@
 import astropy.constants as const
 import numpy as np
+from scipy import integrate
 
 #Constants
 G=const.G.cgs.value
@@ -11,9 +12,9 @@ c=const.c.cgs.value
 pc=const.pc.cgs.value
 
 def vj(r,rho_interp):
-    f=rho(r)/rho_interp(r)
-    beta_sh=(1.-(1./jet.gamma_j)**2.-(2./gamma_j)*(f**-0.5))**0.5
-    return jet.beta_j/beta_sh
+	f=rho(r)/rho_interp(r)
+	beta_sh=(1.-(1./jet.gamma_j)**2.-(2./gamma_j)*(f**-0.5))**0.5
+	return jet.beta_j/beta_sh
 
 class Jet:
 	def __init__(self):
@@ -40,12 +41,35 @@ class Jet:
 	def rho(self,r):
 		return self.lj/(np.pi*self.theta**2*c**3*self.gamma_j**2*r**2)
 
-	def vj(self,r,rho_interp):
-	    f=self.rho(r)/rho_interp(r)
-	    beta_sh=(1.-(1./self.gamma_j)**2.-(2./self.gamma_j)*(f**-0.5))**0.5
-	    return self.beta_j/beta_sh
+	def vj(self,r,rho_profile):
+		f=self.rho(r)/rho_profile(r)
+		beta_sh=(1.-(1./self.gamma_j)**2.-(2./self.gamma_j)*(f**-0.5))**0.5
+		return self.beta_j/beta_sh
 
+	def final_gamma(self, rho_profile):
+		'''Calculate the final Lorentz factor of a jet at the time of reverse shock crossing'''
+		r=integrate.ode(self.vj)
+		r.set_integrator('vode')
+		r.set_initial_value(0., t=self.delta).set_f_params(rho_profile)
+		time=0.
 
+		try:
+			while r.y<r.t:
+				old=r.y[0]
+				r.integrate(r.t+0.01*pc)
+				new=r.y[0]
+				time+=(new-old)/(self.beta_j*c)
+			rc=r.y[0]
+		except Exception as inst:
+			print inst
+			rc=np.nan
+
+		f=self.rho(rc)/rho_profile(rc)
+		gamma=self.gamma_j*(1.+2.*self.gamma_j*f**(-0.5))**(-0.5)  
+
+		return gamma
+
+		
 
 
 
