@@ -124,7 +124,7 @@ class Catalog(object):
 			except IndexError:
 				j=len(vws)-1
 			self.gal_vws_full.append(j)
-			self.index_full[(gal.name,vw)]=len(self.gals_full)-1
+			self.index_full[(gal.name,gal.vw_extra/1.E5)]=len(self.gals_full)-1
 			self.dirs.append(d)
 
 		self.gals_full=np.array(self.gals_full)
