@@ -6,6 +6,7 @@ from scipy.optimize import fsolve
 #Constants
 G=const.G.cgs.value
 M_sun=const.M_sun.cgs.value
+L_sun=const.L_sun.cgs.value
 kb=const.k_B.cgs.value
 mp=const.m_p.cgs.value
 h=const.h.cgs.value
@@ -14,6 +15,15 @@ pc=const.pc.cgs.value
 th=4.35*10**17
 year=3.15569E7
 
+
+def Lv(Mv):
+	'''Luminosity from mag'''
+	Mv_sun=4.83
+	return L_sun*10.**((Mv_sun-Mv)/2.5)
+
+def M_mvbulge(Mv):
+	'''Mbh from the bulge luminosity'''
+	return 10**9.23*(Lv(Mv)/(10.**11*L_sun))**1.11*M_sun
 
 def lambda_c(temp):
 	'''Power law approximation to cooling function for solar abundance plasma (taken from figure 34.1 of Draine)'''
@@ -78,7 +88,7 @@ def xi(M, vw):
 	'''Correction to wind velocity to account for the contribution of the stellar velocity dispersion'''
 	M8=(M/(1.E8*M_sun))
 	vw500=vw/5.E7
-	return (1.+(0.12*M8**0.4/vw500**2.))**0.5
+	return (1.+(0.12*M8**0.39/vw500**2.))**0.5
 
 def M_enc_rs_analytic(M, vw, gamma=1.):
 	return M*(rs_approx(M, vw, gamma=gamma)/rinf(M))**(2.-gamma)
