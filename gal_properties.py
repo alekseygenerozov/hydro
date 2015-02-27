@@ -101,7 +101,7 @@ def eddr_analytic(M, vw, gamma=1., eta=0.1):
 	return mdot_analytic(M, vw, gamma=gamma, eta=eta)/mdot_edd(M)
 
 def vff(M, r):
-	return (2*G*M/r)**0.5
+	return (G*M/r)**0.5
 
 def tff(M, r):
 	return r/vff(M, r)
