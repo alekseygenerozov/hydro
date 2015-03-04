@@ -62,7 +62,7 @@ def dens_slope(gamma):
 def rs_approx(M, vw, gamma=1.):
 	'''Simplified analytic expression for the stagnation radius--given a particular bh mass and particular vw.
 	This assumes sigma is dominated by black holem and hence one gets the funny looking 5/2 out front'''
-	return 5./2.*G*M/((vw)**2.*dens_slope(gamma))
+	return (7./2.-dens_slope(gamma))*G*M/((vw)**2.*dens_slope(gamma))
 
 def rs_approx_t(t, M, gamma=1.):
 	return rs_approx(M, vw_eff(t, M), gamma=gamma)
@@ -122,7 +122,7 @@ def temp_approx_0(M, vw, r, mu=0.62, gamma=1.):
 	x=r/rs
 	gammaf=(2.-gamma)/(1.-gamma)
 	f=1.-gammaf*(x**(1.-gamma)-1)/(x**(1.-gamma)-1./x)
-	v0=vff(M,r)/2.
+	v0=vff(M,r)/(2.)**0.5
 	cs2_approx=vw**2./2.+v0**2*(1+f)
 
 	return 0.4*cs2_approx*(mu*mp)/kb
@@ -133,7 +133,7 @@ def temp_approx(M, vw, r, mu=0.62, gamma=1.):
 	x=r/rs
 	gammaf=(2.-gamma)/(1.-gamma)
 	f=1.-gammaf*(x**(1.-gamma)-1)/(x**(1.-gamma)-1./x)
-	v0=vff(M,r)/2.
+	v0=vff(M,r)/(2.)**0.5
 
 	cs2_approx=vw**2./2.+v0**2*(1+f-f**2)
 
@@ -143,7 +143,7 @@ def vel_approx(M, vw, r, gamma=1.):
 	rs=rs_approx(M, vw, gamma=gamma)
 
 	x=r/rs
-	v0=vff(M,r)/2.
+	v0=vff(M,r)/(2.)**0.5
 	gammaf=(2.-gamma)/(1.-gamma)
 	f=(1.-gammaf*(x**(1.-gamma)-1)/(x**(1.-gamma)-1./x))
 	v0=vff(M,r)/(2.)**0.5

@@ -75,19 +75,18 @@ class Catalog(object):
 				for gamma in gammas:
 					for rb in rbs:
 						d=base_d+'/M{0:2.1g}_vw{1}_gamma{2:.1f}_rb{3}'.format(mass, vw, gamma, rb)
-						print d
 						try:
 							gal=dill.load(open(d+'/grid.p', 'rb'))
 						except:
 							continue
 						if d in exclude_dirs:
-							print d
 							continue
 
 						if not hasattr(gal, 'check_partial'):
 							gal.cons_check(write=False)
 
 						if (not bad_gals and not gal.check_partial):
+							print 'bad!', d
 							continue
 						if gal.vw_extra!=vw*1.E5:
 							print gal.name
