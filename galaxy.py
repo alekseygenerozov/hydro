@@ -1945,6 +1945,11 @@ class NukerGalaxy(Galaxy):
 		return self._get_rinf()
 
 	@property
+	def rs_rinf(self):
+		if self.stag_unique:
+			return self.rs[0]/self.rinf
+
+	@property
 	def sigma_inf(self):
 		'''Velocity dispersion at the radius of influence.'''
 		return self.sigma_interp(self.rinf)
