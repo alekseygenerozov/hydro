@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
-from .. import galaxy
-import parker 
+from nuker_catalog import galaxy
 import sys
 import numpy as np
 
