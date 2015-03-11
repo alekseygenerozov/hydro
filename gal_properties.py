@@ -114,7 +114,7 @@ def tff(M, r):
 
 def temp_rs(M, vw, mu=0.62):
 	gamma=5./3.
-	return (gamma-1.)/gamma*mu*mp*vw**2*xi(M,vw)**2
+	return (gamma-1.)/gamma*mu*mp*vw**2/kb/2.
 
 def temp_approx_0(M, vw, r, mu=0.62, gamma=1.):
 	rs=rs_approx(M, vw, gamma)
@@ -209,6 +209,7 @@ def rho_rs(M, vw):
 	return 3.95E-24*(vw/5.E7)*(M/(1.E8*M_sun))**-0.56
  
 def vw_eff_Ia(t):
+	'''vw from Ia's in impulsive limit'''
 	eps1a=0.4
 	return ((2.*th*rate_Ia(t)*(eps1a*1.E51))/eta(t))**0.5
 
@@ -224,7 +225,12 @@ def vw_eff_imp(t, M):
 		return vw_eff[0]
 		# return vw_from_rs(M, r_Ia_0)
 
-# def be(r, rs=1.E18, M_bh=1.E8*M_sun, vw0=1.E8, M_enc0=0., rho0=0., beta=1.8, sigma=True, shell=True):
+
+def en_analytic(x, phi_rs, z, gamma,  w=1.):
+	'''Analytic expression for v^2/2+(1/(gamma-1))*thermal energy. Derived from Bernoulli conservation.'''
+	beta=1+gamma
+	return phi_rs*(1./x + w/x - (3. - beta)*w*((x**(2. - beta) - 1.)/(2.- beta)) - (3. - beta)*w*(1./(2. - beta)\
+		-((x**(5. - 2.*beta) - 1.)/(x**(3. - beta) - 1.))*((3. - beta)/((5. - 2.*beta)*(2. - beta)))) + w**1./(2.-gamma)*z**2. - (1./2.)*((3. - beta)/(2. - beta))*((x**(2. - beta) - 1.)/(x**(3. - beta) - 1.)) - (w/2.)*((x**(5.- 2.*beta) - 1.)/(x**(3.- beta) - 1.))*((3. - beta)/(5. - 2.*beta)))
 # 	'''Analytic expression for the Bernoulli parameter note the non-trivial gauge condition here.'''
 # 	x=r/rs
 # 	if shell:

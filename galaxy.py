@@ -2003,10 +2003,10 @@ class NukerGalaxy(Galaxy):
 		if self.stag_unique:
 			return (self.sigma_interp(self.rs[0])**2+self.vw_extra**2)**0.5
 
-	@property
-	def vw_rs_analytic(self):
-		'''Analytic estimate for the wind velocity at the stagnation radius'''
-		return self.vw_extra*gal_properties.xi(self.params['M'],self.vw_extra)
+	# @property
+	# def vw_rs_analytic(self):
+	# 	'''Analytic estimate for the wind velocity at the stagnation radius'''
+	# 	return self.vw_extra*gal_properties.xi(self.params['M'],self.vw_extra)
 
 	@property
 	def rho_rs(self):
@@ -2033,8 +2033,13 @@ class NukerGalaxy(Galaxy):
 
 	@property
 	def temp_rs_analytic(self):
-		'''Analytic expression for the temperature at the stagnation radius'''
-		return gal_properties.temp_rs(self.params['M'], self.vw_rs_analytic, self.mu)
+		'''Analytic expression for the temperature at the stagnation radius--using no information from numerical results'''
+		return gal_properties.temp_rs(self.params['M'], self.vw_extra*((7./2.)/(7./2.-gal_properties.dens_slope(self.params['gamma'])))**0.5, self.mu)
+
+	@property 
+	def temp_rs_analytic_cheat(self):
+		'''Analytic expression for the temperature at the stagnation radius--from the actual value of vw at rs'''
+		return gal_properties.temp_rs(self.params['M'], self.vw_rs, self.mu)
 
 	@property
 	def temp_rs_residual(self):
@@ -2081,17 +2086,26 @@ class NukerGalaxy(Galaxy):
 		if self.stag_unique:
 			return self.heating_pos_rs/self.cooling_rs
 
-	@property
-	def rcirc(self):
-		'''Compute the circularization radius at the stagnation radius'''
-		if self.stag_unique and self.vsig:
-			return (self.vsig**2.*self.rs[0]**2/self.rinf)
+	# @property
+	# def rcirc(self):
+	# 	'''Compute the circularization radius at the stagnation radius'''
+	# 	if self.stag_unique and self.vsig:
+	# 		return (self.vsig**2.*self.rs[0]**2/self.rinf)
 
-	@property
-	def rc_rss_ratio(self):
-		'''Ratio of circularizion radius to inner sonic point'''
-		if self.stag_unique and self.vsig:
-			return self.rcirc/self.r_ss
+	# @property
+	# def rc_rss_ratio(self):
+	# 	'''Ratio of circularizion radius to inner sonic point'''
+	# 	if self.stag_unique and self.vsig:
+	# 		return self.rcirc/self.r_ss
+
+	def en_analytic(self, r):
+		if self.stag_unique:
+			phi_rs=G*self.params['M']/self.rs[0]
+			z=self.vw_extra/self.sigma_inf
+			x=r/self.rs[0]
+			w=(self.rs[0]/self.rinf)**(2.-self.params['gamma'])
+
+			return gal_properties.en_analytic(x, phi_rs, z, self.params['gamma'], w)
 
 
 class PowGalaxy(NukerGalaxy):
