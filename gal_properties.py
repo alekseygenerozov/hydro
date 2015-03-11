@@ -227,23 +227,12 @@ def vw_eff_imp(t, M):
 
 
 def en_analytic(x, phi_rs, z, gamma,  w=1.):
-	'''Analytic expression for v^2/2+(1/(gamma-1))*thermal energy. Derived from Bernoulli conservation.'''
+	'''Analytic expression for v^2/2+(1/(gamma-1))*(kb T/(mu mp)). Derived from Bernoulli conservation.'''
 	beta=1+gamma
-	return phi_rs*(1./x + w/x - (3. - beta)*w*((x**(2. - beta) - 1.)/(2.- beta)) - (3. - beta)*w*(1./(2. - beta)\
-		-((x**(5. - 2.*beta) - 1.)/(x**(3. - beta) - 1.))*((3. - beta)/((5. - 2.*beta)*(2. - beta)))) + w**1./(2.-gamma)*z**2. - (1./2.)*((3. - beta)/(2. - beta))*((x**(2. - beta) - 1.)/(x**(3. - beta) - 1.)) - (w/2.)*((x**(5.- 2.*beta) - 1.)/(x**(3.- beta) - 1.))*((3. - beta)/(5. - 2.*beta)))
-# 	'''Analytic expression for the Bernoulli parameter note the non-trivial gauge condition here.'''
-# 	x=r/rs
-# 	if shell:
-# 		from_s=-4.*np.pi*G*rs**2*rho0*(3.-beta)/(2.-beta)*(1./(x**(3.-beta)-1.))*((x**(3.-beta)-1.)/(3.-beta)-(x**(5.-2.*beta)-1)/(5.-2.*beta))
-# 	else:
-# 		from_s=0.
-
-# 	if sigma:
-# 		return (vw0**2/2.)-(G*M_bh/(2.*rs))*(3.-beta)/(2.-beta)*(x**(2.-beta)-1)/(x**(3.-beta)-1)-(G*M_enc0/(2.*rs))*((x**(5.-2.*beta)-1)/(x**(3.-beta)-1))*(3-beta)/(5.-2.*beta)+from_s
-# 	else:
-# 		return (vw0**2/2.)-(G*M_bh/rs)*(3.-beta)/(2.-beta)*(x**(2.-beta)-1)/(x**(3.-beta)-1)-(G*M_enc0/rs)*((x**(5.-2.*beta)-1)/(x**(3.-beta)-1))*(3-beta)/(5.-2.*beta)+from_s
-
-
-
-
+	# return phi_rs*(1./x + w/x - (3. - beta)*w*((x**(2. - beta) - 1.)/(2.- beta)) - (3. - beta)*w*(1./(2. - beta)\
+	return phi_rs*(1./x + w/x - (1.*(3. - 1.*beta)*w*(-1. + x**(2. - 1.*beta)))/(2. - 1.*beta) - \
+	(0.5*(3. - 1.*beta)*w*(-1. + x**(5. - 2.*beta)))/((5. - 2.*beta)*(-1. + x**(3. - 1.*beta))) - \
+	(0.5*(3. - 1.*beta)*(-1. + x**(2. - 1.*beta)))/((2. - 1.*beta)*(-1. + x**(3. - 1.*beta))) - \
+	1.*(3. - 1.*beta)*w*(1./(2. - 1.*beta) - (1.*(3. - 1.*beta)*(-1. + x**(5. - 2.*beta)))/\
+	((5. - 2.*beta)*(2. - 1.*beta)*(-1. + x**(3. - 1.*beta)))) + w**(1./(3. - 1.*beta))*z**2)
 
