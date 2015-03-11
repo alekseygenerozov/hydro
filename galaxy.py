@@ -2086,18 +2086,6 @@ class NukerGalaxy(Galaxy):
 		if self.stag_unique:
 			return self.heating_pos_rs/self.cooling_rs
 
-	# @property
-	# def rcirc(self):
-	# 	'''Compute the circularization radius at the stagnation radius'''
-	# 	if self.stag_unique and self.vsig:
-	# 		return (self.vsig**2.*self.rs[0]**2/self.rinf)
-
-	# @property
-	# def rc_rss_ratio(self):
-	# 	'''Ratio of circularizion radius to inner sonic point'''
-	# 	if self.stag_unique and self.vsig:
-	# 		return self.rcirc/self.r_ss
-
 	def en_analytic(self, r):
 		if self.stag_unique:
 			phi_rs=G*self.params['M']/self.rs[0]
