@@ -67,9 +67,10 @@ def rs_approx(M, vw, gamma=1.):
 def rs_approx_t(t, M, gamma=1.):
 	return rs_approx(M, vw_eff(t, M), gamma=gamma)
 
-# def rs_approx_rinf(zeta):
-# 	'''Analytic approximation for the ratio of rs to rinf'''
-# 	return 5./(4.*zeta**2)
+def rs_rinf_approx(zeta, gamma):
+	'''Analytic approximation for the ratio of rs to rinf'''
+	delta=1+gamma
+	return (7./2.-dens_slope(gamma))*G*M/((2.*zeta**2.*dens_slope(gamma))
 
 def rs_r_Ia(t, M, gamma=1.):
 	return rs_approx_t(t, M, gamma=gamma)/r_Ia(t,M)
@@ -226,13 +227,28 @@ def vw_eff_imp(t, M):
 		# return vw_from_rs(M, r_Ia_0)
 
 
-def en_analytic(x, phi_rs, z, gamma,  w=1.):
+def en_analytic_nd(x, zeta, gamma, w):
+	delta=1.+gamma
+
+	return (1./x + w/x - (1.*(3. - 1.*delta)*w*(-1. + x**(2. - 1.*delta)))/(2. - 1.*delta) - \
+	(0.5*(3. - 1.*delta)*w*(-1. + x**(5. - 2.*delta)))/((5. - 2.*delta)*(-1. + x**(3. - 1.*delta))) - \
+	(0.5*(3. - 1.*delta)*(-1. + x**(2. - 1.*delta)))/((2. - 1.*delta)*(-1. + x**(3. - 1.*delta))) - \
+	1.*(3. - 1.*delta)*w*(1./(2. - 1.*delta) - (1.*(3. - 1.*delta)*(-1. + x**(5. - 2.*delta)))/\
+	((5. - 2.*delta)*(2. - 1.*delta)*(-1. + x**(3. - 1.*delta)))) + w**(1./(3. - 1.*delta))*zeta**2)
+
+def en_analytic(phi_rs, x, zeta, gamma,  w):
 	'''Analytic expression for v^2/2+(1/(gamma-1))*(kb T/(mu mp)). Derived from Bernoulli conservation.'''
-	beta=1+gamma
-	# return phi_rs*(1./x + w/x - (3. - beta)*w*((x**(2. - beta) - 1.)/(2.- beta)) - (3. - beta)*w*(1./(2. - beta)\
-	return phi_rs*(1./x + w/x - (1.*(3. - 1.*beta)*w*(-1. + x**(2. - 1.*beta)))/(2. - 1.*beta) - \
-	(0.5*(3. - 1.*beta)*w*(-1. + x**(5. - 2.*beta)))/((5. - 2.*beta)*(-1. + x**(3. - 1.*beta))) - \
-	(0.5*(3. - 1.*beta)*(-1. + x**(2. - 1.*beta)))/((2. - 1.*beta)*(-1. + x**(3. - 1.*beta))) - \
-	1.*(3. - 1.*beta)*w*(1./(2. - 1.*beta) - (1.*(3. - 1.*beta)*(-1. + x**(5. - 2.*beta)))/\
-	((5. - 2.*beta)*(2. - 1.*beta)*(-1. + x**(3. - 1.*beta)))) + w**(1./(3. - 1.*beta))*z**2)
+	return phi_rs*en_analytic_nd(x, zeta, gamma)
+
+def rb_crit_solve(zeta, gamma):
+	'''critical rb/rinf for which one would get outflow for a given rs/rinf and a particular normalizaed heating rate.'''
+	delta=gamma+1.
+	w=(rs_rinf_crit(zeta, gamma))**(2.-gamma)
+
+	return fsolve(lambda rb_rinf: en_analytic_nd(rb_rinf/w**(1./(2.-gamma)), zeta, gamma, w))
+
+
+
+
+	
 

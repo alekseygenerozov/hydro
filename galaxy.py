@@ -2087,13 +2087,19 @@ class NukerGalaxy(Galaxy):
 			return self.heating_pos_rs/self.cooling_rs
 
 	def en_analytic(self, r):
+		'''analytic v^2/2+(gamma)/(gamma-1)*p/rho at radius r. Uses info from solution (the stagnation radius)'''
 		if self.stag_unique:
 			phi_rs=G*self.params['M']/self.rs[0]
 			z=self.vw_extra/self.sigma_inf
 			x=r/self.rs[0]
 			w=(self.rs[0]/self.rinf)**(2.-self.params['gamma'])
 
-			return gal_properties.en_analytic(x, phi_rs, z, self.params['gamma'], w)
+			return gal_properties.en_analytic(phi_rs, x, z, self.params['gamma'], w)
+
+	def mdot_outflow(self):
+		'''Mass outflow rate at the break radius, rb calculated from the mass enclosed profile of the galaxy'''
+		if self.stag_unique:
+			return self.eta*(self.M_enc(self.params['rb']*pc)-self.M_enc(self.rs[0]))/th
 
 
 class PowGalaxy(NukerGalaxy):
