@@ -36,7 +36,7 @@ def rinf(M):
 	return 14.*(M/(1.E8*M_sun))**0.6*pc
 
 def sigma_200(M):
-	'''M-sigma relationship taken from Wang and Merritt 2004; should be updated to a more modern version (e.g. the one from Gulletkin)'''
+	'''M-sigma from McConnell et al. 2011'''
 	return ((M)/(2.E8*M_sun))**(1./5.1)
 
 def M_sigma(sigma_200):
@@ -70,7 +70,15 @@ def rs_approx_t(t, M, gamma=1.):
 def rs_rinf_approx(zeta, gamma):
 	'''Analytic approximation for the ratio of rs to rinf'''
 	delta=1+gamma
-	return (7./2.-dens_slope(gamma))*G*M/((2.*zeta**2.*dens_slope(gamma))
+	return (7./2.-dens_slope(gamma))/(2.*zeta**2.*dens_slope(gamma))
+
+def rs_rinf_crit(zeta, gamma):
+	return 1.
+	# rs_rinf=2.*rs_rinf_approx(zeta, gamma)
+	# if rs_rinf<1.:
+	# 	return rs_rinf
+	# else:
+	# 	return 1.
 
 def rs_r_Ia(t, M, gamma=1.):
 	return rs_approx_t(t, M, gamma=gamma)/r_Ia(t,M)
@@ -106,12 +114,6 @@ def vff(M, r):
 
 def tff(M, r):
 	return r/vff(M, r)
-
-# def vff_rs(M,vw):
-# 	return vff(M, rs_approx(M,vw))
-
-# def tff_rs(M,vw):
-# 	return rs_approx(M,vw)/vff_rs(M,vw)
 
 def temp_rs(M, vw, mu=0.62):
 	gamma=5./3.
@@ -226,26 +228,26 @@ def vw_eff_imp(t, M):
 		return vw_eff[0]
 		# return vw_from_rs(M, r_Ia_0)
 
-
 def en_analytic_nd(x, zeta, gamma, w):
 	delta=1.+gamma
 
 	return (1./x + w/x - (1.*(3. - 1.*delta)*w*(-1. + x**(2. - 1.*delta)))/(2. - 1.*delta) - \
-	(0.5*(3. - 1.*delta)*w*(-1. + x**(5. - 2.*delta)))/((5. - 2.*delta)*(-1. + x**(3. - 1.*delta))) - \
+	((3. - 1.*delta)*w*(-1. + x**(5. - 2.*delta)))/((5. - 2.*delta)*(-1. + x**(3. - 1.*delta))) - \
 	(0.5*(3. - 1.*delta)*(-1. + x**(2. - 1.*delta)))/((2. - 1.*delta)*(-1. + x**(3. - 1.*delta))) - \
 	1.*(3. - 1.*delta)*w*(1./(2. - 1.*delta) - (1.*(3. - 1.*delta)*(-1. + x**(5. - 2.*delta)))/\
 	((5. - 2.*delta)*(2. - 1.*delta)*(-1. + x**(3. - 1.*delta)))) + w**(1./(3. - 1.*delta))*zeta**2)
 
 def en_analytic(phi_rs, x, zeta, gamma,  w):
 	'''Analytic expression for v^2/2+(1/(gamma-1))*(kb T/(mu mp)). Derived from Bernoulli conservation.'''
-	return phi_rs*en_analytic_nd(x, zeta, gamma)
+	return phi_rs*en_analytic_nd(x, zeta, gamma, w)
 
 def rb_crit_solve(zeta, gamma):
 	'''critical rb/rinf for which one would get outflow for a given rs/rinf and a particular normalizaed heating rate.'''
 	delta=gamma+1.
-	w=(rs_rinf_crit(zeta, gamma))**(2.-gamma)
+	rs_rinf=rs_rinf_crit(zeta, gamma)
+	w=(rs_rinf)**(2.-gamma)
 
-	return fsolve(lambda rb_rinf: en_analytic_nd(rb_rinf/w**(1./(2.-gamma)), zeta, gamma, w))
+	return fsolve(lambda rb_rinf: en_analytic_nd(rb_rinf/w**(1./(2.-gamma)), zeta, gamma, w),1.1*rs_rinf)
 
 
 
