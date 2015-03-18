@@ -241,10 +241,10 @@ def en_analytic(phi_rs, x, zeta, gamma,  w):
 	'''Analytic expression for v^2/2+(1/(gamma-1))*(kb T/(mu mp)). Derived from Bernoulli conservation.'''
 	return phi_rs*en_analytic_nd(x, zeta, gamma, w)
 
-def rb_crit_solve(zeta, gamma):
+def rb_crit_solve(zeta, gamma, rs_rinf):
 	'''critical rb/rinf for which one would get outflow for a given rs/rinf and a particular normalizaed heating rate.'''
 	delta=gamma+1.
-	rs_rinf=rs_rinf_crit(zeta, gamma)
+	# rs_rinf=rs_rinf_crit(zeta, gamma)
 	w=(rs_rinf)**(2.-gamma)
 
 	return fsolve(lambda rb_rinf: en_analytic_nd(rb_rinf/w**(1./(2.-gamma)), zeta, gamma, w),1.1*rs_rinf)
