@@ -586,7 +586,9 @@ class Galaxy(object):
 	def sigma_grid(self):
 		if not hasattr(self,'eps_stellar_heating'):
 			self.set_param('eps_stellar_heating',1.)
-		return (G*(self.params['M']+self.eps_stellar_heating*self.M_enc_grid)/self.radii)**0.5
+		if not hasattr(self, 'sigma_0'):
+			self.set_param('sigma_0', gal_properties.sigma_200(self.params['M'])*2.0E7)
+		return (G*(self.params['M'])/self.radii+self.eps_stellar_heating*self.sigma_0**2)**0.5
 
 	@property
 	def phi_s_grid(self):
