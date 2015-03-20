@@ -477,7 +477,21 @@ class Catalog(object):
 		return fig, ax
 
 	def convergence(self):
+		'''Generate convergence plots for all of the galaxies within the catalog'''
 		props=['sol_plot_seq', 'conv_plot_cons', 'conv_plot_sol']
+		for prop in props:
+			bc('mkdir -p '+self.base_d+'/'+prop)
+		
+		for idx, gal in enumerate(self.gals):
+			for prop in props:
+				fig=getattr(gal, prop)
+				fig.suptitle(gal.name+'_gamma{0}_M{1:2.1e}_vw{2:2.1e}'.format(gal.params['gamma'],\
+					gal.params['M'], gal.vw_extra)) 
+				fig.savefig(self.base_d+'/'+prop+'/'+str(idx)+'.pdf')
+
+	def convergence_sol(self):
+		'''Generate convergence plots for just primitive quantities plus the stagnation radius'''
+		props=['conv_plot_sol']
 		for prop in props:
 			bc('mkdir -p '+self.base_d+'/'+prop)
 		
