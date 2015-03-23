@@ -1969,6 +1969,7 @@ class NukerGalaxy(Galaxy):
 
 	@property
 	def dens_pow_slope_rs(self):
+		'''Power law slope of density at the stagnation stagnation radius'''
 		lrho_interp=interp1d(np.log(self.radii),self.log_rho)
 		return derivative(lrho_interp, np.log(self.rs[0]), dx=self.delta_log[0])
 

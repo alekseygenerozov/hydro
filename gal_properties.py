@@ -53,7 +53,7 @@ def r_Ia(t,M):
 
 def zeta(x, dens_slope=1., gamma=1.):
 	'''This function explicitly calculates zeta given for x and power law density slope, nu.'''
-	return ((1.0/(3.0*x*dens_slope))*(x**(2.-gamma)*2.0+(13.+8.*gamma)/(4.+2.*gamma)-dens_slope*3./(2.+gamma)))**0.5
+	return ((1.0/(3.0*x*dens_slope))*(x**(2.-gamma)*4.0+(13.+8.*gamma)/(4.+2.*gamma)-dens_slope*3./(2.+gamma)))**0.5
 
 def dens_slope(gamma):
 	'''Approximate expression for the density slope at the stagnation radius'''
