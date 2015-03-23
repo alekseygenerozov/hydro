@@ -46,14 +46,14 @@ def M_sigma(sigma_200):
 def r_Ia(t,M):
 	return (G/(sigma_200(M)*2.E7*rate_Ia(t)))**0.5
 
-def rs_implicit(zeta, dens_slope=1., gamma=1., full_output=False):
-	'''solve implcit equation for rs, for a given stellar density profile and density slope'''
-	f=lambda x:x-(0.5/(dens_slope*zeta**2.))*(x**(2.-gamma)*(4.5-0.5*gamma-dens_slope)+(3.5-dens_slope))
-	return fsolve(f, 7./(4.*zeta**2*dens_slope),full_output=full_output)
+# def rs_implicit(zeta, dens_slope=1., gamma=1., full_output=False):
+# 	'''solve implcit equation for rs, for a given stellar density profile and density slope'''
+# 	f=lambda x:x-(0.5/(dens_slope*zeta**2.))*(x**(2.-gamma)*(4.5-0.5*gamma-dens_slope)+(3.5-dens_slope))
+# 	return fsolve(f, 7./(4.*zeta**2*dens_slope),full_output=full_output)
 
 def zeta(x, dens_slope=1., gamma=1.):
-	'''Above solve implicit equation for rs/rinf given a zeta. This function explicitly calculates zeta given an x'''
-	return ((x**(2.-gamma)*(4.5-0.5*gamma-0.5*dens_slope)+(3.5-dens_slope))/(2.*dens_slope*x))**0.5
+	'''This function explicitly calculates zeta given for x and power law density slope, nu.'''
+	return ((1.0/(3.0*x*dens_slope))*(x**(2.-gamma)*2.0+(13.+8.*gamma)/(4.+2.*gamma)-dens_slope*3./(2.+gamma)))**0.5
 
 def dens_slope(gamma):
 	'''Approximate expression for the density slope at the stagnation radius'''
