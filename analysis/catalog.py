@@ -484,7 +484,7 @@ class Catalog(object):
 		
 		for idx, gal in enumerate(self.gals):
 			for prop in props:
-				fig=getattr(gal, prop)
+				fig=getattr(gal, prop)()
 				fig.suptitle(gal.name+'_gamma{0}_M{1:2.1e}_vw{2:2.1e}'.format(gal.params['gamma'],\
 					gal.params['M'], gal.vw_extra)) 
 				fig.savefig(self.base_d+'/'+prop+'/'+str(idx)+'.pdf')
@@ -497,7 +497,7 @@ class Catalog(object):
 		
 		for idx, gal in enumerate(self.gals):
 			for prop in props:
-				fig=getattr(gal, prop)
+				fig=getattr(gal, prop)()
 				fig.suptitle(gal.name+'_gamma{0}_M{1:2.1e}_vw{2:2.1e}'.format(gal.params['gamma'],\
 					gal.params['M'], gal.vw_extra)) 
 				fig.savefig(self.base_d+'/'+prop+'/'+str(idx)+'.pdf')

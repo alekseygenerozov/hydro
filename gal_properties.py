@@ -61,8 +61,10 @@ def dens_slope(gamma):
 
 def rs_approx(M, vw, gamma=1.):
 	'''Simplified analytic expression for the stagnation radius--given a particular bh mass and particular vw.
-	This assumes sigma is dominated by black holem and hence one gets the funny looking 5/2 out front'''
-	return (7./2.-dens_slope(gamma))*G*M/((vw)**2.*dens_slope(gamma))
+	This neglects the stellar mass term. Note that we have incorporate the effect of the constant stellar velocity dispersion.'''
+	sigma_0=(3.0)**0.5*sigma_200(M)*2.0E7
+	return G*M/(dens_slope(gamma)*(vw**2.+sigma_0**2))*((13.+8.*gamma)/(4.+2.*gamma)-dens_slope(gamma)*(3./(2.+gamma)))
+	# return (7./2.-dens_slope(gamma))*G*M/((vw)**2.*dens_slope(gamma))
 
 def rs_approx_t(t, M, gamma=1.):
 	return rs_approx(M, vw_eff(t, M), gamma=gamma)
@@ -71,14 +73,6 @@ def rs_rinf_approx(zeta, gamma):
 	'''Analytic approximation for the ratio of rs to rinf'''
 	delta=1+gamma
 	return (7./2.-dens_slope(gamma))/(2.*zeta**2.*dens_slope(gamma))
-
-def rs_rinf_crit(zeta, gamma):
-	return 1.
-	# rs_rinf=2.*rs_rinf_approx(zeta, gamma)
-	# if rs_rinf<1.:
-	# 	return rs_rinf
-	# else:
-	# 	return 1.
 
 def rs_r_Ia(t, M, gamma=1.):
 	return rs_approx_t(t, M, gamma=gamma)/r_Ia(t,M)
@@ -119,50 +113,46 @@ def temp_rs(M, vw, mu=0.62):
 	gamma=5./3.
 	return (gamma-1.)/gamma*mu*mp*vw**2/kb/2.
 
+def a(gamma=1):
+	return 3./(gamma+2.)
+
+def h(x, gamma=1.):
+	return  (2.*gamma+1)/(a(gamma)*(gamma+2.))*(1.-(2.-gamma)/(1.-gamma)*(x**(1.-gamma)-1.)/(x**(1.-gamma)-1./x))
+
 def temp_approx_0(M, vw, r, mu=0.62, gamma=1.):
 	rs=rs_approx(M, vw, gamma)
-
+	sigma_0=3.0**0.5*sigma_200(M)*2.0E7
 	x=r/rs
-	gammaf=(2.-gamma)/(1.-gamma)
-	f=1.-gammaf*(x**(1.-gamma)-1)/(x**(1.-gamma)-1./x)
-	v0=vff(M,r)/(2.)**0.5
-	cs2_approx=vw**2./2.+v0**2*(1+f)
+	cs2_approx=(vw**2.+sigma_0**2.)/2.+a(gamma)*0.5*vff(M,r)**2*((3./(gamma+2.)/a(gamma))+h(x,gamma))
 
 	return 0.4*cs2_approx*(mu*mp)/kb
 
 def temp_approx(M, vw, r, mu=0.62, gamma=1.):
-	rs=rs_approx(M,vw,gamma=gamma)
-
+	rs=rs_approx(M, vw, gamma)
+	sigma_0=3.0**0.5*sigma_200(M)*2.0E7
 	x=r/rs
-	gammaf=(2.-gamma)/(1.-gamma)
-	f=1.-gammaf*(x**(1.-gamma)-1)/(x**(1.-gamma)-1./x)
-	v0=vff(M,r)/(2.)**0.5
-
-	cs2_approx=vw**2./2.+v0**2*(1+f-f**2)
+	cs2_approx=(vw**2.+sigma_0**2.)/2.+a(gamma)*0.5*vff(M,r)**2*((3./(gamma+2.)/a(gamma))+h(x,gamma)-h(x,gamma)**2.)
 
 	return 0.4*cs2_approx*(mu*mp)/kb
 
 def vel_approx(M, vw, r, gamma=1.):
 	rs=rs_approx(M, vw, gamma=gamma)
-
+	sigma_0=3.0**0.5*sigma_200(M)*2.0E7
 	x=r/rs
-	v0=vff(M,r)/(2.)**0.5
-	gammaf=(2.-gamma)/(1.-gamma)
-	f=(1.-gammaf*(x**(1.-gamma)-1)/(x**(1.-gamma)-1./x))
-	v0=vff(M,r)/(2.)**0.5
-
-	return v0*(f**2)**0.5
+	
+	return (a(gamma))**0.5*vff(M,r)*abs(h(x,gamma))
 
 def rho_approx(M, vw, r, gamma=1., eta=0.1):
 	rs=rs_approx(M,vw,gamma=gamma)
-
 	x=r/rs
-	beta=1+gamma
+	delta=1+gamma
 	##Note that the same approximation for the stagnation radius, rs, should be used everywhere (this is currently not the case!)
 	q0=q_rs_analytic(M,vw, gamma=gamma, eta=eta)
-	#q0=M*(2.-gamma)/(4.*np.pi*rinf(M)**3.)*(rs/rinf(M))**(-1.-gamma)
-
-	return -q0*tff(M, rs)/(3.-beta)*(1./x**1.5)*((x**(3.-beta)-1.)**2*(2.-beta))/((2.-beta)*(x**(3.-beta)-1.)-(3.-beta)*x*(x**(2.-beta)-1.))
+	return  -q0*tff(M, rs)/(2.-gamma)*((x**(2.-gamma)-1.)/x**1.5)*((2.+gamma)/3.)**0.5/h(x,gamma=gamma)
+	# try:
+	# 	return -q0*tff(M, rs)/(2.-gamma)*((x**(2.-gamma)-1.)/x**1.5)/h(x)
+	# except: 
+	# 	return -q0*tff(M, rs)*(6.)/(2.*delta-1.)
 
 
 def rho_rs_analytic(M, vw, gamma=1,eta=0.1):
