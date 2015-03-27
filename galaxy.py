@@ -1982,13 +1982,6 @@ class NukerGalaxy(Galaxy):
 
 			return 1./(dens_slope*zeta**2*3.)*(4.*self.M_enc(self.rs[0])/self.params['M']+((13.+8.*self.params['gamma'])/(4.+2.*self.params['gamma']))-dens_slope*3./(2.+self.params['gamma']))
 
-	# def rs_analytic_implicit(self, dens_slope=1):
-	# 	'''Analytic formula for the stagnation radius--normalized by the influence radius'''
-	# 	A=(4.*self.gamma-(1+self.params['gamma'])*(self.gamma-1.))/(4.*(self.gamma-1.))
-	# 	eta=self.vw_extra/self.sigma_inf
-	# 	f=lambda rs:(rs/self.rinf)-1./(dens_slope*eta**2)*((0.5)*(2*A-dens_slope)*(1+self.M_enc(rs)/self.params['M'])-(2.-self.params['gamma'])/4.)
-	# 	return f
-
 	@property 
 	def rs_analytic_approx(self):
 		return gal_properties.rs_approx(self.params['M'],self.vw_extra)
@@ -2091,7 +2084,7 @@ class NukerGalaxy(Galaxy):
 		'''analytic v^2/2+(gamma)/(gamma-1)*p/rho at radius r. Uses info from solution (the stagnation radius)'''
 		if self.stag_unique:
 			phi_rs=G*self.params['M']/self.rs[0]
-			z=self.vw_extra/self.sigma_inf
+			z=(self.vw_extra**2.+self.sigma_0**2.)**0.5/self.sigma_0
 			x=r/self.rs[0]
 			w=(self.rs[0]/self.rinf)**(2.-self.params['gamma'])
 

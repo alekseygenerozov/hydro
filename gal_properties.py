@@ -3,6 +3,8 @@ import astropy.constants as const
 import numpy as np
 from scipy.optimize import fsolve
 
+import warnings
+
 #Constants
 G=const.G.cgs.value
 M_sun=const.M_sun.cgs.value
@@ -35,6 +37,9 @@ def lambda_c(temp):
 def rinf(M):
 	return 14.*(M/(1.E8*M_sun))**0.6*pc
 
+def rbreak(M):
+	return 106.*(M/(1.E8*M_sun))**0.39*pc
+
 def sigma_200(M):
 	'''M-sigma from McConnell et al. 2011'''
 	return ((M)/(2.E8*M_sun))**(1./5.1)
@@ -45,11 +50,6 @@ def M_sigma(sigma_200):
 
 def r_Ia(t,M):
 	return (G/(sigma_200(M)*2.E7*rate_Ia(t)))**0.5
-
-# def rs_implicit(zeta, dens_slope=1., gamma=1., full_output=False):
-# 	'''solve implcit equation for rs, for a given stellar density profile and density slope'''
-# 	f=lambda x:x-(0.5/(dens_slope*zeta**2.))*(x**(2.-gamma)*(4.5-0.5*gamma-dens_slope)+(3.5-dens_slope))
-# 	return fsolve(f, 7./(4.*zeta**2*dens_slope),full_output=full_output)
 
 def zeta(x, dens_slope=1., gamma=1.):
 	'''This function explicitly calculates zeta given for x and power law density slope, nu.'''
@@ -69,10 +69,10 @@ def rs_approx(M, vw, gamma=1.):
 def rs_approx_t(t, M, gamma=1.):
 	return rs_approx(M, vw_eff(t, M), gamma=gamma)
 
-def rs_rinf_approx(zeta, gamma):
-	'''Analytic approximation for the ratio of rs to rinf'''
-	delta=1+gamma
-	return (7./2.-dens_slope(gamma))/(2.*zeta**2.*dens_slope(gamma))
+# def rs_rinf_approx(zeta, gamma):
+# 	'''Analytic approximation for the ratio of rs to rinf'''
+# 	delta=1+gamma
+# 	return (7./2.-dens_slope(gamma))/(2.*zeta**2.*dens_slope(gamma))
 
 def rs_r_Ia(t, M, gamma=1.):
 	return rs_approx_t(t, M, gamma=gamma)/r_Ia(t,M)
@@ -172,7 +172,7 @@ def tcool_rs(M, vw, mu=0.62, gamma=1., eta=0.1):
 def tcool_tff_rs(M, vw, mu=0.62, gamma=1., eta=0.1):
 	return tcool_rs(M, vw, mu, gamma, eta)/tff_rs(M, vw)
 
-def rb(M, cs):
+def rbondi(M, cs):
 	'''Bondi radius from the mass M and sound speed cs'''
 	return G*M/cs**2
 
@@ -221,15 +221,25 @@ def vw_eff_imp(t, M):
 def en_analytic_nd(x, zeta, gamma, w):
 	delta=1.+gamma
 
-	return (1./x + w/x - (1.*(3. - 1.*delta)*w*(-1. + x**(2. - 1.*delta)))/(2. - 1.*delta) - \
-	((3. - 1.*delta)*w*(-1. + x**(5. - 2.*delta)))/((5. - 2.*delta)*(-1. + x**(3. - 1.*delta))) - \
-	(0.5*(3. - 1.*delta)*(-1. + x**(2. - 1.*delta)))/((2. - 1.*delta)*(-1. + x**(3. - 1.*delta))) - \
-	1.*(3. - 1.*delta)*w*(1./(2. - 1.*delta) - (1.*(3. - 1.*delta)*(-1. + x**(5. - 2.*delta)))/\
-	((5. - 2.*delta)*(2. - 1.*delta)*(-1. + x**(3. - 1.*delta)))) + w**(1./(3. - 1.*delta))*zeta**2)
+	return 1./x + w/x - ((3. - delta)*w*x**(2. - delta))/(2. - delta) - \
+	(((2. - delta)*(3. - delta) - (3. - delta)**2)*w*(-1. + x**(5. - 2.*delta)))/\
+	((5. - 2*delta)*(2. - delta)*(-1. + x**(3. - delta))) + \
+	((1. - 2*delta)*(3. - delta)*(-1. + x**(2. - delta)))/\
+	(2.*(2. - delta)*(1 + delta)*(-1. + x**(3. - delta))) + 1.5*w**(1./(3. - delta))*zeta**2
 
 def en_analytic(phi_rs, x, zeta, gamma,  w):
 	'''Analytic expression for v^2/2+(1/(gamma-1))*(kb T/(mu mp)). Derived from Bernoulli conservation.'''
 	return phi_rs*en_analytic_nd(x, zeta, gamma, w)
+
+def w_solve(rb_rinf, zeta, gamma):
+	'''minimum rs/rinf, for a given rb/rinf, zeta, and gamma'''
+	warnings.filterwarnings('error')
+
+	delta=gamma+1.
+	try:
+		return fsolve(lambda w: en_analytic_nd(rb_rinf/w**(1./(2.-gamma)), zeta, gamma, w),100.)[0]
+	except Warning:
+		return np.nan
 
 def rb_crit_solve(zeta, gamma, rs_rinf):
 	'''critical rb/rinf for which one would get outflow for a given rs/rinf and a particular normalizaed heating rate.'''
@@ -239,6 +249,12 @@ def rb_crit_solve(zeta, gamma, rs_rinf):
 
 	return fsolve(lambda rb_rinf: en_analytic_nd(rb_rinf/w**(1./(2.-gamma)), zeta, gamma, w),1.1*rs_rinf)
 
+def rs_rinf_min_core(rb_rinf, zeta):
+	zeta_c=rb_rinf**0.45
+	if zeta>zeta_c:
+		return -1.
+	else:
+		return (rb_rinf)*(zeta_c-zeta)**0.5/(zeta_c-1.)**0.5
 
 
 
