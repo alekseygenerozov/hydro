@@ -18,6 +18,14 @@ th=4.35*10**17
 year=3.15569E7
 
 
+def l_edd(M):
+	'''Eddington luminosity'''
+	return 4.*np.pi*G*M*c/(0.4)
+
+def mdot_edd(M, efficiency=0.1):
+	'''Eddington accretion rate'''
+	return l_edd(M)/(efficiency*c**2)
+
 def Lv(Mv):
 	'''Luminosity from mag'''
 	Mv_sun=4.83
@@ -37,71 +45,19 @@ def lambda_c(temp):
 def rinf(M):
 	return 14.*(M/(1.E8*M_sun))**0.6*pc
 
-def rbreak(M):
+def rbreakCore(M):
 	return 106.*(M/(1.E8*M_sun))**0.39*pc
 
 def sigma_200(M):
 	'''M-sigma from McConnell et al. 2011'''
 	return ((M)/(2.E8*M_sun))**(1./5.1)
 
+def sigma(M):
+	return 2.E7*sigma_200(M)
+
 def M_sigma(sigma_200):
 	'''Inverse of the above M-sigma relationship'''
 	return (2.E8*M_sun)*(sigma_200)**5.1
-
-def r_Ia(t,M):
-	return (G/(sigma_200(M)*2.E7*rate_Ia(t)))**0.5
-
-def zeta(x, dens_slope=1., gamma=1.):
-	'''This function explicitly calculates zeta given for x and power law density slope, nu.'''
-	return ((1.0/(3.0*x*dens_slope))*(x**(2.-gamma)*4.0+(13.+8.*gamma)/(4.+2.*gamma)-dens_slope*3./(2.+gamma)))**0.5
-
-def dens_slope(gamma):
-	'''Approximate expression for the density slope at the stagnation radius'''
-	return -(1./6.*(1.-4.*(1+gamma)))
-
-def rs_approx(M, vw, gamma=1.):
-	'''Simplified analytic expression for the stagnation radius--given a particular bh mass and particular vw.
-	This neglects the stellar mass term. Note that we have incorporate the effect of the constant stellar velocity dispersion.'''
-	sigma_0=(3.0)**0.5*sigma_200(M)*2.0E7
-	return G*M/(dens_slope(gamma)*(vw**2.+sigma_0**2))*((13.+8.*gamma)/(4.+2.*gamma)-dens_slope(gamma)*(3./(2.+gamma)))
-	# return (7./2.-dens_slope(gamma))*G*M/((vw)**2.*dens_slope(gamma))
-
-def rs_approx_t(t, M, gamma=1.):
-	return rs_approx(M, vw_eff(t, M), gamma=gamma)
-
-# def rs_rinf_approx(zeta, gamma):
-# 	'''Analytic approximation for the ratio of rs to rinf'''
-# 	delta=1+gamma
-# 	return (7./2.-dens_slope(gamma))/(2.*zeta**2.*dens_slope(gamma))
-
-def rs_r_Ia(t, M, gamma=1.):
-	return rs_approx_t(t, M, gamma=gamma)/r_Ia(t,M)
-
-def vw_from_rs(M, rs):
-	'''Inverse of rs_approx'''
-	return ((7./2.)*G*M/(rs))**0.5
-
-def l_edd(M):
-	return 4.*np.pi*G*M*c/(0.4)
-
-def mdot_edd(M, efficiency=0.1):
-	return l_edd(M)/(efficiency*c**2)
-
-def xi(M, vw):
-	'''Correction to wind velocity to account for the contribution of the stellar velocity dispersion'''
-	M8=(M/(1.E8*M_sun))
-	vw500=vw/5.E7
-	return (1.+(0.12*M8**0.39/vw500**2.))**0.5
-
-def M_enc_rs_analytic(M, vw, gamma=1.):
-	return M*(rs_approx(M, vw, gamma=gamma)/rinf(M))**(2.-gamma)
-
-def mdot_analytic(M, vw, gamma=1.,eta=0.1):
-	return eta*M_enc_rs_analytic(M, vw, gamma=gamma)/th
-
-def eddr_analytic(M, vw, gamma=1., eta=0.1):
-	'''Analytic expression for the Eddington ratio--for cuspy galaxies'''
-	return mdot_analytic(M, vw, gamma=gamma, eta=eta)/mdot_edd(M)
 
 def vff(M, r):
 	return (G*M/r)**0.5
@@ -109,68 +65,70 @@ def vff(M, r):
 def tff(M, r):
 	return r/vff(M, r)
 
-def temp_rs(M, vw, mu=0.62):
-	gamma=5./3.
-	return (gamma-1.)/gamma*mu*mp*vw**2/kb/2.
+def r_Ia(t,M):
+	return (G/(sigma_200(M)*2.E7*rate_Ia(t)))**0.5
 
-def a(gamma=1):
-	return 3./(gamma+2.)
+def zeta(M, vw):
+	return (vw**2.+3.*sigma(M)**2.)/(3.**0.5*sigma(M))
 
-def h(x, gamma=1.):
-	return  (2.*gamma+1)/(a(gamma)*(gamma+2.))*(1.-(2.-gamma)/(1.-gamma)*(x**(1.-gamma)-1.)/(x**(1.-gamma)-1./x))
+def zeta_c_fit(gamma, rbrinf):
+	return (rbrinf)**(0.5*(1.-gamma))
 
-def temp_approx_0(M, vw, r, mu=0.62, gamma=1.):
-	rs=rs_approx(M, vw, gamma)
-	sigma_0=3.0**0.5*sigma_200(M)*2.0E7
-	x=r/rs
-	cs2_approx=(vw**2.+sigma_0**2.)/2.+a(gamma)*0.5*vff(M,r)**2*((3./(gamma+2.)/a(gamma))+h(x,gamma))
+def zeta_anal(x, dens_slope=1., gamma=1.):
+	'''This function explicitly calculates zeta given for x and power law density slope, nu.'''
+	return ((1.0/(3.0*x*dens_slope))*(x**(2.-gamma)*4.0+(13.+8.*gamma)/(4.+2.*gamma)-dens_slope*3./(2.+gamma)))**0.5
 
-	return 0.4*cs2_approx*(mu*mp)/kb
+def dens_slope(gamma):
+	'''Approximate expression for the density slope at the stagnation radius'''
+	return -(1./6.*(1.-4.*(1+gamma)))
 
-def temp_approx(M, vw, r, mu=0.62, gamma=1.):
-	rs=rs_approx(M, vw, gamma)
-	sigma_0=3.0**0.5*sigma_200(M)*2.0E7
-	x=r/rs
-	cs2_approx=(vw**2.+sigma_0**2.)/2.+a(gamma)*0.5*vff(M,r)**2*((3./(gamma+2.)/a(gamma))+h(x,gamma)-h(x,gamma)**2.)
+def temp_rs(M, vw, gamma=1., mu=0.62):
+	return 0.4*mu*mp*vw**2/kb/2.*(3.+8.*gamma)/(3.+8.*gamma-6.*dens_slope(gamma))
 
-	return 0.4*cs2_approx*(mu*mp)/kb
+def rs_approx(M, vw, gamma=1., rbrinf=1.):
+	'''Simplified analytic expression for the stagnation radius--given a particular bh mass and particular vw.
+	This neglects the stellar mass term. Note that we have incorporate the effect of the constant stellar velocity dispersion.'''
+	sigma_0=(3.0)**0.5*sigma(M)
+	z=zeta(M,vw)
+	zc=zeta_c(gamma, rbrinf)
+	if z>=zc:
+		return G*M/(dens_slope(gamma)*(vw**2.+sigma_0**2))*((13.+8.*gamma)/(4.+2.*gamma)-dens_slope(gamma)*(3./(2.+gamma)))
+	else:
+		return rinf(M)*rbrinf
 
-def vel_approx(M, vw, r, gamma=1.):
+def M_enc_rs_analytic(M, vw, gamma=1., rbrinf=1.):
+	'''Stellar mass enclosed inside of the stagnation radius'''
+	return M*(rs_approx(M, vw, gamma=gamma, rbrinf=rbrinf)/rinf(M))**(2.-gamma)
+
+def mdot_analytic(M, vw, gamma=1.,eta=0.1, rbrinf=1.):
+	return eta*M_enc_rs_analytic(M, vw, gamma=gamma, rbrinf=rbrinf)/th
+
+def eddr_analytic(M, vw, gamma=1., eta=0.1, rbrinf=1.):
+	'''Analytic expression for the Eddington ratio--for cuspy galaxies'''
+	return mdot_analytic(M, vw, gamma=gamma, eta=eta, rbrinf=rbrinf)/mdot_edd(M)
+
+def rho_rs_analytic(M, vw, gamma=1,eta=0.1,rbrinf=1.):
+	'''Analytic expression for gas density at the stagnation radius rs'''
 	rs=rs_approx(M, vw, gamma=gamma)
-	sigma_0=3.0**0.5*sigma_200(M)*2.0E7
-	x=r/rs
-	
-	return (a(gamma))**0.5*vff(M,r)*abs(h(x,gamma))
+	return mdot_analytic(M, vw, gamma=gamma, eta=eta,rbrinf=rbrinf)/(4./3.*np.pi*rs_approx(M,vw,gamma=gamma,rbrinf=rbrinf)**2*vff(M,rs))
 
-def rho_approx(M, vw, r, gamma=1., eta=0.1):
-	rs=rs_approx(M,vw,gamma=gamma)
-	x=r/rs
-	delta=1+gamma
-	##Note that the same approximation for the stagnation radius, rs, should be used everywhere (this is currently not the case!)
-	q0=q_rs_analytic(M,vw, gamma=gamma, eta=eta)
-	return  -q0*tff(M, rs)/(2.-gamma)*((x**(2.-gamma)-1.)/x**1.5)*((2.+gamma)/3.)**0.5/h(x,gamma=gamma)
-	# try:
-	# 	return -q0*tff(M, rs)/(2.-gamma)*((x**(2.-gamma)-1.)/x**1.5)/h(x)
-	# except: 
-	# 	return -q0*tff(M, rs)*(6.)/(2.*delta-1.)
+def rho_stars_rs_analytic(M, vw, gamma=1., rbrinf=1.):
+	'''Analytic expression for the stellar density at the stagnation radius rs'''
+	return M*(2.-gamma)/(4.*np.pi*rinf(M)**3.)*(rs_approx(M,vw,gamma=gamma, rbrinf=rbrinf)/rinf(M))**(-1.-gamma)
 
+def q_rs_analytic(M, vw, gamma=1., eta=0.1, rbrinf=1.):
+	'''Analytic estimate for the mass source function and the stagnation radius rs'''
+	return eta*rho_stars_rs_analytic(M, vw, gamma=gamma, rbrinf=rbrinf)/th
 
-def rho_rs_analytic(M, vw, gamma=1,eta=0.1):
-	rs=rs_approx(M, vw, gamma=gamma)
-	return mdot_analytic(M, vw, gamma=gamma, eta=eta)/(4./3.*np.pi*rs_approx(M,vw,gamma=gamma)**2*vff(M,rs))
+def tcool_rs(M, vw, gamma=1., mu=0.62, eta=0.1):
+	'''Analytic estimate  for the ratio of the cooling time at the stagnation radius rs''' 
+	temp_rs=temp_rs(M, vw, gamma=gamma, mu=mu)
+	return 1.5*kb*temp_rs/(rho_rs_analytic(gamma,eta,vw,rbrinf)/(mu*mp)*lambda_c(temp_rs))
 
-def rho_stars_rs_analytic(M, vw, gamma=1):
-	return M*(2.-gamma)/(4.*np.pi*rinf(M)**3.)*(rs_approx(M,vw,gamma=gamma)/rinf(M))**(-1.-gamma)
-
-def q_rs_analytic(M, vw, gamma=1., eta=0.1):
-	return eta*rho_stars_rs_analytic(M, vw, gamma)/th
-
-def tcool_rs(M, vw, mu=0.62, gamma=1., eta=0.1):
-	temp_rs=temp_rs(M, vw, mu)
-	return 1.5*kb*temp_rs/(rho_rs_analytic/(mu*mp)*lambda_c(temp_rs))
-
-def tcool_tff_rs(M, vw, mu=0.62, gamma=1., eta=0.1):
-	return tcool_rs(M, vw, mu, gamma, eta)/tff_rs(M, vw)
+def tcool_tff_rs(M, vw, mu=0.62, gamma=1., eta=0.1, rbrinf=1.):
+	'''Analytic estimate for the ratio of the cooling to the free-fall time at the stagnation radius.'''
+	rs1=rs_approx(M,vw,gamma=gamma,rbrinf=rbrinf)
+	return tcool_rs(M, vw, mu, gamma, eta, rbrinf)/tff(M,rs1)
 
 def rbondi(M, cs):
 	'''Bondi radius from the mass M and sound speed cs'''
@@ -191,70 +149,13 @@ def eta(t):
 def rate_Ia(t):
 	'''Rate of SNe Ia using delay time distribution from Maoz et al. '12'''
 	return 0.03*(t/(1.E8*year))**(-1.12)*(1/year)*(1./(10.**10*M_sun))
-
-def vw_eff_stars(t):
-	if t<10.**7.5*year:
-		return 1.E8
-	else:
-		return 1.E7
-	
-def rho_rs(M, vw):
-	return 3.95E-24*(vw/5.E7)*(M/(1.E8*M_sun))**-0.56
  
 def vw_eff_Ia(t):
 	'''vw from Ia's in impulsive limit'''
 	eps1a=0.4
 	return ((2.*th*rate_Ia(t)*(eps1a*1.E51))/eta(t))**0.5
 
-def vw_eff_imp(t, M):
-	r_Ia_0=r_Ia(t,M)
-	vw_eff=np.array([vw_eff_stars(t), (vw_eff_Ia(t)**2+vw_eff_stars(t)**2)**0.5])
-	rs=np.array([rs_approx(M, vw, gamma=gamma) for vw in vw_eff])
-	if rs[0]<r_Ia_0:
-		return vw_eff[0]
-	elif rs[1]>r_Ia_0:
-		return vw_eff[1]
-	else:
-		return vw_eff[0]
-		# return vw_from_rs(M, r_Ia_0)
 
-def en_analytic_nd(x, zeta, gamma, w):
-	delta=1.+gamma
-
-	return 1./x + w/x - ((3. - delta)*w*x**(2. - delta))/(2. - delta) - \
-	(((2. - delta)*(3. - delta) - (3. - delta)**2)*w*(-1. + x**(5. - 2.*delta)))/\
-	((5. - 2*delta)*(2. - delta)*(-1. + x**(3. - delta))) + \
-	((1. - 2*delta)*(3. - delta)*(-1. + x**(2. - delta)))/\
-	(2.*(2. - delta)*(1 + delta)*(-1. + x**(3. - delta))) + 1.5*w**(1./(3. - delta))*zeta**2
-
-def en_analytic(phi_rs, x, zeta, gamma,  w):
-	'''Analytic expression for v^2/2+(1/(gamma-1))*(kb T/(mu mp)). Derived from Bernoulli conservation.'''
-	return phi_rs*en_analytic_nd(x, zeta, gamma, w)
-
-def w_solve(rb_rinf, zeta, gamma):
-	'''minimum rs/rinf, for a given rb/rinf, zeta, and gamma'''
-	warnings.filterwarnings('error')
-
-	delta=gamma+1.
-	try:
-		return fsolve(lambda w: en_analytic_nd(rb_rinf/w**(1./(2.-gamma)), zeta, gamma, w),100.)[0]
-	except Warning:
-		return np.nan
-
-def rb_crit_solve(zeta, gamma, rs_rinf):
-	'''critical rb/rinf for which one would get outflow for a given rs/rinf and a particular normalizaed heating rate.'''
-	delta=gamma+1.
-	# rs_rinf=rs_rinf_crit(zeta, gamma)
-	w=(rs_rinf)**(2.-gamma)
-
-	return fsolve(lambda rb_rinf: en_analytic_nd(rb_rinf/w**(1./(2.-gamma)), zeta, gamma, w),1.1*rs_rinf)
-
-def rs_rinf_min_core(rb_rinf, zeta):
-	zeta_c=rb_rinf**0.45
-	if zeta>zeta_c:
-		return -1.
-	else:
-		return (rb_rinf)*(zeta_c-zeta)**0.5/(zeta_c-1.)**0.5
 
 
 
