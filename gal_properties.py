@@ -1,4 +1,4 @@
-
+ 
 import astropy.constants as const
 import numpy as np
 from scipy.optimize import fsolve
@@ -82,8 +82,11 @@ def dens_slope(gamma):
 	'''Approximate expression for the density slope at the stagnation radius'''
 	return -(1./6.*(1.-4.*(1+gamma)))
 
+def temp_rs_tilde(M, vw,  mu=0.62):
+	return 0.4*mu*mp*vw**2/kb/2.
+
 def temp_rs(M, vw, gamma=1., mu=0.62):
-	return 0.4*mu*mp*vw**2/kb/2.*(3.+8.*gamma)/(3.+8.*gamma-6.*dens_slope(gamma))
+	return 0.4*mu*mp*vw**2/kb/2.*(13.+8.*gamma)/(13.+8.*gamma-6.*dens_slope(gamma))
 
 def rs_approx(M, vw, gamma=1., rbrinf=1.):
 	'''Simplified analytic expression for the stagnation radius--given a particular bh mass and particular vw.
