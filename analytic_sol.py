@@ -52,18 +52,19 @@ def rho_approx(M, vw, r, gamma=1., eta=0.1):
 	##Note that the same approximation for the stagnation radius, rs, should be used everywhere (this is currently not the case!)
 	q0=q_rs_analytic(M,vw, gamma=gamma, eta=eta)
 	return  -q0*tff(M, rs)/(2.-gamma)*((x**(2.-gamma)-1.)/x**1.5)*((2.+gamma)/3.)**0.5/h(x,gamma=gamma)
-	def enth_analytic_nd(x, zeta, gamma, w):
-		delta=1.+gamma
 
-		return 1./x + w/x - ((3. - delta)*w*x**(2. - delta))/(2. - delta) - \
-		(((2. - delta)*(3. - delta) - (3. - delta)**2)*w*(-1. + x**(5. - 2.*delta)))/\
-		((5. - 2*delta)*(2. - delta)*(-1. + x**(3. - delta))) + \
-		((1. - 2*delta)*(3. - delta)*(-1. + x**(2. - delta)))/\
-		(2.*(2. - delta)*(1 + delta)*(-1. + x**(3. - delta))) + 1.5*w**(1./(3. - delta))*zeta**2
+def enth_analytic_nd(x, zeta, gamma, w):
+	delta=1.+gamma
+
+	return 1./x + w/x - ((3. - delta)*w*x**(2. - delta))/(2. - delta) - \
+	(((2. - delta)*(3. - delta) - (3. - delta)**2)*w*(-1. + x**(5. - 2.*delta)))/\
+	((5. - 2*delta)*(2. - delta)*(-1. + x**(3. - delta))) + \
+	((1. - 2*delta)*(3. - delta)*(-1. + x**(2. - delta)))/\
+	(2.*(2. - delta)*(1 + delta)*(-1. + x**(3. - delta))) + 1.5*w**(1./(3. - delta))*zeta**2
 
 def enth_analytic(phi_rs, x, zeta, gamma,  w):
 	'''Analytic expression for v^2/2+(1/(gamma-1))*(kb T/(mu mp)). Derived from Bernoulli conservation.'''
-	return phi_rs*en_analytic_nd(x, zeta, gamma, w)
+	return phi_rs*enth_analytic_nd(x, zeta, gamma, w)
 
 def be_analytic_nd(x, zeta, gamma, w, rb_rinf):
 	delta=1.+gamma

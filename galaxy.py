@@ -27,6 +27,7 @@ from latex_exp import latex_exp
 
 import tde_jet
 import gal_properties
+import analytic_sol as anal_sol
 
 import progressbar as progress
 
@@ -2081,7 +2082,7 @@ class NukerGalaxy(Galaxy):
 		if self.stag_unique:
 			return self.heating_pos_rs/self.cooling_rs
 
-	def en_analytic(self, r):
+	def be_analytic(self, r):
 		'''analytic v^2/2+(gamma)/(gamma-1)*p/rho at radius r. Uses info from solution (the stagnation radius)'''
 		if self.stag_unique:
 			phi_rs=G*self.params['M']/self.rs[0]
@@ -2089,7 +2090,17 @@ class NukerGalaxy(Galaxy):
 			x=r/self.rs[0]
 			w=(self.rs[0]/self.rinf)**(2.-self.params['gamma'])
 
-			return gal_properties.en_analytic(phi_rs, x, z, self.params['gamma'], w)
+			return anal_sol.be_analytic(phi_rs, x, z, self.params['gamma'], w, self.params['rb']/self.rinf)
+
+	def enth_analytic(self, r):
+		'''analytic v^2/2+(gamma)/(gamma-1)*p/rho at radius r. Uses info from solution (the stagnation radius)'''
+		if self.stag_unique:
+			phi_rs=G*self.params['M']/self.rs[0]
+			z=(self.vw_extra**2.+self.sigma_0**2.)**0.5/self.sigma_0
+			x=r/self.rs[0]
+			w=(self.rs[0]/self.rinf)**(2.-self.params['gamma'])
+
+			return anal_sol.enth_analytic(phi_rs, x, z, self.params['gamma'], w)
 
 	def mdot_outflow(self):
 		'''Mass outflow rate at the break radius, rb calculated from the mass enclosed profile of the galaxy'''
