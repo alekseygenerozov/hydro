@@ -2029,7 +2029,7 @@ class NukerGalaxy(Galaxy):
 	@property
 	def temp_rs_analytic(self):
 		'''Analytic expression for the temperature at the stagnation radius--using no information from numerical results'''
-		return gal_properties.temp_rs(self.params['M'], (self.vw_extra**2.+self.sigma_0**2.)**0.5, self.mu)
+		return gal_properties.temp_rs(self.params['M'], (self.vw_extra**2.+self.sigma_0**2.)**0.5, gamma=self.params['gamma'], mu=self.mu)
 
 	@property 
 	def temp_rs_analytic_cheat(self):
