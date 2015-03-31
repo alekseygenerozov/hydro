@@ -944,17 +944,18 @@ class Galaxy(object):
 			ax1[i].loglog(self.radii[1:],fdiff, **dict2)
 		return fig1
 		
-	@property
-	def sol_plot(self, init=False, dict1={}, dict2={}, index=-1):
+	def sol_plot(self, init=False, dict1={}, dict2={}, index=-1.):
 		fig1,ax1=plt.subplots(3, sharex=True, figsize=(10,24))
 		labels=[r'$\rho$ [g/cm$^{-3}$]', r'v/c$_s$', 'T [K]']
-
+		init=np.array([init]).flatten()
+		if len(init)<3:
+			init=[init[0]]*3
+			
 		for k in range(1,4):
 			ax1[k-1].set_ylabel(labels[k-1])
 			ax1[k-1].set_xlabel('Radius [cm]')
-
 			ax1[k-1].loglog(self.saved[index,:,0], abs(self.saved[index,:,k]), **dict1)
-			if init:
+			if init[k-1]:
 				ax1[k-1].loglog(self.saved[0,:,0], abs(self.saved[0,:,k]), **dict2)
 		plt.close()
 		return fig1

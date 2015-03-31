@@ -92,7 +92,7 @@ class Catalog(object):
 							print gal.name
 							continue
 						if len(gal.rs)!=1:
-							print gal.name+' '+str(gal.params['M'])+' '+str(gal.vw_extra/1.E5)+' has more than 1 stagnation point'
+							print gal.name+' '+str(gal.params['M'])+' '+str(gal.vw_extra/1.E5)+' '+str(gal.params['gamma'])+' '+str(gal.params['rb'])+' has more than 1 stagnation point'
 							continue
 
 						self.gals_full.append(gal)
@@ -114,7 +114,7 @@ class Catalog(object):
 			if (not bad_gals and not gal.check_partial):
 				continue
 			if len(gal.rs)!=1:
-				print gal.name+' '+str(gal.params['M'])+' '+str(gal.vw_extra/1.E5)+' has more than 1 stagnation point'
+				print gal.name+' '+str(gal.params['M'])+' '+str(gal.vw_extra/1.E5)+' '+str(gal.params['gamma'])+' '+str(gal.params['rb'])+' has more than 1 stagnation point'
 				continue
 
 			self.gals_full.append(gal)
