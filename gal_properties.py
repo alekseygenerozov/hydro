@@ -2,6 +2,7 @@
 import astropy.constants as const
 import numpy as np
 from scipy.optimize import fsolve
+from scipy.optimize import minimize
 
 import warnings
 
@@ -79,8 +80,6 @@ def vff(M, r):
 def tff(M, r):
 	return r/vff(M, r)
 
-# def r_Ia(t,M):
-# 	return (G/(sigma_200(M)*2.E7*rate_Ia(t)))**0.5
 def r_Ia(M):
 	return 38.*pc*(M/(10.**8*M_sun))**-0.1
 
@@ -90,9 +89,16 @@ def zeta(M, vw):
 def zeta_c_fit(gamma, rbrinf):
 	return (rbrinf)**(0.5*(1.-gamma))
 
-def zeta_anal(x, dens_slope=1., gamma=1.):
+def zeta_anal(x,  gamma=1., nu=None):
 	'''This function explicitly calculates zeta given for x and power law density slope, nu.'''
-	return ((1.0/(3.0*x*dens_slope))*(x**(2.-gamma)*4.0+(13.+8.*gamma)/(4.+2.*gamma)-dens_slope*3./(2.+gamma)))**0.5
+	if not nu:
+		nu=dens_slope(gamma)
+	return ((1.0/(3.0*x*nu))*(x**(2.-gamma)*4.0+(13.+8.*gamma)/(4.+2.*gamma)-nu*3./(2.+gamma)))**0.5
+
+def zeta_min(gamma=1, nu=None):
+	if not nu:
+		nu=dens_slope(gamma)
+	return minimize(lambda x: zeta_anal(x, gamma=gamma, nu=nu), 1.)
 
 def dens_slope(gamma):
 	'''Approximate expression for the density slope at the stagnation radius'''
@@ -104,22 +110,51 @@ def temp_rs_tilde(M, vw,  mu=0.62):
 def temp_rs(M, vw, gamma=1., mu=0.62):
 	return 0.4*mu*mp*vw**2/kb/2.*(13.+8.*gamma)/(13.+8.*gamma-6.*dens_slope(gamma))
 
-def rs_approx(M, vw, gamma=1.):
+def rs_approx(M, vw, gamma=1., nu=None):
 	'''Simplified analytic expression for the stagnation radius--given a particular bh mass and particular vw.
 	This neglects the stellar mass term. Note that we have incorporate the effect of the constant stellar velocity dispersion.'''
 	sigma_0=(3.0)**0.5*sigma(M)
-	return G*M/(dens_slope(gamma)*(vw**2.+sigma_0**2))*((13.+8.*gamma)/(4.+2.*gamma)-dens_slope(gamma)*(3./(2.+gamma)))
+	if not nu:
+		nu=dens_slope(gamma)
+	return G*M/(nu*(vw**2.+sigma_0**2))*((13.+8.*gamma)/(4.+2.*gamma)-nu*(3./(2.+gamma)))
+
+def rs_rinf_approx(z, gamma=1., nu=None):
+	if not nu:
+		nu=dens_slope(gamma)
+	return (1./(3*nu*z**2.))*((13.+8.*gamma)/(4.+2.*gamma)-nu*(3./(2.+gamma)))
+
+def rs_rinf_exact(z, gamma=1., nu=None):
+	if z<zeta_min(gamma, nu):
+		print 'no solution for specified zeta'
+		return np.nan
+	if not nu:
+		nu=dens_slope(gamma)
+	return fsolve(lambda x:zeta_anal(x, gamma=gamma, nu=nu)-z, rs_rinf_approx(z, gamma=gamma, nu=nu))
 
 def M_enc_rs_analytic(M, vw, gamma=1.):
 	'''Stellar mass enclosed inside of the stagnation radius'''
 	return M*(rs_approx(M, vw, gamma=gamma)/rinf(M))**(2.-gamma)
 
+def	M_enc_rs_analytic_exact(M, vw, gamma=1.):
+	'''Stellar mass enclosed inside of the stagnation radius--more exact'''
+	sigma_0=(3.)**0.5*sigma(M)
+	z=(vw**2.+sigma_0**2.)**0.5/sigma_0
+
+	return M*(rs_rinf_exact(z, gamma=gamma))**(2.-gamma)
+
 def mdot_analytic(M, vw, gamma=1.,eta=0.1):
 	return eta*M_enc_rs_analytic(M, vw, gamma=gamma)/th
+
+def mdot_analytic_exact(M, vw, gamma=1.,eta=0.1):
+	return eta*M_enc_rs_analytic_exact(M, vw, gamma=gamma)/th
 
 def eddr_analytic(M, vw, gamma=1., eta=0.1):
 	'''Analytic expression for the Eddington ratio--for cuspy galaxies'''
 	return mdot_analytic(M, vw, gamma=gamma, eta=eta)/mdot_edd(M)
+
+def eddr_analytic_exact(M, vw, gamma=1., eta=0.1):
+	'''Analytic expression for the Eddington ratio--for cuspy galaxies'''
+	return mdot_analytic_exact(M, vw, gamma=gamma, eta=eta)/mdot_edd(M)
 
 def rho_rs_analytic(M, vw, gamma=1,eta=0.1):
 	'''Analytic expression for gas density at the stagnation radius rs'''
