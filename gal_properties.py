@@ -98,7 +98,7 @@ def zeta_anal(x,  gamma=1., nu=None):
 def zeta_min(gamma=1, nu=None):
 	if not nu:
 		nu=dens_slope(gamma)
-	return minimize(lambda x: zeta_anal(x, gamma=gamma, nu=nu), 1.)
+	return minimize(lambda x: zeta_anal(x, gamma=gamma, nu=nu), 1.)['fun']
 
 def dens_slope(gamma):
 	'''Approximate expression for the density slope at the stagnation radius'''
@@ -124,11 +124,13 @@ def rs_rinf_approx(z, gamma=1., nu=None):
 	return (1./(3*nu*z**2.))*((13.+8.*gamma)/(4.+2.*gamma)-nu*(3./(2.+gamma)))
 
 def rs_rinf_exact(z, gamma=1., nu=None):
-	if z<zeta_min(gamma, nu):
-		print 'no solution for specified zeta'
-		return np.nan
 	if not nu:
 		nu=dens_slope(gamma)
+	if z<zeta_min(gamma, nu):
+		print z, gamma, nu,zeta_min(gamma, nu)
+		print 'no solution for specified zeta'
+		return np.nan
+
 	return fsolve(lambda x:zeta_anal(x, gamma=gamma, nu=nu)-z, rs_rinf_approx(z, gamma=gamma, nu=nu))
 
 def M_enc_rs_analytic(M, vw, gamma=1.):
