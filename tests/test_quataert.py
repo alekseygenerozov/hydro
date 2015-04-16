@@ -47,6 +47,8 @@ def test_quataert():
 
 	assert np.allclose(saved1[-1,:,:8], saved2[-1,:,:8])
 
+if __name__ == '__main__':
+	test_quataert()
 
 
 
