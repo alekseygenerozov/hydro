@@ -3,6 +3,7 @@ import astropy.constants as const
 import numpy as np
 from scipy.optimize import fsolve
 from scipy.optimize import minimize
+from scipy.interpolate import interp1d
 
 import warnings
 
@@ -18,6 +19,34 @@ pc=const.pc.cgs.value
 th=4.35*10**17
 year=3.15569E7
 
+def pow_extrap(r, r1, r2, field1, field2):
+	'''Power law extrapolation given radius of interest, and input radii and fields'''
+	slope=np.log(field2/field1)/np.log(r2/r1)
+
+	return field1*np.exp(slope*np.log(r/r1))
+
+def extrap1d_pow(interpolator):
+	'''Modify interpolation function to allow for extrapolation--power law extrapolation beyond boundaries'''
+	xs = interpolator.x
+	ys = interpolator.y
+
+	#This will not work if we have less than 2 interpolation x values. Also, this is somewhat different from the extrapolation used for updating 
+	#the boundaries of the grid, where I go three zones on either side of the edge non-ghost zones in order to compute the power law slope.
+	def pointwise(x):
+		if x < xs[0]:
+			return pow_extrap(x, xs[0], xs[1], ys[0], ys[1])
+		elif x > xs[-1]:
+			return pow_extrap(x, xs[-1], xs[-2], ys[-1], ys[-2])
+		else:
+			return interpolator([x])[0]
+
+	def ufunclike(xs):
+		try:
+			return np.array(map(pointwise, xs))
+		except TypeError:
+			return pointwise(xs)
+
+	return ufunclike
 
 def l_edd(M):
 	'''Eddington luminosity'''
@@ -49,6 +78,56 @@ def uppsilon_vband(sigma, reff, Mv):
 def uppsilon_vband_mag(Mv):
 	'''scaling relation for mass-to-light ratio in V band'''
 	return 4.9*(Lv(Mv)/(10.**10*L_sun))**0.18
+
+def epsilon_adaf_delta_5(eddr, alpha=0.1):
+	'''efficiciency for ADAF as a function of eddington ratio, eddr,
+	from Table 1 and equation 11 Xie & Yuan 2012. delta=0.5 (see Xie & Yuan).
+
+	:param alpha: Shakura-Sunyaev alpha parameter
+	'''
+	if eddr<2.9E-5:
+		eps0=1.58
+		a=0.65
+	elif eddr<3.3E-3:
+		eps0=0.055
+		a=0.076
+	elif eddr<5.3E-3:
+		eps0=0.1
+		a=0.12
+	else:
+		eps0=0.08
+		a=0.
+	# print a, eddr
+	return eps0*(alpha/0.1)**0.5*(eddr/0.01)**a
+
+def epsilon_adaf_delta_1(eddr, alpha=0.1):
+	'''efficiciency for ADAF as a function of eddington ratio, eddr,
+	from Table 1 and equation 11 Xie & Yuan 2012. delta=0.1 (see Xie & Yuan).
+
+	:param alpha: Shakura-Sunyaev alpha parameter
+	'''
+	if eddr<9.4E-5:
+		eps0=0.12
+		a=0.59
+	elif eddr<5.E-3:
+		eps0=0.026
+		a=0.27
+	elif eddr<5.9E-3:
+		eps0=0.50
+		a=4.53
+	else:
+		eps0=0.08
+		a=0.
+
+	return eps0*(alpha/0.1)**0.5*(eddr/0.01)**a
+
+def epsilon_sharma(eddr):
+	if eddr>0.01:
+		return 0.1
+	else:	
+		eff=np.genfromtxt('/Users/aleksey/Documents/papers/Sharma/middle.csv', delimiter=',')
+		extrap=extrap1d_pow(interp1d(10.**eff[:,0], 10.**eff[:,1]))
+		return extrap(eddr)
 
 def lambda_c(temp):
 	'''Power law approximation to cooling function for solar abundance plasma (taken from figure 34.1 of Draine)'''
