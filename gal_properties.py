@@ -123,11 +123,21 @@ def epsilon_adaf_delta_1(eddr, alpha=0.1):
 
 def epsilon_sharma(eddr):
 	if eddr<1.E-4:
-	    return 7.1E-6*(eddr/(1.E-8))**0.9
+		return 2.6E-2*(eddr/(1.E-4))**0.9
 	elif eddr<1.E-2:
-	    return 2.6E-2
+		return 2.6E-2
+	elif eddr<0.1:
+		return 0.1*(eddr/0.1)**0.58
 	else:
-	    return 0.1
+		return 0.1
+
+def epsilon_sharma_2(eddr):
+	if eddr>0.01:
+		return 0.1
+	else:	
+		eff=np.genfromtxt('/Users/aleksey/Documents/papers/Sharma/middle.csv', delimiter=',')
+		extrap=extrap1d_pow(interp1d(10.**eff[:,0], 10.**eff[:,1]))
+		return extrap(eddr)
 	
 def lambda_c(temp):
 	'''Power law approximation to cooling function for solar abundance plasma (taken from figure 34.1 of Draine)'''
