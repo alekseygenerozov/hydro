@@ -132,10 +132,11 @@ def tff(M, r):
 	return r/vff(M, r)
 
 def r_Ia(M):
+	'''radius for which time between Ias is equal to dynamical time'''
 	return 38.*pc*(M/(10.**8*M_sun))**-0.1
 
 def zeta(M, vw):
-	'''critical normalized heating rate for thermal instability'''
+	'''normalized heating rate'''
 	return (vw**2.+3.*sigma(M)**2.)/(3.**0.5*sigma(M))
 
 def zeta_c_fit(gamma, rbrinf):
@@ -143,7 +144,7 @@ def zeta_c_fit(gamma, rbrinf):
 	return (rbrinf)**(0.5*(1.-gamma))
 
 def zeta_anal(x,  gamma=1., nu=None):
-	'''This function explicitly calculates zeta given for x and power law density slope, nu.'''
+	'''This function explicitly calculates zeta given x (rs/rinf) and power law density slope, nu.'''
 	if not nu:
 		nu=dens_slope(gamma)
 	return ((1.0/(3.0*x*nu))*(x**(2.-gamma)*4.0+(13.+8.*gamma)/(4.+2.*gamma)-nu*3./(2.+gamma)))**0.5
