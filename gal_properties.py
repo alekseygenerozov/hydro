@@ -107,8 +107,12 @@ def lambda_c(temp):
 def rinf(M):
 	return 14.*(M/(1.E8*M_sun))**0.6*pc
 
-def rbreakCore(M):
+def rb_core(M):
+	'''scaling relationship for break radius from Lauer et al. 2007 sample'''
 	return 106.*(M/(1.E8*M_sun))**0.39*pc
+
+def rb_rinf_core(M):
+	return rb_core(M)/rinf(M)
 
 def gamma_fit(M):
 	'''Average Nuker gamma based on Lauer et al. 2007 sample'''
@@ -137,7 +141,7 @@ def r_Ia(M):
 
 def zeta(M, vw):
 	'''normalized heating rate'''
-	return (vw**2.+3.*sigma(M)**2.)/(3.**0.5*sigma(M))
+	return (vw**2.+3.*sigma(M)**2.)**0.5/(3.**0.5*sigma(M))
 
 def zeta_c_fit(gamma, rbrinf):
 	'''fit to critical heating rate for thermal instability'''
