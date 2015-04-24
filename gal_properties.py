@@ -79,48 +79,6 @@ def uppsilon_vband_mag(Mv):
 	'''scaling relation for mass-to-light ratio in V band'''
 	return 4.9*(Lv(Mv)/(10.**10*L_sun))**0.18
 
-# def epsilon_adaf_delta_5(eddr, alpha=0.1):
-# 	'''efficiciency for ADAF as a function of eddington ratio, eddr,
-# 	from Table 1 and equation 11 Xie & Yuan 2012. delta=0.5 (see Xie & Yuan).
-
-# 	:param alpha: Shakura-Sunyaev alpha parameter
-# 	'''
-# 	if eddr<2.9E-5:
-# 		eps0=1.58
-# 		a=0.65
-# 	elif eddr<3.3E-3:
-# 		eps0=0.055
-# 		a=0.076
-# 	elif eddr<5.3E-3:
-# 		eps0=0.1
-# 		a=0.12
-# 	else:
-# 		eps0=0.08
-# 		a=0.
-# 	# print a, eddr
-# 	return eps0*(alpha/0.1)**0.5*(eddr/0.01)**a
-
-# def epsilon_adaf_delta_1(eddr, alpha=0.1):
-# 	'''efficiciency for ADAF as a function of eddington ratio, eddr,
-# 	from Table 1 and equation 11 Xie & Yuan 2012. delta=0.1 (see Xie & Yuan).
-
-# 	:param alpha: Shakura-Sunyaev alpha parameter
-# 	'''
-# 	if eddr<9.4E-5:
-# 		eps0=0.12
-# 		a=0.59
-# 	elif eddr<5.E-3:
-# 		eps0=0.026
-# 		a=0.27
-# 	elif eddr<5.9E-3:
-# 		eps0=0.50
-# 		a=4.53
-# 	else:
-# 		eps0=0.08
-# 		a=0.
-
-# 	return eps0*(alpha/0.1)**0.5*(eddr/0.01)**a
-
 def epsilon_sharma(eddr):
 	if eddr<1.E-4:
 		return 2.6E-2*(eddr/(1.E-4))**0.9
@@ -152,6 +110,10 @@ def rinf(M):
 def rbreakCore(M):
 	return 106.*(M/(1.E8*M_sun))**0.39*pc
 
+def gamma_fit(M):
+	'''Average Nuker gamma based on Lauer et al. 2007 sample'''
+	return 0.3*(M/(1.E8*M_sun))**(-0.24)
+
 def sigma_200(M):
 	'''M-sigma from McConnell et al. 2011'''
 	return ((M)/(2.E8*M_sun))**(1./5.1)
@@ -173,9 +135,11 @@ def r_Ia(M):
 	return 38.*pc*(M/(10.**8*M_sun))**-0.1
 
 def zeta(M, vw):
+	'''critical normalized heating rate for thermal instability'''
 	return (vw**2.+3.*sigma(M)**2.)/(3.**0.5*sigma(M))
 
 def zeta_c_fit(gamma, rbrinf):
+	'''fit to critical heating rate for thermal instability'''
 	return (rbrinf)**(0.5*(1.-gamma))
 
 def zeta_anal(x,  gamma=1., nu=None):
