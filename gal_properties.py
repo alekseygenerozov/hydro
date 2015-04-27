@@ -137,15 +137,51 @@ def tff(M, r):
 
 def r_Ia(M):
 	'''radius for which time between Ias is equal to dynamical time'''
-	return 38.*pc*(M/(10.**8*M_sun))**-0.1
+	return 35.*pc*(M/(10.**8*M_sun))**-0.1
 
 def zeta(M, vw):
 	'''normalized heating rate'''
 	return (vw**2.+3.*sigma(M)**2.)**0.5/(3.**0.5*sigma(M))
 
-def zeta_c_fit(gamma, rbrinf):
+
+def zeta_norm(M, vw, gamma=None, rb_rinf=None):
+	'''normalized heating rate
+
+	:param gamma: nuker gamma if not provided use 0.3*M8^-0.24
+	:param rb_rinf: break radius divided by the influence radius. If not provided 
+	use scaling relationship (rb_rinf_core) for cores (gamma<0.3) and 100 pc/rinf for cusps
+
+	'''
+	if not gamma:
+		gamma=gamma_fit(M)
+	if not rb_rinf:
+		if gamma<0.3:
+			rb_rinf=rb_rinf_core(M)
+		else:
+			rb_rinf=100.*pc/rinf(M)
+
+	z=zeta(M, vw)
+	zc=zeta_c_fit(gamma, rb_rinf)
+
+	return z/zc
+
+def zeta_c_fit(gamma, rb_rinf):
 	'''fit to critical heating rate for thermal instability'''
-	return (rbrinf)**(0.5*(1.-gamma))
+	return (rb_rinf)**(0.5*(1.-gamma))
+
+def vw_crit(M, gamma=None, rb_rinf=None):
+	'''critical heating rate below which rs should run away.'''
+	if not gamma:
+		gamma=gamma_fit(M)
+	if not rb_rinf:
+		if gamma<0.3:
+			rb_rinf=rb_rinf_core(M)
+		else:
+			rb_rinf=100.*pc/rinf(M)
+	zc=zeta_c_fit(gamma, rb_rinf)
+	sigma_0=(3.)**0.5*sigma(M)
+
+	return (zc**2.-1.)**0.5*sigma_0
 
 def zeta_anal(x,  gamma=1., nu=None):
 	'''This function explicitly calculates zeta given x (rs/rinf) and power law density slope, nu.'''
@@ -167,6 +203,16 @@ def temp_rs_tilde(M, vw,  mu=0.62):
 
 def temp_rs(M, vw, gamma=1., mu=0.62):
 	return 0.4*mu*mp*vw**2/kb/2.*(13.+8.*gamma)/(13.+8.*gamma-6.*dens_slope(gamma))
+
+def vw_ti_core(M, eta):
+	'''thermal instability criterion for cusp galaxies--assumes gamma=0.8'''
+	M8=M/10.**8/M_sun
+	return 2.814679E7*M8**0.1055555556*(eta/0.02)**0.1388889
+
+def vw_ti_cusp(M, eta):
+	'''thermal instability criterion for cusp galaxies--assumes gamma=0.8'''
+	M8=M/10.**8/M_sun
+	return 2.425311E7*M8**0.08275862*(eta/0.02)**0.17241
 
 def rs_approx(M, vw, gamma=1., nu=None):
 	'''Simplified analytic expression for the stagnation radius--given a particular bh mass and particular vw.
