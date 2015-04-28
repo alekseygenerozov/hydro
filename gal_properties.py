@@ -169,16 +169,21 @@ def zeta_c_fit(gamma, rb_rinf):
 	'''fit to critical heating rate for thermal instability'''
 	return (rb_rinf)**(0.5*(1.-gamma))
 
-def vw_crit(M, gamma=None, rb_rinf=None):
-	'''critical heating rate below which rs should run away.'''
+def vw_crit(M, gamma=None, rb_rinf=None, sig=None):
+	'''critical heating rate below which rs should run away. Corresponds to zeta_c_fit'''
 	if not gamma:
 		gamma=gamma_fit(M)
+	#Scaling relations for rb if this is not specified...
 	if not rb_rinf:
 		if gamma<0.3:
 			rb_rinf=rb_rinf_core(M)
 		else:
 			rb_rinf=100.*pc/rinf(M)
+	#Critical zeta		
 	zc=zeta_c_fit(gamma, rb_rinf)
+	#If sigma is not specified use the M-sigma relation
+	if not sig:
+		sig=sigma(M)
 	sigma_0=(3.)**0.5*sigma(M)
 
 	return (zc**2.-1.)**0.5*sigma_0
@@ -213,6 +218,16 @@ def vw_ti_cusp(M, eta):
 	'''thermal instability criterion for cusp galaxies--assumes gamma=0.8'''
 	M8=M/10.**8/M_sun
 	return 2.425311E7*M8**0.08275862*(eta/0.02)**0.17241
+
+def vw_ti_Ia_cusp(M, eta):
+	'''thermal instability criterion for core galaxies w/ Ia heating--assumes gamma=0.8'''
+	M8=M/10.**8/M_sun
+	return 3.58487E7*(eta/0.02)**0.2941/(M8**0.246)
+
+def vw_ti_Ia_core(M, eta):
+	'''thermal instability criterion for core galaxies w/ Ia heating--assumes gamma=0.1'''
+	M8=M/10.**8/M_sun
+	return (3.645E7*(eta/0.02)**0.2941)/(M8**0.390)
 
 def rs_approx(M, vw, gamma=1., nu=None):
 	'''Simplified analytic expression for the stagnation radius--given a particular bh mass and particular vw.

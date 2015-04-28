@@ -1936,11 +1936,11 @@ class NukerGalaxy(Galaxy):
 	@memoize
 	def _get_rinf(self):
 		'''Get radius of influence for galaxy'''
-		def mdiff(r):
-			return self.params['M']-self.M_enc(r)
+		def mdiff(log_r):
+			return np.log10(self.params['M'])-np.log10(self.M_enc(10.**log_r))
 
-		jac=lambda r: -4.*np.pi*r**2*self.rho_stars(r)
-		return fsolve(mdiff, 0.9*pc*(self.params['M']/(1.E6*M_sun))**0.4, fprime=jac)[0]
+		# jac=lambda r: -4.*np.pi*r**2*self.rho_stars(r)
+		return 10.**fsolve(mdiff, np.log10(0.9*pc*(self.params['M']/(1.E6*M_sun))**0.4))[0]
 
 	@property
 	def rinf(self):
