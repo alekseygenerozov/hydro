@@ -111,8 +111,15 @@ def rb_core(M):
 	'''scaling relationship for break radius from Lauer et al. 2007 sample'''
 	return 106.*(M/(1.E8*M_sun))**0.39*pc
 
+def rinf_core(M):
+	'''separate scaling relation for core galaxy influence radius'''
+	return 25.*(M/(1.E8*M_sun))**0.6*pc
+
+def rinf_cusp(M):
+	return 8.*(M/(1.E8*M_sun))**0.6*pc
+
 def rb_rinf_core(M):
-	return rb_core(M)/rinf(M)
+	return rb_core(M)/rinf_core(M)
 
 def gamma_fit(M):
 	'''Average Nuker gamma based on Lauer et al. 2007 sample'''
@@ -158,7 +165,7 @@ def zeta_norm(M, vw, gamma=None, rb_rinf=None):
 		if gamma<0.3:
 			rb_rinf=rb_rinf_core(M)
 		else:
-			rb_rinf=100.*pc/rinf(M)
+			rb_rinf=100.*pc/rinf_cusp(M)
 
 	z=zeta(M, vw)
 	zc=zeta_c_fit(gamma, rb_rinf)
@@ -178,7 +185,7 @@ def vw_crit(M, gamma=None, rb_rinf=None, sig=None):
 		if gamma<0.3:
 			rb_rinf=rb_rinf_core(M)
 		else:
-			rb_rinf=100.*pc/rinf(M)
+			rb_rinf=100.*pc/rinf_cusp(M)
 	#Critical zeta		
 	zc=zeta_c_fit(gamma, rb_rinf)
 	#If sigma is not specified use the M-sigma relation
