@@ -1042,6 +1042,8 @@ class Galaxy(object):
 				self._update_ghosts_temp_fixed()
 			elif bdry=='non_cond':
 				self._update_ghosts_non_cond()
+			elif bdry=='non_cond_ss':
+				self._update_ghosts_non_cond_ss()
 			elif bdry=='mdot_fixed':
 				self._update_ghosts_mdot_fixed()
 			elif bdry=='ss':
@@ -1096,6 +1098,21 @@ class Galaxy(object):
 		for i in range(1,4):
 			ghost_idx=self.outwards(self._end_zone,i)
 			self.s[ghost_idx]=s(self.temp[self._end_zone],self.rho[ghost_idx],self.mu)
+
+	def _update_ghosts_non_cond_ss(self):
+		self._extrapolate('rho')
+		self._extrapolate('vel')
+		for i in range(1,4):
+			ghost_idx=self.outwards(self._end_zone,i)
+			self.s[ghost_idx]=s(self.temp[self._end_zone],self.rho[ghost_idx],self.mu)
+		if not self.isot:
+			self._update_temp()
+
+		if abs(self.mach[ghost_idx])>1.5:
+			pass
+		else:
+			self.vel[ghost_idx]=np.sign(self.vel[ghost_idx])*1.5*self.cs[ghost_idx]
+			self._bdry_interp('vel')	
 
 	def _bdry_interp(self,field):
 		field_arr=getattr(self, field)
