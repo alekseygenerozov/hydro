@@ -41,8 +41,9 @@ def temp_approx(M, vw, r, mu=0.62, gamma=1.):
 
 	return 0.4*cs2_approx*(mu*mp)/kb
 
-def vel_approx(M, vw, r, gamma=1.):
-	rs=gp.rs_approx(M, vw, gamma=gamma)
+def vel_approx(M, vw, r, gamma=1., rs=None):
+	if not rs:
+		rs=gp.rs_approx(M, vw, gamma=gamma)
 	sigma_0=3.0**0.5*gp.sigma(M)
 	x=r/rs
 	
