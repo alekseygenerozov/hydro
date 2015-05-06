@@ -42,12 +42,29 @@ def temp_approx(M, vw, r, mu=0.62, gamma=1.):
 	return 0.4*cs2_approx*(mu*mp)/kb
 
 def vel_approx(M, vw, r, gamma=1., rs=None):
+	'''Analytic approximation for the velocity profile'''
 	if not rs:
 		rs=gp.rs_approx(M, vw, gamma=gamma)
 	sigma_0=3.0**0.5*gp.sigma(M)
 	x=r/rs
 	
 	return (a(gamma))**0.5*gp.vff(M,r)*abs(h(x,gamma))
+
+# def vel_approx_core(M, vw, r, rs=None):
+# 	'''Modification of vel_approx which prevents velocity from decreasing for large radii--this is specific to gamma=0.1'''
+# 	if not rs:
+# 		rs=gp.rs_approx(M, vw, gamma=gamma)
+# 	sigma_0=3.0**0.5*gp.sigma(M)
+# 	x=r/rs
+# 	x_crit=4.47
+# 	gamma=0.1
+
+# 	# return (a(gamma))**0.5*gp.vff(M,r)*abs(h(x, gamma))
+# 	if x<x_crit:
+# 		return (a(gamma))**0.5*gp.vff(M,r)*abs(h(x, gamma))
+# 	else:
+# 		return (a(gamma))**0.5*gp.vff(M, x_crit*rs)*abs(h(x_crit, gamma))
+
 
 def mach_approx(M, vw, r, mu=0.62, gamma=1.):
 	vel=vel_approx(M, vw, r, gamma=gamma)
@@ -119,3 +136,6 @@ def zeta_c(rb_rinf,  gamma):
 		return fsolve(lambda zeta: be_analytic_nd(rb_rinf/w**(1./(2.-gamma)), zeta, gamma, w, rb_rinf),100.)[0]
 	except Warning:
 		return np.nan
+
+
+
