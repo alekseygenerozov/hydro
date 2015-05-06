@@ -92,7 +92,9 @@ Note that in finding a solution it is often useful for numerical stability to ad
 
 Numerical parameters:
 2. *Re (float) -90.* artificial viscosity in the velocity equation
+ 
 3. *Re_s (float)- 1.E20* artificial viscosity in the entropy equation (note default corresponds to essential no viscosity).
+
 4. *bdry (string or tuple)* type of condition to use. Note that the user may pass in a tuple specifying the inner and outer boundary conditions separately. After updating all the physical zones: we must update the ghost zones on the boundary (there are three on each side of the grid). 
 
 	*'default': power law extrapolations to 
@@ -101,5 +103,7 @@ Numerical parameters:
 
 Physics parameters
 4. *vw_extra (float)* extra heating rate
+ 
 5. *phi_cond (float)* 
+
 6. *mu (float) -1.* molecular weight
