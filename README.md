@@ -27,17 +27,17 @@ The code includes three different types of model galaxies  differing in the way 
 
 1. *Galaxy.* 
 
-	The stellar density is assumed to be zero. Therefore 	the the stars do not contribute to to the 	gravitational potential. However by default there is 	a contribution from the stellar velocity dispersion: 	this is given by
+	The stellar density is assumed to be zero. Therefore 	the the stars do not contribute to to the 	gravitational potential. However by default there is a contribution from the stellar velocity dispersion: this is given by
  
 
-	Thus the only gravity is from the central black 	hole, whose mass is stored in the dictionary params 	(under params['M'])
+	Thus the only gravity is from the central black hole, whose mass is stored in the dictionary params 	(under params['M'])
 
 
 2. *NukerGalaxy.*
 
 	 This assumes that stellar light profile follows a 	Nuker Law (Faber et al. 1997). User shold pass the 	name of a galaxy.  Along with the name the user may 	also pass a dictionary of nuker galaxies (using the 	keyword gdata). Each entry in this dictionary should 	itself be a dictionary of Nuker parameters.
  
-	 If no dictionary one is constructed from the file 	wm (this is table 1 Wang & Merritt 2004).
+	 If no dictionary is passed to gdata one is constructed from the file wm (this is table 1 Wang & Merritt 2004).
 
 	The mass enclosed from the stars contributes to the 	gravitational potential. 
 
@@ -80,3 +80,10 @@ gal.set_param('isot', False)
 #Run for another sound crossing time.
 gal.solve(gal.tcross)
 ```
+
+##Summary of galaxy properties and defaults
+1. *params* (stores structural parameters of galaxy)
+	-params['M']-black hole mass
+	-params['gamma']-slope of stellar density profile (PowGalaxy/NukerGalaxy) or just slope of mass source 			(Galaxy).
+	(Note that the structural parameters assumed to be present for PowGalaxy, NukerGalaxy, and Galaxy subtypes 	        are somewhat different.
+2. 
