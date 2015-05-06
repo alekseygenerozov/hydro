@@ -87,19 +87,19 @@ Note that parameters may be adjusted using the set_param method (which accepts t
 Note that in finding a solution it is often useful for numerical stability to adjust a parameter gradually: this may be done using the solve_adjust method 
 
 
-1. *params* (stores structural parameters of galaxy--the assumed structure is somewhat different for each type of 		     galaxy) 
+1. *params* (stores structural parameters of galaxy--the assumed structure is somewhat different for each type of galaxy) ...
 
-	*params['M']:black hole mass
-	*params['gamma']:slope of stellar density profile (PowGalaxy/NukerGalaxy) or just slope of mass source 
 
 Numerical parameters:
-2. *Re (float)* artificial viscosity in the velocity equation
-3. *Re_s (float)* artificial viscosity in the entropy equation
-4. *bdry (string or tuple)* type of condition to use. Note that the user may pass in a tuple specifying the inner and outer boundary conditions separately
+2. *Re (float) -90.* artificial viscosity in the velocity equation
+3. *Re_s (float)- 1.E20* artificial viscosity in the entropy equation (note default corresponds to essential no viscosity).
+4. *bdry (string or tuple)* type of condition to use. Note that the user may pass in a tuple specifying the inner and outer boundary conditions separately. After updating all the physical zones: we must update the ghost zones on the boundary (there are three on each side of the grid). 
 
-	*'default': power law extrapolations to update boundaries after each time step.
-	*'ss': same as default except if the 
-	*''
+	*'default': power law extrapolations to 
+	*'ss': same as default except if the mach number is less than unity on the boundary 
+	*'mdot_fixed': 
 
+Physics parameters
 4. *vw_extra (float)* extra heating rate
 5. *phi_cond (float)* 
+6. *mu (float) -1.* molecular weight
