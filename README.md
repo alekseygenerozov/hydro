@@ -102,6 +102,8 @@ Numerical parameters:
 	*'ss': same as default except if the mach number is less than unity on the boundary 
 	
 	*'mdot_fixed': power law extrapolations of density and entropy. Velocity is set by equating the difference in mass flux between each ghost zone and the closest physical zone and the integral of the mass source term between the ghost zone and the closest physical zone.
+	
+	*'bp': 
 
 Physics parameters
 4. *vw_extra (float)-1.E8* extra heating rate
@@ -110,8 +112,15 @@ Physics parameters
 
 6. *mu (float) -1.* molecular weight
 
+7. *isot (bool)-False* turn temperature evolution on/off.
+
+
+
 ##Grid setup
 ...
 
 ##Driver
-I have written a driver code to ease the pain of running the code. Generally the easiest way to get a model galaxy working is to use an existing model as input. 
+I have written a driver code to ease the pain of running the code. Generally the easiest way to get a model galaxy working is to use an existing model as input, this may be accomplished by using the nuker_driver_gen.py code. 
+(nuker_driver_gen.py input).
+
+
