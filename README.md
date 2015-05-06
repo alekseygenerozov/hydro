@@ -83,16 +83,23 @@ gal.solve(gal.tcross)
 
 ##Summary of galaxy properties, possible values, and defaults
 Note that parameters may be adjusted using the set_param method (which accepts the name of a parameter and the value you would like to change it to). 
+
+Note that in finding a solution it is often useful for numerical stability to adjust a parameter gradually: this may be done using the solve_adjust method 
+
+
 1. *params* (stores structural parameters of galaxy--the assumed structure is somewhat different for each type of 		     galaxy) 
+
 	*params['M']:black hole mass
 	*params['gamma']:slope of stellar density profile (PowGalaxy/NukerGalaxy) or just slope of mass source 
 
 Numerical parameters:
-2. *Re* artificial viscosity in the velocity equation
-3. *Re_s* artificial viscosity in the entropy equation
-4. *bdry* type of condition to use 
+2. *Re (float)* artificial viscosity in the velocity equation
+3. *Re_s (float)* artificial viscosity in the entropy equation
+4. *bdry (string or tuple)* type of condition to use. Note that the user may pass in a tuple specifying the inner and outer boundary conditions separately
 
-5. 
+	*'default': power law extrapolations to update boundaries after each time step.
+	*'ss': same as default except if the 
+	*''
 
-4. *vw_extra* extra heating rate
-5. *phi_cond* 
+4. *vw_extra (float)* extra heating rate
+5. *phi_cond (float)* 
