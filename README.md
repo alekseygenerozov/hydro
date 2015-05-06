@@ -81,9 +81,18 @@ gal.set_param('isot', False)
 gal.solve(gal.tcross)
 ```
 
-##Summary of galaxy properties and defaults
-1. *params* (stores structural parameters of galaxy)
-	-params['M']:black hole mass
-	-params['gamma']:slope of stellar density profile (PowGalaxy/NukerGalaxy) or just slope of mass source 			(Galaxy).
-	(Note that the structural parameters assumed to be present for PowGalaxy, NukerGalaxy, and Galaxy subtypes 	        are somewhat different.
-2. 
+##Summary of galaxy properties, possible values, and defaults
+Note that parameters may be adjusted using the set_param method (which accepts the name of a parameter and the value you would like to change it to). 
+1. *params* (stores structural parameters of galaxy--the assumed structure is somewhat different for each type of 		     galaxy) 
+	*params['M']:black hole mass
+	*params['gamma']:slope of stellar density profile (PowGalaxy/NukerGalaxy) or just slope of mass source 
+
+Numerical parameters:
+2. *Re* artificial viscosity in the velocity equation
+3. *Re_s* artificial viscosity in the entropy equation
+4. *bdry* type of condition to use 
+
+5. 
+
+4. *vw_extra* extra heating rate
+5. *phi_cond* 
