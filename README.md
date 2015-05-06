@@ -83,7 +83,7 @@ gal.solve(gal.tcross)
 
 ##Summary of galaxy properties and defaults
 1. *params* (stores structural parameters of galaxy)
-	-params['M']-black hole mass
-	-params['gamma']-slope of stellar density profile (PowGalaxy/NukerGalaxy) or just slope of mass source 			(Galaxy).
+	-params['M']:black hole mass
+	-params['gamma']:slope of stellar density profile (PowGalaxy/NukerGalaxy) or just slope of mass source 			(Galaxy).
 	(Note that the structural parameters assumed to be present for PowGalaxy, NukerGalaxy, and Galaxy subtypes 	        are somewhat different.
 2. 
