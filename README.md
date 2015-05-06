@@ -98,7 +98,9 @@ Numerical parameters:
 4. *bdry (string or tuple)* type of condition to use. Note that the user may pass in a tuple specifying the inner and outer boundary conditions separately. After updating all the physical zones: we must update the ghost zones on the boundary (there are three on each side of the grid). 
 
 	*'default': power law extrapolations to 
+	
 	*'ss': same as default except if the mach number is less than unity on the boundary 
+	
 	*'mdot_fixed': 
 
 Physics parameters
