@@ -87,7 +87,7 @@ Note that parameters may be adjusted using the set_param method (which accepts t
 Note that in finding a solution it is often useful for numerical stability to adjust a parameter gradually: this may be done using the solve_adjust method 
 
 
-1. *params* (stores structural parameters of galaxy--the assumed structure is somewhat different for each type of galaxy) ...
+1. *params* (stores structural parameters of galaxy--the assumed structure is somewhat different for each type of galaxy). These are used to calculate potentials, stellar density profiles, etc. 
 
 
 Numerical parameters:
@@ -97,15 +97,21 @@ Numerical parameters:
 
 4. *bdry (string or tuple)* type of condition to use. Note that the user may pass in a tuple specifying the inner and outer boundary conditions separately. After updating all the physical zones: we must update the ghost zones on the boundary (there are three on each side of the grid). 
 
-	*'default': power law extrapolations to 
+	*'default': power law extrapolations (of density, velocity and entropy)
 	
 	*'ss': same as default except if the mach number is less than unity on the boundary 
 	
-	*'mdot_fixed': 
+	*'mdot_fixed': power law extrapolations of density and entropy. Velocity is set by equating the difference in mass flux between each ghost zone and the closest physical zone and the integral of the mass source term between the ghost zone and the closest physical zone.
 
 Physics parameters
-4. *vw_extra (float)* extra heating rate
+4. *vw_extra (float)-1.E8* extra heating rate
  
 5. *phi_cond (float)* 
 
 6. *mu (float) -1.* molecular weight
+
+##Grid setup
+...
+
+##Driver
+I have written a driver code to ease the pain of running the code. Generally the easiest way to get a model galaxy working is to use an existing model as input. 
