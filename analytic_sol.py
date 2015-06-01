@@ -23,21 +23,24 @@ def a(gamma=1):
 	return 3./(gamma+2.)
 
 def h(x, gamma=1.):
-	return  (2.*gamma+1)/(a(gamma)*(gamma+2.))*(1.-(2.-gamma)/(1.-gamma)*(x**(1.-gamma)-1.)/(x**(1.-gamma)-1./x))
+	delta=1.+gamma
+	return  (1.-x*(3.-delta)/(2.-delta)*(x**(2.-delta)-1)/(x**(3.-delta)-1.))
 
 def temp_approx_0(M, vw, r, mu=0.62, gamma=1.):
+	delta=1.+gamma
 	rs=gp.rs_approx(M, vw, gamma)
 	sigma_0=3.0**0.5*gp.sigma(M)
 	x=r/rs
-	cs2_approx=(vw**2.+sigma_0**2.)/2.+a(gamma)*0.5*gp.vff(M,r)**2*((3./(gamma+2.)/a(gamma))+h(x,gamma))
+	cs2_approx=(vw**2.+sigma_0**2.)/2.+(3./(2.+gamma))*G*M/(2.*rs)*(3.-delta)/(2.-delta)*(x**(2.-delta)-1)/(x**(3.-delta)-1.)+(G*M/r)*(h(x, gamma=gamma))
 
 	return 0.4*cs2_approx*(mu*mp)/kb
 
 def temp_approx(M, vw, r, mu=0.62, gamma=1.):
+	delta=1.+gamma
 	rs=gp.rs_approx(M, vw, gamma)
 	sigma_0=3.0**0.5*gp.sigma(M)
 	x=r/rs
-	cs2_approx=(vw**2.+sigma_0**2.)/2.+a(gamma)*0.5*gp.vff(M,r)**2*((3./(gamma+2.)/a(gamma))+h(x,gamma)-h(x,gamma)**2.)
+	cs2_approx=cs2_approx=(vw**2.+sigma_0**2.)/2.+(3./(2.+gamma))*G*M/(2.*rs)*(3.-delta)/(2.-delta)*(x**(2.-delta)-1)/(x**(3.-delta)-1.)+(G*M/r)*(h(x, gamma=gamma)-h(x, gamma=gamma)**2./2.)
 
 	return 0.4*cs2_approx*(mu*mp)/kb
 
@@ -48,7 +51,7 @@ def vel_approx(M, vw, r, gamma=1., rs=None):
 	sigma_0=3.0**0.5*gp.sigma(M)
 	x=r/rs
 	
-	return (a(gamma))**0.5*gp.vff(M,r)*abs(h(x,gamma))
+	return gp.vff(M,r)*abs(h(x,gamma))
 
 def mach_approx(M, vw, r, mu=0.62, gamma=1.):
 	vel=vel_approx(M, vw, r, gamma=gamma)
@@ -63,7 +66,7 @@ def rho_approx(M, vw, r, gamma=1., eta=0.1):
 	delta=1+gamma
 	##Note that the same approximation for the stagnation radius, rs, should be used everywhere (this is currently not the case!)
 	q0=gp.q_rs_analytic(M,vw, gamma=gamma, eta=eta)
-	return  -q0*gp.tff(M, rs)*(((2.+gamma)/3.)**0.5)/(2.-gamma)*((x**(2.-gamma)-1.)/x**1.5)/h(x,gamma=gamma)
+	return  -q0*gp.tff(M, rs)/(2.-gamma)*((x**(2.-gamma)-1.)/x**1.5)/h(x,gamma=gamma)
 
 def enth_analytic_nd(x, zeta, gamma, w):
 	delta=1.+gamma
