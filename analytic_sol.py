@@ -50,22 +50,6 @@ def vel_approx(M, vw, r, gamma=1., rs=None):
 	
 	return (a(gamma))**0.5*gp.vff(M,r)*abs(h(x,gamma))
 
-# def vel_approx_core(M, vw, r, rs=None):
-# 	'''Modification of vel_approx which prevents velocity from decreasing for large radii--this is specific to gamma=0.1'''
-# 	if not rs:
-# 		rs=gp.rs_approx(M, vw, gamma=gamma)
-# 	sigma_0=3.0**0.5*gp.sigma(M)
-# 	x=r/rs
-# 	x_crit=4.47
-# 	gamma=0.1
-
-# 	# return (a(gamma))**0.5*gp.vff(M,r)*abs(h(x, gamma))
-# 	if x<x_crit:
-# 		return (a(gamma))**0.5*gp.vff(M,r)*abs(h(x, gamma))
-# 	else:
-# 		return (a(gamma))**0.5*gp.vff(M, x_crit*rs)*abs(h(x_crit, gamma))
-
-
 def mach_approx(M, vw, r, mu=0.62, gamma=1.):
 	vel=vel_approx(M, vw, r, gamma=gamma)
 	temp=temp_approx(M, vw, r, mu=0.62, gamma=gamma)
@@ -79,7 +63,7 @@ def rho_approx(M, vw, r, gamma=1., eta=0.1):
 	delta=1+gamma
 	##Note that the same approximation for the stagnation radius, rs, should be used everywhere (this is currently not the case!)
 	q0=gp.q_rs_analytic(M,vw, gamma=gamma, eta=eta)
-	return  -q0*gp.tff(M, rs)/(2.-gamma)*((x**(2.-gamma)-1.)/x**1.5)*((2.+gamma)/3.)**0.5/h(x,gamma=gamma)
+	return  -q0*gp.tff(M, rs)*(((2.+gamma)/3.)**0.5)/(2.-gamma)*((x**(2.-gamma)-1.)/x**1.5)/h(x,gamma=gamma)
 
 def enth_analytic_nd(x, zeta, gamma, w):
 	delta=1.+gamma
