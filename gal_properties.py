@@ -289,6 +289,13 @@ def rho_rs_analytic(M, vw, gamma=1,eta=0.1):
 	rs=rs_approx(M, vw, gamma=gamma)
 	return mdot_analytic(M, vw, gamma=gamma, eta=eta)/(4./3.*np.pi*rs_approx(M,vw,gamma=gamma)**2*vff(M,rs))
 
+def n18_cusp(M, vw, eta, mu=0.62):
+	'''Estimate for the density at 10.^18 cm--assuming a fixed gamma=0.8'''
+	return 1.25*(mu/0.62)**-1.*(eta/0.02)*(M/10.**8/M_sun)**0.5*(vw/5.E7)**-1.5
+
+def eta_n18(n18, M, vw, mu=0.62):
+	return 0.02*(n18/1.25)*(mu/0.62)*(M/10.**8/M_sun)**-0.5*(vw/5.E7)**1.5
+
 def rho_stars_rs_analytic(M, vw, gamma=1.):
 	'''Analytic expression for the stellar density at the stagnation radius rs'''
 	return M*(2.-gamma)/(4.*np.pi*rinf(M)**3.)*(rs_approx(M,vw,gamma=gamma)/rinf(M))**(-1.-gamma)
