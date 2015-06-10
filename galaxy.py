@@ -263,7 +263,7 @@ def rho_stars(r, Ib=17.16, alpha=1.26, beta=1.75, rb=343.3, gamma=0, Uv=7.):
 	M_sun*Uv*inverse_abel(nuker_prime, r)/pc**3
 
 def M_enc(r, Ib=17.16, alpha=1.26, beta=1.75, rb=343.3, gamma=0, Uv=7.):
-	inegrate.quad(4.*np.pi*r**2*rho_stars(r, Ib, alpha, beta, rb, gamma, Uv), 1.E-3, r)
+	integrate.quad(4.*np.pi*r**2*rho_stars(r, Ib, alpha, beta, rb, gamma, Uv), 1.E-3, r)
 
 ##Convert from magnitudes per arcsec^2 to luminosities per parsec^2
 def mub_to_Ib(mub):
@@ -2152,12 +2152,69 @@ class PowGalaxy(NukerGalaxy):
 	def rho_0(self):
 		return self.params['M']*self.rinf**(-1.-self.params['gamma'])/(4.*np.pi*(self.rinf**(2.-self.params['gamma'])-(self.rmin_star*pc)**(2.-self.params['gamma'])))*(2.-self.params['gamma'])
 
+class NukerGalaxyExtend(NukerGalaxy):
+	'''Nuker galaxy with extended inner density profile'''
+	def __init__(self, gname, gdata=None, init={}):
+		Galaxy.__init__(self, init=init)
+		if not gdata:
+			gdata=nuker_params()
+		try:
+			self.params=gdata[gname]
+		except KeyError:
+			print 'Error! '+gname+' is not in catalog!'
+			raise
 
+		self.name=gname
+		self.eta=1.
+		self.rmin_star=1.E-3
+		self.rmax_star=1.E5
 
+	@memoize
+	def rho_stars(self,r):
+		'''Stellar density
+		:param r: radius 
+		'''
+		rpc=r/pc
+		if rpc>self.rmax_star:
+			return 0.
+		elif rpc<self.rmin_star:
+			return self.rho_stars(self.rmin_star*pc)*(rpc/self.rmin_star)**0.5
+		else:
+			return M_sun*self.params['Uv']*inverse_abel(nuker_prime, rpc, **self.params)/pc**3
 
+	@memoize
+	def _get_rho_stars_interp(self):
+		_rho_stars_rad=np.logspace(np.log10(self.rmin_star), np.log10(self.rmax_star),1000)*pc
+		_rho_stars_grid=[self.rho_stars(r) for r in _rho_stars_rad]
+		return interp1d(np.log(_rho_stars_rad),np.log(_rho_stars_grid))
 
+	def _rho_stars_interp(self,r):
+		interp=self._get_rho_stars_interp()
+		if r/pc<self.rmin_star:
+			return self.rho_stars(r)
+		else:	
+			try:
+				return np.exp(interp(np.log(r)))
+			except ValueError:
+				return 0.
 
+	@memoize
+	def M_enc(self,r):
+		'''Mass enclosed within radius r 
+		:param r: radius 
+		'''
+		rpc=r/pc
+		if rpc>self.rmax_star:
+			return self.M_enc(self.rmax_star*pc)
+		else:
+			return integrate.quad(lambda r1:4.*np.pi*r1**2*self._rho_stars_interp(r1*pc)*pc**3, 0., rpc)[0]
 
+	@memoize
+	def phi_s(self, r):
+		rpc=r/pc
+		return (-G*self.M_enc(r)/r)-\
+		4.*np.pi*G*integrate.quad(lambda r1:self._rho_stars_interp(r1*pc)*r1*pc**3, rpc, self.rmin_star)[0]/pc-\
+		4.*np.pi*G*integrate.quad(lambda r1:self._rho_stars_interp(r1*pc)*r1*pc**3, self.rmin_star, self.rmax_star)[0]/pc
 
 
 
