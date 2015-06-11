@@ -8,6 +8,7 @@ import argparse
 
 import ast
 import sys
+import re
 
 from bash_command import bash_command as bc
 
@@ -61,7 +62,7 @@ class Driver(object):
 	'''Driver to set up solutions for Nuker galaxies'''
 	def __init__(self, config_file):
 		self.config_file=config_file
-		self.__parse_config()
+		self.__parse_config() 
 		if self.name=='quataert':
 			if self.model:
 				self.gal=galaxy.Galaxy.from_dir(loc=self.model, **self.grid_params_dict)
@@ -72,11 +73,17 @@ class Driver(object):
 				self.gal=galaxy.PowGalaxy.from_dir(loc=self.model, **self.grid_params_dict)
 			else:
 				self.gal=galaxy.PowGalaxy(init=self.grid_params_dict)
+		elif re.match('.*_Extend', self.name):
+			self.name=self.name.replace('_Extend', '')
+			if self.model:
+				self.gal=galaxy.NukerGalaxyExtend.from_dir(args=[self.name, self.gdata_dict], loc=self.model, **self.grid_params_dict)
+			else:
+				self.gal=galaxy.NukerGalaxyExtend(self.name, gdata=self.gdata_dict, init=self.grid_params_dict)
 		else:
 			if self.model:
-				self.gal=galaxy.NukerGalaxy.from_dir(args=[self.name], loc=self.model, **self.grid_params_dict)
+				self.gal=galaxy.NukerGalaxy.from_dir(args=[self.name, self.gdata_dict], loc=self.model, **self.grid_params_dict)
 			else:
-				self.gal=galaxy.NukerGalaxy(args=[self.name], init=self.grid_params_dict)
+				self.gal=galaxy.NukerGalaxy(self.name, gdata=self.gdata_dict, init=self.grid_params_dict)
 
 		for param in self.model_params_dict:
 			self.gal.set_param(param,self.model_params_dict[param])
@@ -105,6 +112,7 @@ class Driver(object):
 		self.__parse_config_params()
 		self.__parse_config_grid()
 		self.__parse_config_adjust()
+		self.__parse_config_gdata()
 
 	def __parse_config_params(self):
 		self.user_params_dict=config_parse_section(self.config, 'params')
@@ -121,6 +129,9 @@ class Driver(object):
 
 	def __parse_config_adjust(self):
 		self.adjust_params_dict=config_parse_section(self.config,'adjust')
+
+	def __parse_config_gdata(self):
+		self.gdata_dict=config_parse_section(self.config, 'gdata')['gdata']
 
 	def solve(self):
 		'''Find solution for given galaxy'''

@@ -2178,7 +2178,8 @@ class NukerGalaxyExtend(NukerGalaxy):
 		if rpc>self.rmax_star:
 			return 0.
 		elif rpc<self.rmin_star:
-			return self.rho_stars(self.rmin_star*pc)*(rpc/self.rmin_star)**0.5
+			rho_min=M_sun*self.params['Uv']*inverse_abel(nuker_prime, self.rmin_star, **self.params)/pc**3
+			return rho_min*(rpc/self.rmin_star)**0.5
 		else:
 			return M_sun*self.params['Uv']*inverse_abel(nuker_prime, rpc, **self.params)/pc**3
 
