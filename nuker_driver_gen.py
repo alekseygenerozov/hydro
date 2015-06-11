@@ -131,8 +131,11 @@ class Driver(object):
 		self.adjust_params_dict=config_parse_section(self.config,'adjust')
 
 	def __parse_config_gdata(self):
-		self.gdata_dict=config_parse_section(self.config, 'gdata')['gdata']
-
+		try:
+			self.gdata_dict=config_parse_section(self.config, 'gdata')['gdata']
+		except KeyError:
+			self.gdata_dict=config_parse_section(self.config, 'gdata')
+			
 	def solve(self):
 		'''Find solution for given galaxy'''
 		bc('cp '+self.config_file+' '+self.gal.outdir)
