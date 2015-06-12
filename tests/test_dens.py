@@ -32,6 +32,7 @@ def test_dens_extend():
 	r_cut=gal.radii[gal.radii/galaxy.pc<gal.rmin_star]
 
 	assert np.allclose(rho_cut, rho_cut[0]*(r_cut/r_cut[0])**0.5)
+	assert  np.allclose(gal.rho_stars_grid[gal.radii/galaxy.pc>gal.rmin_star],gal2.rho_stars_grid[gal.radii/galaxy.pc>gal.rmin_star])
 
 
 
