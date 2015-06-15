@@ -1924,6 +1924,15 @@ class NukerGalaxy(Galaxy):
 		rpc=r/pc
 		return (-G*self.M_enc(r)/r)-4.*np.pi*G*integrate.quad(lambda r1:self._rho_stars_interp(r1*pc)*r1*pc**3, rpc, self.rmax_star)[0]/pc
 
+	def rescale_rho(self, eta):
+		'''quickly rescale gas density profile to different value of eta--note that entropy is a 
+		function of the gas density also has to be adjusted. 
+		'''
+		self.log_rho=np.log((eta/self.eta)*self.rho)
+		self.s=(kb/(self.mu*mp))*np.log(1./np.exp(self.log_rho)*(self.temp)**(3./2.))
+		self.clear_saved()
+		self.set_param('eta', eta)
+
 	def q(self, r):
 		'''Source term representing mass loss from stellar winds'''
 		return self.eta*self.rho_stars(r)/th
