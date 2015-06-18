@@ -242,7 +242,7 @@ def rs_approx(M, vw, gamma=1., nu=None):
 	sigma_0=(3.0)**0.5*sigma(M)
 	if not nu:
 		nu=dens_slope(gamma)
-	return G*M/(nu*(vw**2.+sigma_0**2))*((13.+8.*gamma)/(4.+2.*gamma)-nu*(3./(2.+gamma)))
+	return G*M/(nu*(vw**2.))*((13.+8.*gamma)/(4.+2.*gamma)-nu*(3./(2.+gamma)))
 
 def rs_rinf_approx(z, gamma=1., nu=None):
 	if not nu:
