@@ -1902,7 +1902,10 @@ class NukerGalaxy(Galaxy):
 	def _rho_stars_interp(self,r):
 		interp=self._get_rho_stars_interp()
 		try:
-			return np.exp(interp(np.log(r)))
+			if np.isnan(interp(np.log(r))):
+				return 0.
+			else:
+				return np.exp(interp(np.log(r)))
 		except ValueError:
 			return 0.
 
