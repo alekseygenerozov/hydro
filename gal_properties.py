@@ -191,7 +191,7 @@ def vw_crit(M, gamma=None, rb_rinf=None, sig=None):
 	#If sigma is not specified use the M-sigma relation
 	if not sig:
 		sig=sigma(M)
-	sigma_0=(3.)**0.5*sigma(M)
+	sigma_0=(3.)**0.5*sig
 
 	return (zc**2.-1.)**0.5*sigma_0
 
