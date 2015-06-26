@@ -123,7 +123,14 @@ def rb_rinf_core(M):
 
 def gamma_fit(M):
 	'''Average Nuker gamma based on Lauer et al. 2007 sample'''
-	return 0.3*(M/(1.E8*M_sun))**(-0.24)
+	if M<3.0e7*M_sun:
+		return 0.8
+	else:
+		return  -0.3*np.log10(M/(3.0*10.**7)/M_sun)+0.8
+
+def gamma_fit_2(M):
+	'''Average Nuker gamma based on Lauer et al. 2007 sample'''
+	return 0.3*(M/10.**8/M_sun)**-0.24
 
 def sigma_200(M):
 	'''M-sigma from McConnell et al. 2011'''
