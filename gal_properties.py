@@ -89,13 +89,13 @@ def epsilon_sharma(eddr):
 	else:
 		return 0.1
 
-def epsilon_sharma_2(eddr):
-	if eddr>0.01:
-		return 0.1
-	else:	
-		eff=np.genfromtxt('/Users/aleksey/Documents/papers/Sharma/middle.csv', delimiter=',')
-		extrap=extrap1d_pow(interp1d(10.**eff[:,0], 10.**eff[:,1]))
-		return extrap(eddr)
+# def epsilon_sharma_2(eddr):
+# 	if eddr>0.01:
+# 		return 0.1
+# 	else:	
+# 		eff=np.genfromtxt('/Users/aleksey/Documents/papers/Sharma/middle.csv', delimiter=',')
+# 		extrap=extrap1d_pow(interp1d(10.**eff[:,0], 10.**eff[:,1]))
+# 		return extrap(eddr)
 	
 def lambda_c(temp):
 	'''Power law approximation to cooling function for solar abundance plasma (taken from figure 34.1 of Draine)'''
@@ -123,10 +123,10 @@ def rb_rinf_core(M):
 
 def gamma_fit(M):
 	'''Average Nuker gamma based on Lauer et al. 2007 sample'''
-	if M<3.0e7*M_sun:
+	if M<4.0e7*M_sun:
 		return 0.8
 	else:
-		return  -0.3*np.log10(M/(3.0*10.**7)/M_sun)+0.8
+		return  -0.3*np.log10(M/(4.0*10.**7)/M_sun)+0.7
 
 def gamma_fit_2(M):
 	'''Average Nuker gamma based on Lauer et al. 2007 sample'''
