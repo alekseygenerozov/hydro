@@ -184,7 +184,7 @@ def zeta_norm(M, vw, gamma=None, rb_rinf=None):
 
 def zeta_c_fit(gamma, rb_rinf):
 	'''fit to critical heating rate for thermal instability'''
-	return (rb_rinf)**(0.5*(1.-gamma))
+	return ((rb_rinf)**(1.-gamma)+1.)**0.5
 
 def vw_crit(M, gamma=None, rb_rinf=None, sig=None):
 	'''critical heating rate below which rs should run away. Corresponds to zeta_c_fit'''
