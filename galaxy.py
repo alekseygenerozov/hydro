@@ -2180,23 +2180,20 @@ class NukerGalaxyExtend(NukerGalaxy):
 		self.eta=1.
 		self.rmin_star=1.E-3
 		self.rmax_star=1.E5
-		if not np.in1d('gamma_in',self.params.keys())[0]):
-			self.params['gamma_in']=0.5
+		if not np.in1d('gamma_in',self.params.keys())[0]:
+			self.params['gamma_in']=-1.5
 
 	@memoize
 	def rho_stars(self,r):
 		'''Stellar density
 		:param r: radius 
 		'''
-		if not np.in1d('gamma_in',self.params.keys())[0]):
-			self.params['gamma_in']=0.5
-		
 		rpc=r/pc
 		if rpc>self.rmax_star:
 			return 0.
 		elif rpc<self.rmin_star:
 			rho_min=M_sun*self.params['Uv']*inverse_abel(nuker_prime, self.rmin_star, **self.params)/pc**3
-			return rho_min*(rpc/self.rmin_star)**self.params['gamma_in']
+			return rho_min*(rpc/self.rmin_star)**(-1.-self.params['gamma_in'])
 		else:
 			return M_sun*self.params['Uv']*inverse_abel(nuker_prime, rpc, **self.params)/pc**3
 
