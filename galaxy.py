@@ -34,6 +34,8 @@ import re
 import functools
 import signal
 
+from schure_cooling import cooling_curve
+
 #Constants
 G=const.G.cgs.value
 M_sun=const.M_sun.cgs.value
@@ -1691,6 +1693,9 @@ class Galaxy(object):
 	def cooling(self):
 		'''Cooling luminosity'''
 		lambdas=np.array([lambda_c(temp) for temp in self.temp])
+		if hasattr(self, 'cooling_func') and self.cooling_func=='schure':
+				lambdas=np.array([cooling_curve.lambda_c(temp) for temp in self.temp])
+
 		return lambdas*(self.rho/(self.mu*mp))**2
 
 	@property
