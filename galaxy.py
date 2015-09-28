@@ -539,7 +539,6 @@ class Galaxy(object):
 			##In case galaxy dictionary is specified (e.g. for a Nuker galaxy parameters in
 			##the galaxy dictionary will overide the model parameter dictionary parameters.)
 			name=gal.__class__.__name__
-			print name
 			pat=re.compile('params\[\w+\]')
 			try:
 				model_params_dict=dill.load(open(loc+'/non_standard.p','rb'))
