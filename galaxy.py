@@ -689,9 +689,9 @@ class Galaxy(object):
 	@property 
 	def src_en(self):
 		if not hasattr(self,'eps_cool'):
-			self.eps_cool=0.
+			self.set_param('eps_cool', 0.)
 		if not hasattr(self,'eps_cond'):
-			self.eps_cond=0.
+			self.set_param('eps_cond', 0.)
 
 		return self.radii**2.*(self.q_grid*(self.vw**2/2.+self.phi_grid)+self.eps_cond*self.cond_grid-self.eps_cool*self.cooling)
 
