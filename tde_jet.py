@@ -28,12 +28,15 @@ class Jet:
 	@property
 	def tfb(self):
 		return  3.5E6*np.sqrt(self.m6)*np.sqrt(self.ms)
+
 	@property
 	def delta(self):
 		return c*self.tfb
+
 	@property
 	def mdot_peak(self):
 		return 1.85E26*np.sqrt(self.ms)/np.sqrt(self.m6)
+
 	@property
 	def lj(self):
 		return 1.67E47*self.eta*np.sqrt(self.ms)/np.sqrt(self.m6)
@@ -43,8 +46,11 @@ class Jet:
 
 	def vj(self,r,rho_profile):
 		f=self.rho(r)/rho_profile(r)
-		beta_sh=(1.-(1./self.gamma_j)**2.-(2./self.gamma_j)*(f**-0.5))**0.5
+		beta_sh=(1.-(1./self.gamma_sh(f)**2.))**0.5
 		return self.beta_j/beta_sh
+
+	def gamma_sh(self, f):
+		return self.gamma_j*(1.+2.*self.gamma_j*f**(-0.5))**(-0.5) 
 
 	def final_gamma(self, rho_profile):
 		'''Calculate the final Lorentz factor of a jet at the time of reverse shock crossing'''
@@ -65,7 +71,7 @@ class Jet:
 			rc=np.nan
 
 		f=self.rho(rc)/rho_profile(rc)
-		gamma=self.gamma_j*(1.+2.*self.gamma_j*f**(-0.5))**(-0.5)  
+		gamma=self.gamma_sh(f) 
 
 		return gamma
 
