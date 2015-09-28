@@ -538,6 +538,8 @@ class Galaxy(object):
 		if model_params:
 			##In case galaxy dictionary is specified (e.g. for a Nuker galaxy parameters in
 			##the galaxy dictionary will overide the model parameter dictionary parameters.)
+			name=gal.__class__.__name__
+			print name
 			pat=re.compile('params\[\w+\]')
 			try:
 				model_params_dict=dill.load(open(loc+'/non_standard.p','rb'))
@@ -545,10 +547,12 @@ class Galaxy(object):
 				return gal
 			for param in model_params_dict:
 				##gal_dict takes precedence over model parameters
-				if gal_dict and re.findall(pat, param):
+				if (name=='NukerGalaxyExtend' or name=='NukerGalaxy') and re.findall(pat, param):
 					continue
+				print param
 				gal.set_param(param,model_params_dict[param])
 
+		print gal.non_standard
 		return gal
 
 	def M_enc(self,r):

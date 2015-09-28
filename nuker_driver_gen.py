@@ -85,8 +85,8 @@ class Driver(object):
 			else:
 				self.gal=galaxy.NukerGalaxy(self.name, gdata=self.gdata_dict, init=self.grid_params_dict)
 
-		for param in self.model_params_dict:
-			self.gal.set_param(param,self.model_params_dict[param])
+		# for param in self.model_params_dict:
+		# 	self.gal.set_param(param,self.model_params_dict[param])
 		for param in self.user_params_dict:
 			self.gal.set_param(param,self.user_params_dict[param])
 
