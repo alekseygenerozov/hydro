@@ -536,11 +536,17 @@ class Galaxy(object):
 			gal.radii=rescale*gal.radii
 			gal.re_grid(gal.radii[0], gal.radii[-1])
 		if model_params:
+			##In case galaxy dictionary is specified (e.g. for a Nuker galaxy parameters in
+			##the galaxy dictionary will overide the model parameter dictionary parameters.)
+			pat=re.compile('params\[\w+\]')
 			try:
 				model_params_dict=dill.load(open(loc+'/non_standard.p','rb'))
 			except:
 				return gal
 			for param in model_params_dict:
+				##gal_dict takes precedence over model parameters
+				if gal_dict and re.findall(pat, param):
+					continue
 				gal.set_param(param,model_params_dict[param])
 
 		return gal
