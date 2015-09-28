@@ -1324,6 +1324,9 @@ class Galaxy(object):
 				old=''	
 			self.params[key]=value
 			self.cache={}
+			##Rescale constant component of velocity dispersion if the mass is reset.
+			if key=='M':
+				self.set_param('sigma_0', (3.)**0.5*gal_properties.sigma_200(self.params['M'])*2.0E7)
 		elif param=='rmin_star' or param=='rmax_star':
 			setattr(self, param, value)
 			self.cache={}
