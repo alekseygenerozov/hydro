@@ -1696,7 +1696,8 @@ class Galaxy(object):
 		if hasattr(self, 'cooling_func') and self.cooling_func=='schure':
 				lambdas=np.array([cooling_curve.lambda_c(temp) for temp in self.temp])
 
-		return lambdas*(self.rho/(self.mu*mp))**2
+		#Adding the extra 0.22 as the cooling function is normalized to ne*nh not n^2
+		return 0.22*lambdas*(self.rho/(self.mu*mp))**2
 
 	@property
 	def x_ray_lum(self):
