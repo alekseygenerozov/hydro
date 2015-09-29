@@ -548,10 +548,8 @@ class Galaxy(object):
 				##gal_dict takes precedence over model parameters
 				if (name=='NukerGalaxyExtend' or name=='NukerGalaxy') and re.findall(pat, param):
 					continue
-				print param
 				gal.set_param(param,model_params_dict[param])
 
-		print gal.non_standard
 		return gal
 
 	def M_enc(self,r):
@@ -597,7 +595,7 @@ class Galaxy(object):
 		if not hasattr(self,'eps_stellar_heating'):
 			self.set_param('eps_stellar_heating',1.)
 		if not hasattr(self, 'sigma_0'):
-			self.set_param('sigma_0', (3.)**0.5*gal_properties.sigma_200(self.params['M'])*2.0E7)
+			self.sigma_0=(3.)**0.5*gal_properties.sigma_200(self.params['M'])*2.0E7
 		return ((3./(self.params['gamma']+2.))*G*(self.params['M'])/self.radii+self.eps_stellar_heating*self.sigma_0**2)**0.5
 
 	@property
@@ -1335,7 +1333,7 @@ class Galaxy(object):
 			self.cache={}
 			##Rescale constant component of velocity dispersion if the mass is reset.
 			if key=='M':
-				self.set_param('sigma_0', (3.)**0.5*gal_properties.sigma_200(self.params['M'])*2.0E7)
+				self.sigma_0=(3.)**0.5*gal_properties.sigma_200(self.params['M'])*2.0E7
 		elif param=='rmin_star' or param=='rmax_star':
 			setattr(self, param, value)
 			self.cache={}
@@ -1706,9 +1704,9 @@ class Galaxy(object):
 		'''Cooling luminosity'''
 		lambdas=np.array([lambda_c(temp) for temp in self.temp])
 		if hasattr(self, 'cooling_func') and self.cooling_func=='schure':
-				lambdas=np.array([cooling_curve.lambda_c(temp) for temp in self.temp])
+			lambdas=np.array([cooling_curve.lambda_c(temp) for temp in self.temp])
 
-		#Adding the extra 0.22 as the cooling function is normalized to ne*nh not n^2
+		#Add extra 0.22 as the cooling function is normalized to ne*nh not n^2
 		return 0.22*lambdas*(self.rho/(self.mu*mp))**2
 
 	@property
