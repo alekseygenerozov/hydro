@@ -1707,7 +1707,7 @@ class Galaxy(object):
 			lambdas=np.array([cooling_curve.lambda_c(temp) for temp in self.temp])
 
 		#Add extra 0.22 as the cooling function is normalized to ne*nh not n^2
-		return 0.22*lambdas*(self.rho/(self.mu*mp))**2
+		return lambdas*(self.rho/(self.mu*mp))**2
 
 	@property
 	def x_ray_lum(self):
