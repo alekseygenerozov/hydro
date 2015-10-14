@@ -406,6 +406,9 @@ class Galaxy(object):
 		self.eps=1.
 		self.eps_cool=0.
 		self.eps_cond=0.
+		self.eps_stellar_heating=1.
+		self.cond_scheme='spitzer'
+		self.phi_cond=0.1
 
 		self.tol=40.
 		self.out_fields=['radii', 'rho', 'vel', 'temp', 'frho', 'bernoulli', 's', 'cs', 'q_grid', 'M_enc_grid', 'phi_grid', 'sigma_grid','vw']
@@ -595,7 +598,7 @@ class Galaxy(object):
 	@property
 	def sigma_grid(self):
 		if not hasattr(self,'eps_stellar_heating'):
-			self.set_param('eps_stellar_heating',1.)
+			self.eps_stellar_heating=1.
 		if not hasattr(self, 'sigma_0'):
 			self.sigma_0=(3.)**0.5*gal_properties.sigma_200(self.params['M'])*2.0E7
 		return ((3./(self.params['gamma']+2.))*G*(self.params['M'])/self.radii+self.eps_stellar_heating*self.sigma_0**2)**0.5
@@ -1784,7 +1787,7 @@ class Galaxy(object):
 	@property
 	def kappa_cond(self):
 		if not hasattr(self, 'cond_scheme'):
-			self.set_param('cond_scheme','spitzer')
+			self.cond_scheme='spitzer'
 
 		if self.cond_scheme=='shcherba':
 			return self.shcherba
@@ -1800,7 +1803,7 @@ class Galaxy(object):
 	@property 
 	def f_cond_sat(self):
 		if not hasattr(self, 'phi_cond'):
-			self.set_param('phi_cond',1.)
+			self.phi_cond=0.1
 		return self.phi_cond*5.*self.rho*self.cs**3
 
 	@property 
