@@ -404,6 +404,8 @@ class Galaxy(object):
 		self.vw_extra=1.E8
 		self.sigma_heating=True
 		self.eps=1.
+		self.eps_cool=0.
+		self.eps_cond=0.
 
 		self.tol=40.
 		self.out_fields=['radii', 'rho', 'vel', 'temp', 'frho', 'bernoulli', 's', 'cs', 'q_grid', 'M_enc_grid', 'phi_grid', 'sigma_grid','vw']
@@ -696,9 +698,9 @@ class Galaxy(object):
 	@property 
 	def src_en(self):
 		if not hasattr(self,'eps_cool'):
-			self.set_param('eps_cool', 0.)
+			self.eps_cool=0.
 		if not hasattr(self,'eps_cond'):
-			self.set_param('eps_cond', 0.)
+			self.eps_cond=0.
 
 		return self.radii**2.*(self.q_grid*(self.vw**2/2.+self.phi_grid)+self.eps_cond*self.cond_grid-self.eps_cool*self.cooling)
 
