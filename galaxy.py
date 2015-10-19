@@ -405,6 +405,7 @@ class Galaxy(object):
 		self.sigma_heating=True
 		self.eps=1.
 		self.eps_cool=0.
+		self._gsm15_cool=False
 		self.eps_cond=0.
 		self.eps_stellar_heating=1.
 		self.cond_scheme='spitzer'
@@ -1712,7 +1713,10 @@ class Galaxy(object):
 			lambdas=np.array([cooling_curve.lambda_c(temp) for temp in self.temp])
 
 		#Add extra 0.22 as the cooling function is normalized to ne*nh not n^2
-		return lambdas*(self.rho/(self.mu*mp))**2
+		if hasattr(self, '_gsm15_cool') and self._gsm15_cool==True:
+			return lambdas*(self.rho/(self.mu*mp))**2
+		else:
+			return 0.22*lambdas*(self.rho/(self.mu*mp))**2
 
 	@property
 	def x_ray_lum(self):
