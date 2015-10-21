@@ -23,7 +23,6 @@ from astropy.table import Table,Column
 import astropy.units as u
 import brewer2mpl
 
-import tde_jet
 import gal_properties
 import analytic_sol as anal_sol
 
