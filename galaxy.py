@@ -503,7 +503,7 @@ class Galaxy(object):
 		self.clear_saved()
 
 	@classmethod
-	def from_dir(cls, args=[], loc='.', index=-1, rescale=1., rmin=None, rmax=None, gdata=None, length=None, extrap='default', model_params=True, **kwargs):
+	def from_dir(cls, args=[], loc='.', index=-1, rescale=1., rescale_rho=None,  rmin=None, rmax=None, length=None, extrap='default', model_params=True, **kwargs):
 		init={}
 		init_array=prepare_start(np.load(loc+'/save.npz')['a'][index])
 		radii=init_array[:,0]
@@ -554,6 +554,9 @@ class Galaxy(object):
 				if (name=='NukerGalaxyExtend' or name=='NukerGalaxy') and re.findall(pat, param):
 					continue
 				gal.set_param(param,model_params_dict[param])
+
+		if rescale_rho:
+			gal.rescale_rho(rescale_rho)
 
 		return gal
 

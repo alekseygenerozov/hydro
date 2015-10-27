@@ -119,7 +119,7 @@ class Driver(object):
 
 	def __parse_config_grid(self):
 		if self.model:
-			grid_params_names=['rmin', 'rmax', 'logr', 'length', 'rescale', 'index','extrap']
+			grid_params_names=['rmin', 'rmax', 'logr', 'length', 'rescale', 'index', 'extrap', 'rescale_rho']
 		else:
 			grid_params_names=['rmin', 'rmax', 'logr', 'length', 'f_initial', 'func_params']
 		self.grid_params_dict={}
