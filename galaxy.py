@@ -28,6 +28,7 @@ import analytic_sol as anal_sol
 
 import progressbar as progress
 
+
 import os.path
 import re
 import functools
@@ -109,8 +110,8 @@ def zero_crossings(a):
 	'''Identify zero crossings of an array'''
 	return np.where(np.diff(np.sign(a)))[0]
 
-def s(temp, rho, mu):
-	return (kb/(mu*mp))*np.log(1./rho*(temp)**(3./2.))
+def s(temp, rho, mu, gamma=5./3.):
+	return (kb/(mu*mp))*np.log(1./rho*(temp)**(1./(gamma-1.)))
 
 class memoize(object):
 	'''Memoization intended for class methods.'''
@@ -467,7 +468,7 @@ class Galaxy(object):
 		self.log_rho=np.log(prims[:,0])
 		self.vel=prims[:,1]
 		self.temp=prims[:,2]
-		self.s=(kb/(self.mu*mp))*np.log(1./np.exp(self.log_rho)*(self.temp)**(3./2.))
+		self.s=s(self.temp, np.exp(self.log_rho), self.mu, self.gamma)
 		#Attributes to store length of the list as well as start and end indices (useful for ghost zones)
 		self.start=3
 		self.end=self.length-4
@@ -829,11 +830,11 @@ class Galaxy(object):
 		return gal_properties.cs(self.temp_profile(r),mu=self.mu, gamma=self.gamma)
 
 	def _update_temp(self):
-		self.temp=(np.exp(self.log_rho)*np.exp(self.mu*mp*self.s/kb))**(2./3.)
+		self.temp=(np.exp(self.log_rho)*np.exp(self.mu*mp*self.s/kb))**(self.gamma-1.)
 
 	def set_temp(self, temp):
 		'''set temperature to a particular constant value--to help with conduction'''
-		self.s=np.array([s(temp, self.rho[i], self.mu) for i in range(self.length)])
+		self.s=np.array([s(self.temp, self.rho[i], self.mu, self.gamma) for i in range(self.length)])
 		self._update_temp()
 
 	#Update array of conseerved quantities	
@@ -1278,7 +1279,7 @@ class Galaxy(object):
 	def isot_off(self):
 		'''Switch off isothermal evolution'''
 		self.isot=False
-		self.s=(kb/(self.mu*mp))*np.log(1./np.exp(self.log_rho)*(self.temp)**(3./2.))
+		self.s=s(self.temp, np.exp(self.log_rho), self.mu, self.gamma)
 		#The next line should not be necessary...
 		self._update_temp()
 		self.fields=['log_rho', 'vel', 's']
@@ -1316,7 +1317,7 @@ class Galaxy(object):
 
 		if param=='gamma' or param=='mu':
 			setattr(self,param,value)
-			self.s=(kb/(self.mu*mp))*np.log(1./np.exp(self.log_rho)*(self.temp)**(3./2.))
+			self.s=s(self.temp, np.exp(self.log_rho), self.mu, self.gamma)
 			if not self.isot:
 				self._update_temp()
 		elif param=='outdir':
@@ -1959,7 +1960,7 @@ class NukerGalaxy(Galaxy):
 		function of the gas density also has to be adjusted. 
 		'''
 		self.log_rho=np.log((eta/self.eta)*self.rho)
-		self.s=(kb/(self.mu*mp))*np.log(1./np.exp(self.log_rho)*(self.temp)**(3./2.))
+		self.s=s(self.temp, np.exp(self.log_rho), self.mu, self.gamma)
 		self.clear_saved()
 		self.set_param('eta', eta)
 
