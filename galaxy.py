@@ -24,6 +24,7 @@ import astropy.units as u
 import brewer2mpl
 
 import gal_properties
+import nuker
 import analytic_sol as anal_sol
 
 import progressbar as progress
@@ -365,7 +366,7 @@ def background(rad, rho_0=2.E-31, temp=1.E6, r0=5.E11, n=0.):
 	
 
 class Galaxy(object):
-	'''Class to representing galaxy--Corresponds to Quataert 2004. Can be initialized either using an analytic function or a
+	'''Class to representing galaxy. Can be initialized either using an analytic function or a
 	numpy ndarray object
 
 	:param init: list contain minimum radius of the grid [cm], maximum radius of the grid [cm], and function to evaluate 
@@ -373,8 +374,15 @@ class Galaxy(object):
 	:param init_dir: name of directory containing previous from which the current run should be initialized
 	'''
 
-	def __init__(self, init={}):
-		self.params={'M':3.6E6*M_sun, 'r1':2.4E17, 'r2':1.2E18, 'gamma':1., 'mdotw':6.7*10.**22}
+	def __init__(self, gal, init={}):
+		self.params=gal.params
+
+		self.rho_stars=gal.rho_stars
+		self.M_enc=gal.M_enc
+		self.phi_bh=gal.phi_bh
+		self.phi_s=gal.phi_s
+		self.sigma=gal.sigma
+
 		self.isot=False
 		self.gamma=5./3.
 		self.fields=['log_rho', 'vel', 's']
@@ -561,9 +569,6 @@ class Galaxy(object):
 
 		return gal
 
-	def M_enc(self,r):
-		return 0.
-
 	@property
 	def M_bh_8(self):
 		return self.params['M']/1.E8/M_sun
@@ -572,23 +577,25 @@ class Galaxy(object):
 	def vw_extra_500(self):
 		return self.vw_extra/5.E7
 
-	def phi_s(self, r):
-		return 0.
-
-	def phi_bh(self, r):
-		return -G*self.params['M']/r
-
 	def phi(self,r):
 		'''Total potential
 		'''
 		return self.phi_bh(r)+self.eps*self.phi_s(r)
+
+	@property 
+	def rho_stars_grid(self):
+		try:
+			return self.cache['rho_stars_grid']
+		except KeyError:
+			self.cache['rho_stars_grid']=np.array([self.rho_stars(r) for r in self.radii])
+			return self.rho_stars['q_grid']
 
 	@property
 	def q_grid(self):
 		try:
 			return self.cache['q_grid']
 		except KeyError:
-			self.cache['q_grid']=np.array([quataert_q(r, r1=self.params['r1'], r2=self.params['r2'], gamma=self.params['gamma'], mdotw=self.params['mdotw']) for r in self.radii])
+			self.cache['q_grid']=np.array([self.eta*self.q(r) for r in self.radii])
 			return self.cache['q_grid']
 
 	@property
@@ -603,10 +610,8 @@ class Galaxy(object):
 	def sigma_grid(self):
 		if not hasattr(self,'eps_stellar_heating'):
 			self.eps_stellar_heating=1.
-		if not hasattr(self, 'sigma_0'):
-			self.sigma_0=(3.)**0.5*gal_properties.sigma_200(self.params['M'])*2.0E7
-		return ((3./(self.params['gamma']+2.))*G*(self.params['M'])/self.radii+self.eps_stellar_heating*self.sigma_0**2)**0.5
-
+		return np.array([sigma(r) for r in gal.radii])
+		
 	@property
 	def phi_s_grid(self):
 		return np.array(map(self.phi_s, self.radii))
@@ -1892,372 +1897,377 @@ class Galaxy(object):
 		else:
 			return False
 
-
-class NukerGalaxy(Galaxy):
-	'''Sub-classing galaxy above to represent Nuker parameterized galaxies'''
-	def __init__(self, gname, gdata=None, init={}):
-		Galaxy.__init__(self, init=init)
-		if not gdata:
-			gdata=nuker_params()
-		try:
-			self.params=gdata[gname]
-		except KeyError:
-			print 'Error! '+gname+' is not in catalog!'
-			raise
-
-		self.name=gname
-		self.eta=1.
-		self.rmin_star=1.E-3
-		self.rmax_star=1.E5
-
-	@memoize
-	def rho_stars(self,r):
-		'''Stellar density
-		:param r: radius 
-		'''
-		rpc=r/pc
-		if rpc<self.rmin_star or rpc>self.rmax_star:
-			return 0.
-		else:
-			return M_sun*self.params['Uv']*inverse_abel(nuker_prime, rpc, **self.params)/pc**3
-
-	@memoize
-	def _get_rho_stars_interp(self):
-		_rho_stars_rad=np.logspace(np.log10(self.rmin_star), np.log10(self.rmax_star),1000)*pc
-		_rho_stars_grid=[self.rho_stars(r) for r in _rho_stars_rad]
-		return interp1d(np.log(_rho_stars_rad),np.log(_rho_stars_grid))
-
-	def _rho_stars_interp(self,r):
-		interp=self._get_rho_stars_interp()
-		try:
-			if np.isnan(interp(np.log(r))):
-				return 0.
-			else:
-				return np.exp(interp(np.log(r)))
-		except ValueError:
-			return 0.
-
-	@memoize
-	def M_enc(self,r):
-		'''Mass enclosed within radius r 
-		:param r: radius 
-		'''
-		rpc=r/pc
-		if rpc<self.rmin_star:
-			return 0.
-		elif rpc>self.rmax_star:
-			return self.M_enc(self.rmax_star*pc)
-		else:
-			return integrate.quad(lambda r1:4.*np.pi*r1**2*self._rho_stars_interp(r1*pc)*pc**3, self.rmin_star, rpc)[0]
-
-	@memoize
-	def phi_s(self, r):
-		rpc=r/pc
-		return (-G*self.M_enc(r)/r)-4.*np.pi*G*integrate.quad(lambda r1:self._rho_stars_interp(r1*pc)*r1*pc**3, rpc, self.rmax_star)[0]/pc
-
-	def rescale_rho(self, eta):
-		'''quickly rescale gas density profile to different value of eta--note that entropy is a 
-		function of the gas density also has to be adjusted. 
-		'''
-		self.log_rho=np.log((eta/self.eta)*self.rho)
-		self.s=s(self.temp, np.exp(self.log_rho), self.mu, self.gamma)
-		self.clear_saved()
-		self.set_param('eta', eta)
-
-	def q(self, r):
-		'''Source term representing mass loss from stellar winds'''
-		return self.eta*self.rho_stars(r)/th
-
-	@property
-	def rho_stars_grid(self):
-		try:
-			return self.cache['rho_stars_grid']
-		except KeyError:
-			self.cache['rho_stars_grid']=np.array([self.rho_stars(r) for r in self.radii])
-			return self.cache['rho_stars_grid']
-
-	@property
-	def q_grid(self):
-		return self.eta*self.rho_stars_grid/th
-
-	@property
-	def sigma_200(self):
-		'''Reverse engineering the velocity dispersion from Mbh-sigma relationship and BH mass--using the relationship in WM04'''
-		return gal_properties.sigma_200(self.params['M'])
-
 	@property
 	def r_Ia(self):
 		return gal_properties.r_Ia(self.params['M'])
 
-	##Getting the radius of influence: where the enclosed mass begins to equal the mass of the central BH. 
-	@memoize
-	def _get_rinf(self):
-		'''Get radius of influence for galaxy'''
-		def mdiff(log_r):
-			return np.log10(self.params['M'])-np.log10(self.M_enc(10.**log_r))
 
-		# jac=lambda r: -4.*np.pi*r**2*self.rho_stars(r)
-		return 10.**fsolve(mdiff, np.log10(0.9*pc*(self.params['M']/(1.E6*M_sun))**0.4))[0]
 
-	@property
-	def rinf(self):
-		return self._get_rinf()
+# class NukerGalaxy(Galaxy):
+# 	'''Sub-classing galaxy above to represent Nuker parameterized galaxies'''
+# 	def __init__(self, gname, gdata=None, init={}):
+# 		Galaxy.__init__(self, init=init)
+# 		if not gdata:
+# 			gdata=nuker_params()
+# 		try:
+# 			self.params=gdata[gname]
+# 		except KeyError:
+# 			print 'Error! '+gname+' is not in catalog!'
+# 			raise
 
-	@property
-	def rs_rinf(self):
-		if self.stag_unique:
-			return self.rs[0]/self.rinf
+# 		self.name=gname
+# 		self.eta=1.
+# 		self.rmin_star=1.E-3
+# 		self.rmax_star=1.E5
 
-	@property
-	def sigma_inf(self):
-		'''Velocity dispersion at the radius of influence.'''
-		return self.sigma_interp(self.rinf)
+# 	@memoize
+# 	def rho_stars(self,r):
+# 		'''Stellar density
+# 		:param r: radius 
+# 		'''
+# 		rpc=r/pc
+# 		if rpc<self.rmin_star or rpc>self.rmax_star:
+# 			return 0.
+# 		else:
+# 			return M_sun*self.params['Uv']*inverse_abel(nuker_prime, rpc, **self.params)/pc**3
 
-	@property
-	def rb(self):
-		'''Bondi radius computed from G M/cs(rb)^2=rb'''
-		f=lambda r:G*self.params['M']/(self.cs_profile(r))**2-r
-		rb=fsolve(f, G*self.params['M']/self.cs_profile(self.rinf)**2)
+# 	@memoize
+# 	def _get_rho_stars_interp(self):
+# 		_rho_stars_rad=np.logspace(np.log10(self.rmin_star), np.log10(self.rmax_star),1000)*pc
+# 		_rho_stars_grid=[self.rho_stars(r) for r in _rho_stars_rad]
+# 		return interp1d(np.log(_rho_stars_rad),np.log(_rho_stars_grid))
 
-		return rb
+# 	def _rho_stars_interp(self,r):
+# 		interp=self._get_rho_stars_interp()
+# 		try:
+# 			if np.isnan(interp(np.log(r))):
+# 				return 0.
+# 			else:
+# 				return np.exp(interp(np.log(r)))
+# 		except ValueError:
+# 			return 0.
 
-	def get_prop(self,field,r):
-		return getattr(self, field)(r)
+# 	@memoize
+# 	def M_enc(self,r):
+# 		'''Mass enclosed within radius r 
+# 		:param r: radius 
+# 		'''
+# 		rpc=r/pc
+# 		if rpc<self.rmin_star:
+# 			return 0.
+# 		elif rpc>self.rmax_star:
+# 			return self.M_enc(self.rmax_star*pc)
+# 		else:
+# 			return integrate.quad(lambda r1:4.*np.pi*r1**2*self._rho_stars_interp(r1*pc)*pc**3, self.rmin_star, rpc)[0]
 
-	@property
-	def dens_pow_slope_rs(self):
-		'''Power law slope of density at the stagnation stagnation radius'''
-		lrho_interp=interp1d(np.log(self.radii),self.log_rho)
-		return derivative(lrho_interp, np.log(self.rs[0]), dx=self.delta_log[0])
+# 	@memoize
+# 	def phi_s(self, r):
+# 		rpc=r/pc
+# 		return (-G*self.M_enc(r)/r)-4.*np.pi*G*integrate.quad(lambda r1:self._rho_stars_interp(r1*pc)*r1*pc**3, rpc, self.rmax_star)[0]/pc
 
-	@property
-	def rs_analytic(self):
-		'''Analytic formula for the stagnation radius--normalized by the influence radius'''
-		if self.stag_unique:
-			zeta=(self.vw_extra**2.+self.sigma_0**2.)**0.5/self.sigma_0
-			dens_slope=np.abs(self.dens_pow_slope_rs)
+# 	def rescale_rho(self, eta):
+# 		'''quickly rescale gas density profile to different value of eta--note that entropy is a 
+# 		function of the gas density also has to be adjusted. 
+# 		'''
+# 		self.log_rho=np.log((eta/self.eta)*self.rho)
+# 		self.s=s(self.temp, np.exp(self.log_rho), self.mu, self.gamma)
+# 		self.clear_saved()
+# 		self.set_param('eta', eta)
 
-			return 1./(dens_slope*zeta**2*3.)*(4.*self.M_enc(self.rs[0])/self.params['M']+((13.+8.*self.params['gamma'])/(4.+2.*self.params['gamma']))-dens_slope*3./(2.+self.params['gamma']))
+# 	def q(self, r):
+# 		'''Source term representing mass loss from stellar winds'''
+# 		return self.eta*self.rho_stars(r)/th
 
-	@property 
-	def rs_analytic_approx(self):
-		return gal_properties.rs_approx(self.params['M'],self.vw_extra)
+# 	@property
+# 	def rho_stars_grid(self):
+# 		try:
+# 			return self.cache['rho_stars_grid']
+# 		except KeyError:
+# 			self.cache['rho_stars_grid']=np.array([self.rho_stars(r) for r in self.radii])
+# 			return self.cache['rho_stars_grid']
 
-	@property 
-	def rs_residual(self):
-		'''Residual of the stagnation radius from the analytic result'''
-		if self.stag_unique:
-			return (self.rs_analytic-(self.rs[0]/self.rinf))/self.rs_analytic
+# 	@property
+# 	def q_grid(self):
+# 		return self.eta*self.rho_stars_grid/th
 
-	@property
-	def vw_rs(self):
-		if self.stag_unique:
-			return (self.sigma_interp(self.rs[0])**2+self.vw_extra**2)**0.5
+# 	@property
+# 	def sigma_200(self):
+# 		'''Reverse engineering the velocity dispersion from Mbh-sigma relationship and BH mass--using the relationship in WM04'''
+# 		return gal_properties.sigma_200(self.params['M'])
 
-	# @property
-	# def vw_rs_analytic(self):
-	# 	'''Analytic estimate for the wind velocity at the stagnation radius'''
-	# 	return self.vw_extra*gal_properties.xi(self.params['M'],self.vw_extra)
+# 	@property
+# 	def r_Ia(self):
+# 		return gal_properties.r_Ia(self.params['M'])
 
-	@property
-	def rho_rs(self):
-		'''Density at rs'''
-		if self.stag_unique:
-			return self.rho_profile(self.rs[0])
+# 	##Getting the radius of influence: where the enclosed mass begins to equal the mass of the central BH. 
+# 	@memoize
+# 	def _get_rinf(self):
+# 		'''Get radius of influence for galaxy'''
+# 		def mdiff(log_r):
+# 			return np.log10(self.params['M'])-np.log10(self.M_enc(10.**log_r))
 
-	@property
-	def temp_rs(self):
-		'''Temperature at the rs'''
-		if self.stag_unique:
-			return self.temp_profile(self.rs[0])
+# 		# jac=lambda r: -4.*np.pi*r**2*self.rho_stars(r)
+# 		return 10.**fsolve(mdiff, np.log10(0.9*pc*(self.params['M']/(1.E6*M_sun))**0.4))[0]
 
-	@property
-	def q_rs(self):
-		'''Value of the source function at the stagnation radius'''
-		if self.stag_unique:
-			return self.q_interp(self.rs[0])
+# 	@property
+# 	def rinf(self):
+# 		return self._get_rinf()
 
-	@property
-	def menc_rs(self):
-		if self.stag_unique:
-			return self.M_enc_interp(self.rs[0])
+# 	@property
+# 	def rs_rinf(self):
+# 		if self.stag_unique:
+# 			return self.rs[0]/self.rinf
 
-	@property
-	def temp_rs_analytic(self):
-		'''Analytic expression for the temperature at the stagnation radius--using no information from numerical results'''
-		return gal_properties.temp_rs(self.params['M'], (self.vw_extra**2.+self.sigma_0**2.)**0.5, gamma=self.params['gamma'], mu=self.mu)
+# 	@property
+# 	def sigma_inf(self):
+# 		'''Velocity dispersion at the radius of influence.'''
+# 		return self.sigma_interp(self.rinf)
 
-	@property 
-	def temp_rs_analytic_cheat(self):
-		'''Analytic expression for the temperature at the stagnation radius--from the actual value of vw at rs'''
-		return gal_properties.temp_rs_tilde(self.params['M'], self.vw_rs, self.mu)
+# 	@property
+# 	def rb(self):
+# 		'''Bondi radius computed from G M/cs(rb)^2=rb'''
+# 		f=lambda r:G*self.params['M']/(self.cs_profile(r))**2-r
+# 		rb=fsolve(f, G*self.params['M']/self.cs_profile(self.rinf)**2)
 
-	@property
-	def temp_rs_residual(self):
-		'''Residual of the temperature at the stagnation radius compared to the analytic result'''
-		if self.stag_unique:
-			return (self.temp_rs_analytic-self.temp_interp(self.rs))/self.temp_rs_analytic
+# 		return rb
 
-	@property 
-	def rho_rs_analytic(self):
-		return gal_properties.rho_rs_analytic(self.params['M'], self.vw_rs_analytic, gamma=self.params['gamma'], eta=self.eta)
+# 	def get_prop(self,field,r):
+# 		return getattr(self, field)(r)
 
-	@property
-	def cs_rs_analytic(self):
-		return gal_properties.cs_rs_analytic(self.params['M'],self.vw_extra)
+# 	@property
+# 	def dens_pow_slope_rs(self):
+# 		'''Power law slope of density at the stagnation stagnation radius'''
+# 		lrho_interp=interp1d(np.log(self.radii),self.log_rho)
+# 		return derivative(lrho_interp, np.log(self.rs[0]), dx=self.delta_log[0])
 
-	@property
-	def rho_rs_analytic(self):
-		'''Analytic estimate for the density at the stagnation radius'''
-		return gal_properties.rho_rs_analytic(self.params['M'],self.vw_extra,self.params['gamma'], self.eta)
+# 	@property
+# 	def rs_analytic(self):
+# 		'''Analytic formula for the stagnation radius--normalized by the influence radius'''
+# 		if self.stag_unique:
+# 			zeta=(self.vw_extra**2.+self.sigma_0**2.)**0.5/self.sigma_0
+# 			dens_slope=np.abs(self.dens_pow_slope_rs)
 
-	@property
-	def rho_stars_rs_analytic(self):
-		return gal_properties.rho_stars_rs_analytic(self.params['M'],self.vw_extra)
+# 			return 1./(dens_slope*zeta**2*3.)*(4.*self.M_enc(self.rs[0])/self.params['M']+((13.+8.*self.params['gamma'])/(4.+2.*self.params['gamma']))-dens_slope*3./(2.+self.params['gamma']))
+
+# 	@property 
+# 	def rs_analytic_approx(self):
+# 		return gal_properties.rs_approx(self.params['M'],self.vw_extra)
+
+# 	@property 
+# 	def rs_residual(self):
+# 		'''Residual of the stagnation radius from the analytic result'''
+# 		if self.stag_unique:
+# 			return (self.rs_analytic-(self.rs[0]/self.rinf))/self.rs_analytic
+
+# 	@property
+# 	def vw_rs(self):
+# 		if self.stag_unique:
+# 			return (self.sigma_interp(self.rs[0])**2+self.vw_extra**2)**0.5
+
+# 	# @property
+# 	# def vw_rs_analytic(self):
+# 	# 	'''Analytic estimate for the wind velocity at the stagnation radius'''
+# 	# 	return self.vw_extra*gal_properties.xi(self.params['M'],self.vw_extra)
+
+# 	@property
+# 	def rho_rs(self):
+# 		'''Density at rs'''
+# 		if self.stag_unique:
+# 			return self.rho_profile(self.rs[0])
+
+# 	@property
+# 	def temp_rs(self):
+# 		'''Temperature at the rs'''
+# 		if self.stag_unique:
+# 			return self.temp_profile(self.rs[0])
+
+# 	@property
+# 	def q_rs(self):
+# 		'''Value of the source function at the stagnation radius'''
+# 		if self.stag_unique:
+# 			return self.q_interp(self.rs[0])
+
+# 	@property
+# 	def menc_rs(self):
+# 		if self.stag_unique:
+# 			return self.M_enc_interp(self.rs[0])
+
+# 	@property
+# 	def temp_rs_analytic(self):
+# 		'''Analytic expression for the temperature at the stagnation radius--using no information from numerical results'''
+# 		return gal_properties.temp_rs(self.params['M'], (self.vw_extra**2.+self.sigma_0**2.)**0.5, gamma=self.params['gamma'], mu=self.mu)
+
+# 	@property 
+# 	def temp_rs_analytic_cheat(self):
+# 		'''Analytic expression for the temperature at the stagnation radius--from the actual value of vw at rs'''
+# 		return gal_properties.temp_rs_tilde(self.params['M'], self.vw_rs, self.mu)
+
+# 	@property
+# 	def temp_rs_residual(self):
+# 		'''Residual of the temperature at the stagnation radius compared to the analytic result'''
+# 		if self.stag_unique:
+# 			return (self.temp_rs_analytic-self.temp_interp(self.rs))/self.temp_rs_analytic
+
+# 	@property 
+# 	def rho_rs_analytic(self):
+# 		return gal_properties.rho_rs_analytic(self.params['M'], self.vw_rs_analytic, gamma=self.params['gamma'], eta=self.eta)
+
+# 	@property
+# 	def cs_rs_analytic(self):
+# 		return gal_properties.cs_rs_analytic(self.params['M'],self.vw_extra)
+
+# 	@property
+# 	def rho_rs_analytic(self):
+# 		'''Analytic estimate for the density at the stagnation radius'''
+# 		return gal_properties.rho_rs_analytic(self.params['M'],self.vw_extra,self.params['gamma'], self.eta)
+
+# 	@property
+# 	def rho_stars_rs_analytic(self):
+# 		return gal_properties.rho_stars_rs_analytic(self.params['M'],self.vw_extra)
 		
-	@property
-	def menc_rs_analytic(self):
-		return gal_properties.M_enc_rs_analytic(self.params['M'],self.vw_extra, self.params['gamma'])
+# 	@property
+# 	def menc_rs_analytic(self):
+# 		return gal_properties.M_enc_rs_analytic(self.params['M'],self.vw_extra, self.params['gamma'])
 
-	@property 
-	def eddr_analytic(self):
-		return gal_properties.eddr_analytic(self.params['M'], self.vw_extra, self.params['gamma'], self.eta)
+# 	@property 
+# 	def eddr_analytic(self):
+# 		return gal_properties.eddr_analytic(self.params['M'], self.vw_extra, self.params['gamma'], self.eta)
 
-	@property
-	def heating_pos_rs(self):
-		return self.heating_pos_profile(self.rs[0])
+# 	@property
+# 	def heating_pos_rs(self):
+# 		return self.heating_pos_profile(self.rs[0])
 
-	@property 
-	def cooling_rs(self):
-		return self.cooling_profile(self.rs[0])
+# 	@property 
+# 	def cooling_rs(self):
+# 		return self.cooling_profile(self.rs[0])
 
-	@property
-	def hc_rs(self):
-		'''Ratio of heating to cooling at the stagnation radius'''
-		if self.stag_unique:
-			return self.heating_pos_rs/self.cooling_rs
+# 	@property
+# 	def hc_rs(self):
+# 		'''Ratio of heating to cooling at the stagnation radius'''
+# 		if self.stag_unique:
+# 			return self.heating_pos_rs/self.cooling_rs
 
-	def be_analytic(self, r):
-		'''analytic v^2/2+(gamma)/(gamma-1)*p/rho at radius r. Uses info from solution (the stagnation radius)'''
-		if self.stag_unique:
-			phi_rs=G*self.params['M']/self.rs[0]
-			z=(self.vw_extra**2.+self.sigma_0**2.)**0.5/self.sigma_0
-			x=r/self.rs[0]
-			w=(self.rs[0]/self.rinf)**(2.-self.params['gamma'])
+# 	def be_analytic(self, r):
+# 		'''analytic v^2/2+(gamma)/(gamma-1)*p/rho at radius r. Uses info from solution (the stagnation radius)'''
+# 		if self.stag_unique:
+# 			phi_rs=G*self.params['M']/self.rs[0]
+# 			z=(self.vw_extra**2.+self.sigma_0**2.)**0.5/self.sigma_0
+# 			x=r/self.rs[0]
+# 			w=(self.rs[0]/self.rinf)**(2.-self.params['gamma'])
 
-			return anal_sol.be_analytic(phi_rs, x, z, self.params['gamma'], w, self.params['rb']/self.rinf)
+# 			return anal_sol.be_analytic(phi_rs, x, z, self.params['gamma'], w, self.params['rb']/self.rinf)
 
-	def enth_analytic(self, r):
-		'''analytic v^2/2+(gamma)/(gamma-1)*p/rho at radius r. Uses info from solution (the stagnation radius)'''
-		if self.stag_unique:
-			phi_rs=G*self.params['M']/self.rs[0]
-			z=(self.vw_extra**2.+self.sigma_0**2.)**0.5/self.sigma_0
-			x=r/self.rs[0]
-			w=(self.rs[0]/self.rinf)**(2.-self.params['gamma'])
+# 	def enth_analytic(self, r):
+# 		'''analytic v^2/2+(gamma)/(gamma-1)*p/rho at radius r. Uses info from solution (the stagnation radius)'''
+# 		if self.stag_unique:
+# 			phi_rs=G*self.params['M']/self.rs[0]
+# 			z=(self.vw_extra**2.+self.sigma_0**2.)**0.5/self.sigma_0
+# 			x=r/self.rs[0]
+# 			w=(self.rs[0]/self.rinf)**(2.-self.params['gamma'])
 
-			return anal_sol.enth_analytic(phi_rs, x, z, self.params['gamma'], w)
+# 			return anal_sol.enth_analytic(phi_rs, x, z, self.params['gamma'], w)
 
-	def mdot_outflow(self):
-		'''Mass outflow rate at the break radius, rb calculated from the mass enclosed profile of the galaxy'''
-		if self.stag_unique:
-			return self.eta*(self.M_enc(self.params['rb']*pc)-self.M_enc(self.rs[0]))/th
+# 	def mdot_outflow(self):
+# 		'''Mass outflow rate at the break radius, rb calculated from the mass enclosed profile of the galaxy'''
+# 		if self.stag_unique:
+# 			return self.eta*(self.M_enc(self.params['rb']*pc)-self.M_enc(self.rs[0]))/th
 
 
-class PowGalaxy(NukerGalaxy):
-	def __init__(self, init={}):
-		self.params={'M':1.E7*M_sun, 'gamma':0.8, 'rb':100., 'beta':2.}
-		name='pow'
-		NukerGalaxy.__init__(self, name, gdata={name:self.params}, init=init)
+# class PowGalaxy(NukerGalaxy):
+# 	def __init__(self, init={}):
+# 		self.params={'M':1.E7*M_sun, 'gamma':0.8, 'rb':100., 'beta':2.}
+# 		name='pow'
+# 		NukerGalaxy.__init__(self, name, gdata={name:self.params}, init=init)
 
-	@memoize
-	def rho_stars(self,r):
-		try:
-			self.params['rb']
-		except KeyError:
-			self.params['rb']=np.inf
+# 	@memoize
+# 	def rho_stars(self,r):
+# 		try:
+# 			self.params['rb']
+# 		except KeyError:
+# 			self.params['rb']=np.inf
 
-		rpc=r/pc
-		if rpc<self.rmin_star or rpc>self.rmax_star:
-			return 0.
-		elif rpc<self.params['rb']:
-			return self.rho_0*(r/self.rinf)**(-1.-self.params['gamma'])
-		else:
-			return self.rho_0*(self.params['rb']*pc/self.rinf)**(-1.-self.params['gamma'])*(rpc/self.params['rb'])**(-1.-self.params['beta'])
+# 		rpc=r/pc
+# 		if rpc<self.rmin_star or rpc>self.rmax_star:
+# 			return 0.
+# 		elif rpc<self.params['rb']:
+# 			return self.rho_0*(r/self.rinf)**(-1.-self.params['gamma'])
+# 		else:
+# 			return self.rho_0*(self.params['rb']*pc/self.rinf)**(-1.-self.params['gamma'])*(rpc/self.params['rb'])**(-1.-self.params['beta'])
 
-	@property
-	def rinf(self):
-		return gal_properties.rinf(self.params['M'])
+# 	@property
+# 	def rinf(self):
+# 		return gal_properties.rinf(self.params['M'])
 
-	@property
-	def rho_0(self):
-		return self.params['M']*self.rinf**(-1.-self.params['gamma'])/(4.*np.pi*(self.rinf**(2.-self.params['gamma'])-(self.rmin_star*pc)**(2.-self.params['gamma'])))*(2.-self.params['gamma'])
+# 	@property
+# 	def rho_0(self):
+# 		return self.params['M']*self.rinf**(-1.-self.params['gamma'])/(4.*np.pi*(self.rinf**(2.-self.params['gamma'])-(self.rmin_star*pc)**(2.-self.params['gamma'])))*(2.-self.params['gamma'])
 
-class NukerGalaxyExtend(NukerGalaxy):
-	'''Nuker galaxy with extended inner density profile'''
-	def __init__(self, gname, gdata=None, init={}):
-		Galaxy.__init__(self, init=init)
-		if not gdata:
-			gdata=nuker_params()
-		try:
-			self.params=gdata[gname]
-		except KeyError:
-			print 'Error! '+gname+' is not in catalog!'
-			raise
+# class NukerGalaxyExtend(NukerGalaxy):
+# 	'''Nuker galaxy with extended inner density profile'''
+# 	def __init__(self, gname, gdata=None, init={}):
+# 		Galaxy.__init__(self, init=init)
+# 		if not gdata:
+# 			gdata=nuker_params()
+# 		try:
+# 			self.params=gdata[gname]
+# 		except KeyError:
+# 			print 'Error! '+gname+' is not in catalog!'
+# 			raise
 
-		self.name=gname
-		self.eta=1.
-		self.rmin_star=1.E-3
-		self.rmax_star=1.E5
-		if not np.in1d('gamma_in',self.params.keys())[0]:
-			self.params['gamma_in']=-1.5
+# 		self.name=gname
+# 		self.eta=1.
+# 		self.rmin_star=1.E-3
+# 		self.rmax_star=1.E5
+# 		if not np.in1d('gamma_in',self.params.keys())[0]:
+# 			self.params['gamma_in']=-1.5
 
-	@memoize
-	def rho_stars(self,r):
-		'''Stellar density
-		:param r: radius 
-		'''
-		rpc=r/pc
-		if rpc>self.rmax_star:
-			return 0.
-		elif rpc<self.rmin_star:
-			rho_min=M_sun*self.params['Uv']*inverse_abel(nuker_prime, self.rmin_star, **self.params)/pc**3
-			return rho_min*(rpc/self.rmin_star)**(-1.-self.params['gamma_in'])
-		else:
-			return M_sun*self.params['Uv']*inverse_abel(nuker_prime, rpc, **self.params)/pc**3
+# 	@memoize
+# 	def rho_stars(self,r):
+# 		'''Stellar density
+# 		:param r: radius 
+# 		'''
+# 		rpc=r/pc
+# 		if rpc>self.rmax_star:
+# 			return 0.
+# 		elif rpc<self.rmin_star:
+# 			rho_min=M_sun*self.params['Uv']*inverse_abel(nuker_prime, self.rmin_star, **self.params)/pc**3
+# 			return rho_min*(rpc/self.rmin_star)**(-1.-self.params['gamma_in'])
+# 		else:
+# 			return M_sun*self.params['Uv']*inverse_abel(nuker_prime, rpc, **self.params)/pc**3
 
-	@memoize
-	def _get_rho_stars_interp(self):
-		_rho_stars_rad=np.logspace(np.log10(self.rmin_star), np.log10(self.rmax_star),1000)*pc
-		_rho_stars_grid=[self.rho_stars(r) for r in _rho_stars_rad]
-		return interp1d(np.log(_rho_stars_rad),np.log(_rho_stars_grid))
+# 	@memoize
+# 	def _get_rho_stars_interp(self):
+# 		_rho_stars_rad=np.logspace(np.log10(self.rmin_star), np.log10(self.rmax_star),1000)*pc
+# 		_rho_stars_grid=[self.rho_stars(r) for r in _rho_stars_rad]
+# 		return interp1d(np.log(_rho_stars_rad),np.log(_rho_stars_grid))
 
-	def _rho_stars_interp(self,r):
-		interp=self._get_rho_stars_interp()
-		if r/pc<self.rmin_star:
-			return self.rho_stars(r)
-		else:	
-			try:
-				return np.exp(interp(np.log(r)))
-			except ValueError:
-				return 0.
+# 	def _rho_stars_interp(self,r):
+# 		interp=self._get_rho_stars_interp()
+# 		if r/pc<self.rmin_star:
+# 			return self.rho_stars(r)
+# 		else:	
+# 			try:
+# 				return np.exp(interp(np.log(r)))
+# 			except ValueError:
+# 				return 0.
 
-	@memoize
-	def M_enc(self,r):
-		'''Mass enclosed within radius r 
-		:param r: radius 
-		'''
-		rpc=r/pc
-		if rpc>self.rmax_star:
-			return self.M_enc(self.rmax_star*pc)
-		else:
-			return integrate.quad(lambda r1:4.*np.pi*r1**2*self._rho_stars_interp(r1*pc)*pc**3, 0., rpc)[0]
+# 	@memoize
+# 	def M_enc(self,r):
+# 		'''Mass enclosed within radius r 
+# 		:param r: radius 
+# 		'''
+# 		rpc=r/pc
+# 		if rpc>self.rmax_star:
+# 			return self.M_enc(self.rmax_star*pc)
+# 		else:
+# 			return integrate.quad(lambda r1:4.*np.pi*r1**2*self._rho_stars_interp(r1*pc)*pc**3, 0., rpc)[0]
 
-	@memoize
-	def phi_s(self, r):
-		rpc=r/pc
-		return (-G*self.M_enc(r)/r)-\
-		4.*np.pi*G*integrate.quad(lambda r1:self._rho_stars_interp(r1*pc)*r1*pc**3, rpc, self.rmin_star)[0]/pc-\
-		4.*np.pi*G*integrate.quad(lambda r1:self._rho_stars_interp(r1*pc)*r1*pc**3, self.rmin_star, self.rmax_star)[0]/pc
+# 	@memoize
+# 	def phi_s(self, r):
+# 		rpc=r/pc
+# 		return (-G*self.M_enc(r)/r)-\
+# 		4.*np.pi*G*integrate.quad(lambda r1:self._rho_stars_interp(r1*pc)*r1*pc**3, rpc, self.rmin_star)[0]/pc-\
+# 		4.*np.pi*G*integrate.quad(lambda r1:self._rho_stars_interp(r1*pc)*r1*pc**3, self.rmin_star, self.rmax_star)[0]/pc
 
 
 
