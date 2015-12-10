@@ -1066,6 +1066,8 @@ class Galaxy(object):
 				self._update_ghosts_mdot_fixed()
 			elif bdry=='ss':
 				self._update_ghosts_ss()
+			elif bdry=='cons':
+				self._update_ghosts_cons()
 			else:
 				self._update_ghosts_default()
 			
@@ -1085,6 +1087,11 @@ class Galaxy(object):
 		self._extrapolate('rho')
 		self._extrapolate('s')
 		self._mdot_adjust()
+
+	def _update_ghosts_cons(self):
+		self._extrapolate('rho')
+		self._mdot_adjust()
+		self._en_adjust()
 
 	def _update_ghosts_bp(self):
 		self._s_adjust_bp()
@@ -1178,6 +1185,17 @@ class Galaxy(object):
 				src=np.trapz(self.src_rho[self._end_zone:ghost_idx+1], x=self.radii[self._end_zone:ghost_idx+1])
 			self.vel[ghost_idx]=(self.frho[self._end_zone]+src)/self.rho[ghost_idx]/self.radii[ghost_idx]**2
 			
+	def _en_adjust(self):
+		for i in range(1, 4):
+			ghost_idx=self.outwards(self._end_zone, i)
+			if self._end_zone==self.start:
+				src=np.trapz(self.src_en[ghost_idx:self._end_zone+1], x=self.radii[ghost_idx:self._end_zone+1])
+			else:
+				src=np.trapz(self.src_en[self._end_zone:ghost_idx+1], x=self.radii[self._end_zone:ghost_idx+1])
+			be=(self.fen[self._end_zone]+src)/self.rho[ghost_idx]/self.radii[ghost_idx]**2./self.vel[ghost_idx]
+			temp=(self.gamma-1.)/self.gamma*(self.mu*mp/kb)*(be-0.5*self.vel[ghost_idx]**2.-self.phi_grid[ghost_idx])
+			self.s[ghost_idx]=s(temp, self.rho[ghost_idx], self.mu, self.gamma)
+
 	def _mdot_adjust_bp(self):
 		'''Enforce constant mdot across the ghost zones. Source term is not accounted for in this version'''
 		for i in range(1,4):
