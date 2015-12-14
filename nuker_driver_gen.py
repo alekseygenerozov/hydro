@@ -11,6 +11,7 @@ import sys
 import re
 
 from bash_command import bash_command as bc
+import numpy as np
 
 
 def config_items_section(config,sec):
@@ -116,6 +117,9 @@ class Driver(object):
 
 	def __parse_config_params(self):
 		self.user_params_dict=config_parse_section(self.config, 'params')
+		##Quick hack to allow users to pass in heating profile
+		if ('vw_extra' in self.user_params_dict.keys()): 
+			self.user_params_dict['vw_extra']=np.array(self.user_params_dict['vw_extra']).flatten()
 
 	def __parse_config_grid(self):
 		if self.model:
