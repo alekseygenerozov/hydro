@@ -229,12 +229,12 @@ def temp_rs(M, vw, gamma=1., mu=0.62):
 def vw_ti_core(M, eta):
 	'''thermal instability criterion for cusp galaxies--assumes gamma=0.8'''
 	M8=M/10.**8/M_sun
-	return 2.814679E7*M8**0.1055555556*(eta/0.02)**0.1388889
+	return 228.*M8**0.1055555556*(eta/0.02)**0.1388889
 
 def vw_ti_cusp(M, eta):
 	'''thermal instability criterion for cusp galaxies--assumes gamma=0.8'''
 	M8=M/10.**8/M_sun
-	return 2.425311E7*M8**0.08275862*(eta/0.02)**0.17241
+	return 190.*M8**0.08275862*(eta/0.02)**0.17241
 
 def vw_ti_Ia_cusp(M, eta):
 	'''thermal instability criterion for core galaxies w/ Ia heating--assumes gamma=0.8'''
