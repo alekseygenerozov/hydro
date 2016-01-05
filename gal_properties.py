@@ -124,6 +124,14 @@ def rb_rinf_core(M):
 def rb_rinf_cusp(M):
 	return 240.*pc/rinf_cusp(M)
 
+def rb_rinf(M, gamma):
+	if gamma<0.3:
+		rbrinf=rb_rinf_core(M)
+	else:
+		rbrinf=rb_rinf_cusp(M)
+	return rbrinf
+
+
 def gamma_fit(M):
 	'''Average Nuker gamma based on Lauer et al. 2007 sample'''
 	if M<4.0e7*M_sun:
@@ -283,6 +291,37 @@ def	M_enc_rs_analytic_exact(M, vw, gamma=1.):
 def mdot_analytic(M, vw, gamma=1.,eta=0.1):
 	return eta*M_enc_rs_analytic(M, vw, gamma=gamma)/th
 
+def mdot_rb(M, gamma=1., eta=0.1):
+	rbrinf=rb_rinf(M, gamma)
+	Menc=M*(rbrinf)**(2.-gamma)
+
+	return eta*Menc/th
+
+def lum(M, vw, gamma=1.,eta=0.1, fin=0.1):
+	mdot=mdot_analytic(M, vw, gamma, eta)
+	eddr=mdot/mdot_edd(M)
+	eps=eps_rad(fin*eddr)
+
+	return eps*fin*mdot*c**2.
+
+def lum_rb(M, gamma, eta=0.1, fin=0.1, rbrinf=None):
+	if not rbrinf:
+		rbrinf=rb_rinf(M, gamma)
+	Menc=M*(rbrinf)**(2.-gamma)
+	mdot=eta*Menc/th
+	eddr=mdot/mdot_edd(M)
+	eps=eps_rad(fin*eddr)
+
+	return eps*fin*mdot*c**2.
+
+def lum_r(r, M, gamma, eta=0.1, fin=0.1):
+	Menc=M*(r/rinf(M))**(2.-gamma)
+	mdot=eta*Menc/th
+	eddr=mdot/mdot_edd(M)
+	eps=eps_rad(fin*eddr)
+
+	return eps*fin*mdot*c**2.
+
 def mdot_analytic_exact(M, vw, gamma=1.,eta=0.1):
 	return eta*M_enc_rs_analytic_exact(M, vw, gamma=gamma)/th
 
@@ -348,6 +387,17 @@ def vw_eff_Ia(t):
 	'''vw from Ia's in impulsive limit'''
 	eps1a=0.4
 	return ((2.*th*rate_Ia(t)*(eps1a*1.E51))/eta(t))**0.5
+
+def eps_rad(x):
+	'''Radiative efficiency as a function of Eddington ratio x'''
+	if x<1.0e-4:
+		return 0.026*(x/1.0e-4)**0.9
+	elif x<1.0e-2:
+		return 0.026
+	elif x<0.1:
+		return 0.1*(x/0.1)**0.58
+	else:
+		return 0.1
 
 
 
