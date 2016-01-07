@@ -399,6 +399,11 @@ def eps_rad(x):
 	else:
 		return 0.1
 
+def eddr_from_lum(x):
+	'''Takes luminsosity Eddington ratio and converts it to eddington ratio for mdot, using above prescription for eps_rad'''
+	return fsolve(lambda eddr:(eps_rad(eddr)/0.1)*eddr-x, x)[0]
+
+
 
 
 
