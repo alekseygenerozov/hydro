@@ -237,12 +237,12 @@ def temp_rs(M, vw, gamma=1., mu=0.62):
 def vw_ti_core(M, eta):
 	'''thermal instability criterion for cusp galaxies--assumes gamma=0.8'''
 	M8=M/10.**8/M_sun
-	return 228.*M8**0.1055555556*(eta/0.02)**0.1388889
+	return 2.28*10.**7*M8**0.1055555556*(eta/0.02)**0.1388889
 
 def vw_ti_cusp(M, eta):
 	'''thermal instability criterion for cusp galaxies--assumes gamma=0.8'''
 	M8=M/10.**8/M_sun
-	return 190.*M8**0.08275862*(eta/0.02)**0.17241
+	return 1.9*10.**7.*M8**0.08275862*(eta/0.02)**0.17241
 
 def vw_ti_Ia_cusp(M, eta):
 	'''thermal instability criterion for core galaxies w/ Ia heating--assumes gamma=0.8'''
@@ -348,6 +348,9 @@ def eta_n18(n18, M, vw, mu=0.62):
 def rho_stars_rs_analytic(M, vw, gamma=1.):
 	'''Analytic expression for the stellar density at the stagnation radius rs'''
 	return M*(2.-gamma)/(4.*np.pi*rinf(M)**3.)*(rs_approx(M,vw,gamma=gamma)/rinf(M))**(-1.-gamma)
+
+def rho_stars_rinf(M, gamma=1.):
+	return M*(2.-gamma)/(4.*np.pi*rinf(M)**3.)
 
 def q_rs_analytic(M, vw, gamma=1., eta=0.1):
 	'''Analytic estimate for the mass source function and the stagnation radius rs'''
