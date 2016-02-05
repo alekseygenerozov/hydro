@@ -264,8 +264,9 @@ def inverse_abel(i_prime, r, **kwargs):
 def rho_stars(r, Ib=17.16, alpha=1.26, beta=1.75, rb=343.3, gamma=0, Uv=7.):
 	M_sun*Uv*inverse_abel(nuker_prime, r)/pc**3
 
-def M_enc(r, Ib=17.16, alpha=1.26, beta=1.75, rb=343.3, gamma=0, Uv=7.):
-	integrate.quad(4.*np.pi*r**2*rho_stars(r, Ib, alpha, beta, rb, gamma, Uv), 1.E-3, r)
+###This looks wrong, but I don't think that I actually used this anywhere...
+# def M_enc(r, Ib=17.16, alpha=1.26, beta=1.75, rb=343.3, gamma=0, Uv=7.):
+# 	integrate.quad(4.*np.pi*r**2*rho_stars(r, Ib, alpha, beta, rb, gamma, Uv), 1.E-3, r)
 
 ##Convert from magnitudes per arcsec^2 to luminosities per parsec^2
 def mub_to_Ib(mub):

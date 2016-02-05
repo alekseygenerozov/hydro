@@ -160,9 +160,9 @@ def vff(M, r):
 def tff(M, r):
 	return r/vff(M, r)
 
-def r_Ia(M):
-	'''radius for which time between Ias is equal to dynamical time'''
-	return 35.*pc*(M/(10.**8*M_sun))**-0.1
+# def r_Ia(M):
+# 	'''radius for which time between Ias is equal to dynamical time'''
+# 	return 35.*pc*(M/(10.**8*M_sun))**-0.1
 
 def zeta(M, vw):
 	'''normalized heating rate'''
@@ -339,8 +339,8 @@ def rho_rs_analytic(M, vw, gamma=1,eta=0.1):
 	return mdot_analytic(M, vw, gamma=gamma, eta=eta)/(4./3.*np.pi*rs_approx(M,vw,gamma=gamma)**2*vff(M,rs))
 
 def n18_cusp(M, vw, eta, mu=0.62):
-	'''Estimate for the density at 10.^18 cm--assuming a fixed gamma=0.8'''
-	return 1.25*(mu/0.62)**-1.*(eta/0.02)*(M/10.**8/M_sun)**0.5*(vw/5.E7)**-1.5
+	'''Estimate for the density at 10.^18 cm--assuming a fixed gamma=0.8--replace with more general expression'''
+	return 1.25*(mu/0.62)**-1.*(eta/0.02)*(M/10.**8/M_sun)**0.5*(vw/5.E7)**(-1.5)
 
 def eta_n18(n18, M, vw, mu=0.62):
 	return 0.02*(n18/1.25)*(mu/0.62)*(M/10.**8/M_sun)**-0.5*(vw/5.E7)**1.5
