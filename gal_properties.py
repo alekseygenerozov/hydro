@@ -352,6 +352,9 @@ def rho_stars_rs_analytic(M, vw, gamma=1.):
 def rho_stars_rinf(M, gamma=1.):
 	return M*(2.-gamma)/(4.*np.pi*rinf(M)**3.)
 
+def rho_stars(r, M, gamma=1.):
+	return M*(2.-gamma)/(4.*np.pi*rinf(M)**3.)*(r/rinf(M))**(-1.-gamma)
+
 def q_rs_analytic(M, vw, gamma=1., eta=0.1):
 	'''Analytic estimate for the mass source function and the stagnation radius rs'''
 	return eta*rho_stars_rs_analytic(M, vw, gamma=gamma)/th
