@@ -381,19 +381,6 @@ def cs(temp, mu=1, gamma=5./3.):
 	'''Sound speed'''
 	return (gamma*kb*temp/(mu*mp))**0.5
 
-# def eta(t):
-# 	'''Normalization of the mass source function as a function of stellar age'''
-# 	return 0.11*(t/th)**-1.26
-
-# def rate_Ia(t):
-# 	'''Rate of SNe Ia using delay time distribution from Maoz et al. '12'''
-# 	return 0.03*(t/(1.E8*year))**(-1.12)*(1/year)*(1./(10.**10*M_sun))
- 
-# def vw_eff_Ia(t):
-# 	'''vw from Ia's in impulsive limit'''
-# 	eps1a=0.4
-# 	return ((2.*th*rate_Ia(t)*(eps1a*1.E51))/eta(t))**0.5
-
 def eps_rad(x):
 	'''Radiative efficiency as a function of Eddington ratio x'''
 	if x<1.0e-4:
