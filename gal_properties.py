@@ -79,15 +79,15 @@ def uppsilon_vband_mag(Mv):
 	'''scaling relation for mass-to-light ratio in V band'''
 	return 4.9*(Lv(Mv)/(10.**10*L_sun))**0.18
 
-def epsilon_sharma(eddr):
-	if eddr<1.E-4:
-		return 2.6E-2*(eddr/(1.E-4))**0.9
-	elif eddr<1.E-2:
-		return 2.6E-2
-	elif eddr<0.1:
-		return 0.1*(eddr/0.1)**0.58
-	else:
-		return 0.1
+# def epsilon_sharma(eddr):
+# 	if eddr<1.E-4:
+# 		return 2.6E-2*(eddr/(1.E-4))**0.9
+# 	elif eddr<1.E-2:
+# 		return 2.6E-2
+# 	elif eddr<0.1:
+# 		return 0.1*(eddr/0.1)**0.58
+# 	else:
+# 		return 0.1
 
 # def epsilon_sharma_2(eddr):
 # 	if eddr>0.01:
@@ -338,6 +338,13 @@ def rho_rs_analytic(M, vw, gamma=1,eta=0.1):
 	rs=rs_approx(M, vw, gamma=gamma)
 	return mdot_analytic(M, vw, gamma=gamma, eta=eta)/(4./3.*np.pi*rs_approx(M,vw,gamma=gamma)**2*vff(M,rs))
 
+def rho_rs_gen_analytic(M, r, gamma=1, eta=0.1):
+	'''
+	Estimate for density at stagnation radius r (this is passed as a parameter). This function is useful is to compute the gas density if the stagnation radius 
+	moves outwards to the Ia radius. 
+	'''
+	return eta*M*(r/rinf(M))**(2.-gamma)/(4./3.*np.pi*r**2*vff(M,r))
+
 def n18_cusp(M, vw, eta, mu=0.62):
 	'''Estimate for the density at 10.^18 cm--assuming a fixed gamma=0.8--replace with more general expression'''
 	return 1.25*(mu/0.62)**-1.*(eta/0.02)*(M/10.**8/M_sun)**0.5*(vw/5.E7)**(-1.5)
@@ -381,6 +388,7 @@ def cs(temp, mu=1, gamma=5./3.):
 	'''Sound speed'''
 	return (gamma*kb*temp/(mu*mp))**0.5
 
+@np.vectorize
 def eps_rad(x):
 	'''Radiative efficiency as a function of Eddington ratio x'''
 	if x<1.0e-4:
