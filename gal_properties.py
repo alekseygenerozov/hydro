@@ -231,7 +231,7 @@ def dens_slope(gamma):
 def temp_rs_tilde(M, vw,  mu=0.62):
 	return 0.4*mu*mp*vw**2/kb/2.
 
-def temp_rs(M, vw, gamma=1., mu=0.62):
+def temp_rs(vw, gamma=1., mu=0.62):
 	return 0.4*mu*mp*vw**2/kb/2.*(13.+8.*gamma)/(13.+8.*gamma-6.*dens_slope(gamma))
 
 def vw_ti_core(M, eta):
@@ -343,7 +343,7 @@ def rho_rs_gen_analytic(M, r, gamma=1, eta=0.1):
 	Estimate for density at stagnation radius r (this is passed as a parameter). This function is useful is to compute the gas density if the stagnation radius 
 	moves outwards to the Ia radius. 
 	'''
-	return eta*M*(r/rinf(M))**(2.-gamma)/(4./3.*np.pi*r**2*vff(M,r))
+	return eta*M*(r/rinf(M))**(2.-gamma)/(4./3.*np.pi*r**2*vff(M,r))/th
 
 def n18_cusp(M, vw, eta, mu=0.62):
 	'''Estimate for the density at 10.^18 cm--assuming a fixed gamma=0.8--replace with more general expression'''
@@ -366,15 +366,30 @@ def q_rs_analytic(M, vw, gamma=1., eta=0.1):
 	'''Analytic estimate for the mass source function and the stagnation radius rs'''
 	return eta*rho_stars_rs_analytic(M, vw, gamma=gamma)/th
 
-def tcool_rs(M, vw, gamma=1., mu=0.62, eta=0.1):
-	'''Analytic estimate  for the ratio of the cooling time at the stagnation radius rs''' 
-	temp_rs=temp_rs(M, vw, gamma=gamma, mu=mu)
-	return 1.5*kb*temp_rs/(rho_rs_analytic(gamma,eta,vw,rbrinf)/(mu*mp)*lambda_c(temp_rs))
+# def tcool_rs(M, vw, gamma=1., mu=0.62, eta=0.1):
+# 	'''Analytic estimate  for the ratio of the cooling time at the stagnation radius rs''' 
+# 	temp_rs=temp_rs(M, vw, gamma=gamma, mu=mu)
+# 	return 1.5*kb*temp_rs/(rho_rs_analytic(gamma, eta, vw, rbrinf)/(mu*mp)*lambda_c(temp_rs))
 
-def tcool_tff_rs(M, vw, mu=0.62, gamma=1., eta=0.1):
-	'''Analytic estimate for the ratio of the cooling to the free-fall time at the stagnation radius.'''
-	rs1=rs_approx(M,vw,gamma=gamma)
-	return tcool_rs(M, vw, mu, gamma, eta, rbrinf)/tff(M,rs1)
+# def tcool_tff_rs(M, vw, mu=0.62, gamma=1., eta=0.1):
+# 	'''Analytic estimate for the ratio of the cooling to the free-fall time at the stagnation radius.'''
+# 	rs1=rs_approx(M,vw,gamma=gamma)
+# 	return tcool_rs(M, vw, mu, gamma, eta, rbrinf)/tff(M,rs1)
+
+def tcool_rs_gen(M, r, vw, gamma=1., mu=0.62, eta=0.1):
+	'''
+	Estimate for the cooling rate at stagnation radius rs. Use expression for temperature at stagnation radius. 
+	The stagnation raidus itself is passed as a parameter (i.e. it's value is not tied to Generozov's law). 
+	'''
+	temp_rs=temp_rs(vw, gamma=gamma, mu=mu)
+	return 1.5*kb*temp_rs/(rho_rs_gen_analytic(M, r, gamma=gamma, eta=eta)/(mu*mp)*lambda_c(temp_rs))
+
+def tcool_tff_rs_gen(M, rs, vw, mu=0.62, gamma=1., eta=0.1):
+	'''
+	Estimate for ratio of the cooling to the free-fall time at the stagnation radius. 
+	The stagnation raidus itself is passed as a parameter (i.e. it's value is not tied to Generozov's law).
+	'''
+	return tcool_rs_gen(M, r, vw, gamma=gamma, mu=mu, eta=eta)/tff(M, r)
 
 def rbondi(M, cs):
 	'''Bondi radius from the mass M and sound speed cs'''
