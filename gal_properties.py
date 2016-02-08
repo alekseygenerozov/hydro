@@ -228,7 +228,7 @@ def dens_slope(gamma):
 	'''Approximate expression for the density slope at the stagnation radius'''
 	return -(1./6.*(1.-4.*(1+gamma)))
 
-def temp_rs_tilde(M, vw,  mu=0.62):
+def temp_rs_tilde(vw,  mu=0.62):
 	return 0.4*mu*mp*vw**2/kb/2.
 
 def temp_rs(vw, gamma=0.8, mu=0.62):
