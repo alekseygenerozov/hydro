@@ -384,7 +384,7 @@ def tcool_rs_gen(M, r, vw, gamma=1., mu=0.62, eta=0.1):
 	temp_rs=temp_rs(vw, gamma=gamma, mu=mu)
 	return 1.5*kb*temp_rs/(rho_rs_gen_analytic(M, r, gamma=gamma, eta=eta)/(mu*mp)*lambda_c(temp_rs))
 
-def tcool_tff_rs_gen(M, rs, vw, mu=0.62, gamma=1., eta=0.1):
+def tcool_tff_rs_gen(M, r, vw, mu=0.62, gamma=1., eta=0.1):
 	'''
 	Estimate for ratio of the cooling to the free-fall time at the stagnation radius. 
 	The stagnation raidus itself is passed as a parameter (i.e. it's value is not tied to Generozov's law).
