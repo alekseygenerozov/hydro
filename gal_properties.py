@@ -213,13 +213,13 @@ def vw_crit(M, gamma=None, rb_rinf=None, sig=None):
 
 	return (zc**2.-1.)**0.5*sigma_0
 
-def zeta_anal(x,  gamma=1., nu=None):
+def zeta_anal(x,  gamma=0.8, nu=None):
 	'''This function explicitly calculates zeta given x (rs/rinf) and power law density slope, nu.'''
 	if not nu:
 		nu=dens_slope(gamma)
 	return ((1.0/(3.0*x*nu))*(x**(2.-gamma)*4.0+(13.+8.*gamma)/(4.+2.*gamma)-nu*3./(2.+gamma)))**0.5
 
-def zeta_min(gamma=1, nu=None):
+def zeta_min(gamma=0.8, nu=None):
 	if not nu:
 		nu=dens_slope(gamma)
 	return minimize(lambda x: zeta_anal(x, gamma=gamma, nu=nu), 1.)['fun']
@@ -231,7 +231,7 @@ def dens_slope(gamma):
 def temp_rs_tilde(M, vw,  mu=0.62):
 	return 0.4*mu*mp*vw**2/kb/2.
 
-def temp_rs(vw, gamma=1., mu=0.62):
+def temp_rs(vw, gamma=0.8, mu=0.62):
 	return 0.4*mu*mp*vw**2/kb/2.*(13.+8.*gamma)/(13.+8.*gamma-6.*dens_slope(gamma))
 
 def vw_ti_core(M, eta):
@@ -254,7 +254,7 @@ def vw_ti_Ia_core(M, eta):
 	M8=M/10.**8/M_sun
 	return (3.645E7*(eta/0.02)**0.2941)/(M8**0.390)
 
-def rs_approx(M, vw, gamma=1., nu=None):
+def rs_approx(M, vw, gamma=0.8, nu=None):
 	'''Simplified analytic expression for the stagnation radius--given a particular bh mass and particular vw.
 	This neglects the stellar mass term. Note that we have incorporate the effect of the constant stellar velocity dispersion.'''
 	sigma_0=(3.0)**0.5*sigma(M)
@@ -262,12 +262,12 @@ def rs_approx(M, vw, gamma=1., nu=None):
 		nu=dens_slope(gamma)
 	return G*M/(nu*(vw**2.))*((13.+8.*gamma)/(4.+2.*gamma)-nu*(3./(2.+gamma)))
 
-def rs_rinf_approx(z, gamma=1., nu=None):
+def rs_rinf_approx(z, gamma=0.8, nu=None):
 	if not nu:
 		nu=dens_slope(gamma)
 	return (1./(3*nu*z**2.))*((13.+8.*gamma)/(4.+2.*gamma)-nu*(3./(2.+gamma)))
 
-def rs_rinf_exact(z, gamma=1., nu=None):
+def rs_rinf_exact(z, gamma=0.8, nu=None):
 	if not nu:
 		nu=dens_slope(gamma)
 	if z<zeta_min(gamma, nu):
@@ -277,27 +277,27 @@ def rs_rinf_exact(z, gamma=1., nu=None):
 
 	return fsolve(lambda x:zeta_anal(x, gamma=gamma, nu=nu)-z, rs_rinf_approx(z, gamma=gamma, nu=nu))
 
-def M_enc_rs_analytic(M, vw, gamma=1.):
+def M_enc_rs_analytic(M, vw, gamma=0.8):
 	'''Stellar mass enclosed inside of the stagnation radius'''
 	return M*(rs_approx(M, vw, gamma=gamma)/rinf(M))**(2.-gamma)
 
-def	M_enc_rs_analytic_exact(M, vw, gamma=1.):
+def	M_enc_rs_analytic_exact(M, vw, gamma=0.8):
 	'''Stellar mass enclosed inside of the stagnation radius--more exact'''
 	sigma_0=(3.)**0.5*sigma(M)
 	z=(vw**2.+sigma_0**2.)**0.5/sigma_0
 
 	return M*(rs_rinf_exact(z, gamma=gamma))**(2.-gamma)
 
-def mdot_analytic(M, vw, gamma=1.,eta=0.1):
+def mdot_analytic(M, vw, gamma=0.8,eta=0.1):
 	return eta*M_enc_rs_analytic(M, vw, gamma=gamma)/th
 
-def mdot_rb(M, gamma=1., eta=0.1):
+def mdot_rb(M, gamma=0.8, eta=0.1):
 	rbrinf=rb_rinf(M, gamma)
 	Menc=M*(rbrinf)**(2.-gamma)
 
 	return eta*Menc/th
 
-def lum(M, vw, gamma=1.,eta=0.1, fin=0.1):
+def lum(M, vw, gamma=0.8,eta=0.1, fin=0.1):
 	mdot=mdot_analytic(M, vw, gamma, eta)
 	eddr=mdot/mdot_edd(M)
 	eps=eps_rad(fin*eddr)
@@ -322,23 +322,23 @@ def lum_r(r, M, gamma, eta=0.1, fin=0.1):
 
 	return eps*fin*mdot*c**2.
 
-def mdot_analytic_exact(M, vw, gamma=1.,eta=0.1):
+def mdot_analytic_exact(M, vw, gamma=0.8,eta=0.1):
 	return eta*M_enc_rs_analytic_exact(M, vw, gamma=gamma)/th
 
-def eddr_analytic(M, vw, gamma=1., eta=0.1):
+def eddr_analytic(M, vw, gamma=0.8, eta=0.1):
 	'''Analytic expression for the Eddington ratio--for cuspy galaxies'''
 	return mdot_analytic(M, vw, gamma=gamma, eta=eta)/mdot_edd(M)
 
-def eddr_analytic_exact(M, vw, gamma=1., eta=0.1):
+def eddr_analytic_exact(M, vw, gamma=0.8, eta=0.1):
 	'''Analytic expression for the Eddington ratio--for cuspy galaxies'''
 	return mdot_analytic_exact(M, vw, gamma=gamma, eta=eta)/mdot_edd(M)
 
-def rho_rs_analytic(M, vw, gamma=1,eta=0.1):
+def rho_rs_analytic(M, vw, gamma=0.8,eta=0.1):
 	'''Analytic expression for gas density at the stagnation radius rs'''
 	rs=rs_approx(M, vw, gamma=gamma)
 	return mdot_analytic(M, vw, gamma=gamma, eta=eta)/(4./3.*np.pi*rs_approx(M,vw,gamma=gamma)**2*vff(M,rs))
 
-def rho_rs_gen_analytic(M, r, gamma=1, eta=0.1):
+def rho_rs_gen_analytic(M, r, gamma=0.8, eta=0.1):
 	'''
 	Estimate for density at stagnation radius r (this is passed as a parameter). This function is useful is to compute the gas density if the stagnation radius 
 	moves outwards to the Ia radius. 
@@ -352,31 +352,31 @@ def n18_cusp(M, vw, eta, mu=0.62):
 def eta_n18(n18, M, vw, mu=0.62):
 	return 0.02*(n18/1.25)*(mu/0.62)*(M/10.**8/M_sun)**-0.5*(vw/5.E7)**1.5
 
-def rho_stars_rs_analytic(M, vw, gamma=1.):
+def rho_stars_rs_analytic(M, vw, gamma=0.8):
 	'''Analytic expression for the stellar density at the stagnation radius rs'''
 	return M*(2.-gamma)/(4.*np.pi*rinf(M)**3.)*(rs_approx(M,vw,gamma=gamma)/rinf(M))**(-1.-gamma)
 
-def rho_stars_rinf(M, gamma=1.):
+def rho_stars_rinf(M, gamma=0.8):
 	return M*(2.-gamma)/(4.*np.pi*rinf(M)**3.)
 
-def rho_stars(r, M, gamma=1.):
+def rho_stars(r, M, gamma=0.8):
 	return M*(2.-gamma)/(4.*np.pi*rinf(M)**3.)*(r/rinf(M))**(-1.-gamma)
 
-def q_rs_analytic(M, vw, gamma=1., eta=0.1):
+def q_rs_analytic(M, vw, gamma=0.8, eta=0.1):
 	'''Analytic estimate for the mass source function and the stagnation radius rs'''
 	return eta*rho_stars_rs_analytic(M, vw, gamma=gamma)/th
 
-# def tcool_rs(M, vw, gamma=1., mu=0.62, eta=0.1):
+# def tcool_rs(M, vw, gamma=0.8, mu=0.62, eta=0.1):
 # 	'''Analytic estimate  for the ratio of the cooling time at the stagnation radius rs''' 
 # 	temp_rs=temp_rs(M, vw, gamma=gamma, mu=mu)
 # 	return 1.5*kb*temp_rs/(rho_rs_analytic(gamma, eta, vw, rbrinf)/(mu*mp)*lambda_c(temp_rs))
 
-# def tcool_tff_rs(M, vw, mu=0.62, gamma=1., eta=0.1):
+# def tcool_tff_rs(M, vw, mu=0.62, gamma=0.8, eta=0.1):
 # 	'''Analytic estimate for the ratio of the cooling to the free-fall time at the stagnation radius.'''
 # 	rs1=rs_approx(M,vw,gamma=gamma)
 # 	return tcool_rs(M, vw, mu, gamma, eta, rbrinf)/tff(M,rs1)
 
-def tcool_rs_gen(M, r, vw, gamma=1., mu=0.62, eta=0.1):
+def tcool_rs_gen(M, r, vw, gamma=0.8, mu=0.62, eta=0.1):
 	'''
 	Estimate for the cooling rate at stagnation radius rs. Use expression for temperature at stagnation radius. 
 	The stagnation raidus itself is passed as a parameter (i.e. it's value is not tied to Generozov's law). 
@@ -384,7 +384,7 @@ def tcool_rs_gen(M, r, vw, gamma=1., mu=0.62, eta=0.1):
 	temp=temp_rs(vw, gamma=gamma, mu=mu)
 	return 1.5*kb*temp/(rho_rs_gen_analytic(M, r, gamma=gamma, eta=eta)/(mu*mp)*lambda_c(temp))
 
-def tcool_tff_rs_gen(M, r, vw, mu=0.62, gamma=1., eta=0.1):
+def tcool_tff_rs_gen(M, r, vw, mu=0.62, gamma=0.8, eta=0.1):
 	'''
 	Estimate for ratio of the cooling to the free-fall time at the stagnation radius. 
 	The stagnation raidus itself is passed as a parameter (i.e. it's value is not tied to Generozov's law).
