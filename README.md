@@ -19,7 +19,7 @@ This code is designed to model the injection of stellar winds in a galactic nucl
 
 The relevant equations are summarized here...
 
-Much more detail about our model may be found in (paper citation here)
+Much more detail about our model may be found in https://ui.adsabs.harvard.edu/#abs/2015MNRAS.453..775G/abstract
 
 ##Comment on different galaxy models
 
@@ -106,6 +106,7 @@ Numerical parameters:
 	*'bp': 
 
 Physics parameters
+
 4. *vw_extra (float)-1.E8* extra heating rate
  
 5. *phi_cond (float)* 
